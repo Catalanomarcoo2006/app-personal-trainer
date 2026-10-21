@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
-import { Bell, CalendarDays, ChartLine, Check, CircleDot, Droplet, EllipsisVertical, Footprints, FolderOpen, House, Info, Plus, User } from "lucide-react";
+import { Bell, CalendarDays, ChartLine, Check, CircleDot, Droplet, EllipsisVertical, Footprints, FolderOpen, House, Info, Play, Plus, User } from "lucide-react";
 import { Avatar, IconCircle, Pill } from "@/components/ui/basics";
 import { CountUp, EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { client, trainer, workout } from "@/libs/prototipo/dati-finti";
+import { rowName, useStato, videoByName } from "@/libs/prototipo/stato";
 
 const tint = (p: number) => `color-mix(in srgb, var(--trainer) ${p}%, white)`;
 const card = "rounded-[20px] bg-card";
@@ -171,7 +172,27 @@ export function NextSession() {
   );
 }
 
+// L'allenamento di oggi: l'ultima scheda inviata dal trainer (primo giorno), altrimenti quella della demo.
+function useTodayWorkout() {
+  const sent = useStato((s) => s.sent);
+  const videos = useStato((s) => s.videos);
+  const last = [...sent].reverse().find((p) => p.clientId === "giulia-bianchi");
+  if (last) {
+    const day = last.days[0];
+    return {
+      title: day.focus ? `${day.label} · ${day.focus}` : day.label,
+      exercises: day.rows.map((r) => ({
+        name: rowName(r),
+        detail: [r.sets, r.load !== "—" ? r.load : "", r.rest ? `recupero ${r.rest}` : ""].filter(Boolean).join(" · "),
+        video: r.video,
+      })),
+    };
+  }
+  return { title: workout.title, exercises: workout.exercises.map((ex) => ({ ...ex, video: videoByName(ex.name, videos) })) };
+}
+
 export function WorkoutCard() {
+  const workout = useTodayWorkout();
   const [done, setDone] = useState<boolean[]>(workout.exercises.map((_, i) => i === 0));
   const count = done.filter(Boolean).length;
   const all = count === done.length;
@@ -201,29 +222,48 @@ export function WorkoutCard() {
       </div>
       <div className="mt-[10px] flex flex-col gap-[7px]">
         {workout.exercises.map((ex, i) => (
-          <motion.button
-            type="button"
-            key={ex.name}
+          <motion.div
+            key={ex.name + i}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.35 + i * 0.07, duration: 0.45, ease: EASE_OUT }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => toggle(i)}
-            className="flex h-[50px] cursor-pointer items-center gap-[10px] rounded-[12px] border border-line px-[11px] text-left"
+            className="rounded-[12px] border border-line"
           >
-            <CircleDot size={14} strokeWidth={2.4} className="shrink-0" style={{ color: done[i] ? "var(--trainer)" : undefined }} />
-            <div className="min-w-0 leading-none">
-              <p className="truncate text-[10px] text-muted">{ex.detail}</p>
-              <p className={`mt-[4px] truncate text-[13px] font-semibold transition-opacity ${done[i] ? "opacity-45" : ""}`}>{ex.name}</p>
-            </div>
-            <motion.span
-              animate={{ scale: done[i] ? [1, 1.18, 1] : 1 }}
-              transition={{ duration: 0.3 }}
-              className={`ml-auto grid size-[30px] shrink-0 place-items-center rounded-full border border-line transition-colors duration-300 ${done[i] ? "bg-contrast text-on-contrast" : "bg-card text-ink/35"}`}
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.98 }}
+              onClick={() => toggle(i)}
+              aria-pressed={done[i]}
+              className="flex min-h-[50px] w-full cursor-pointer items-center gap-[10px] px-[11px] pt-[9px] pb-[6px] text-left"
             >
-              <Check size={14} strokeWidth={2.6} />
-            </motion.span>
-          </motion.button>
+              <CircleDot size={14} strokeWidth={2.4} className="shrink-0" style={{ color: done[i] ? "var(--trainer)" : undefined }} />
+              <div className="min-w-0 leading-none">
+                <p className="truncate text-[10px] text-muted">{ex.detail}</p>
+                <p className={`mt-[4px] truncate text-[13px] font-semibold transition-opacity ${done[i] ? "opacity-45" : ""}`}>{ex.name}</p>
+              </div>
+              <motion.span
+                animate={{ scale: done[i] ? [1, 1.18, 1] : 1 }}
+                transition={{ duration: 0.3 }}
+                className={`ml-auto grid size-[30px] shrink-0 place-items-center rounded-full border border-line transition-colors duration-300 ${done[i] ? "bg-contrast text-on-contrast" : "bg-card text-ink/35"}`}
+              >
+                <Check size={14} strokeWidth={2.6} />
+              </motion.span>
+            </motion.button>
+            {ex.video ? (
+              <a
+                href={ex.video}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => playSound("tap")}
+                className="mx-[11px] mb-[9px] ml-[35px] inline-flex items-center gap-[5px] rounded-full px-[9px] py-[4px] text-[11px] font-semibold"
+                style={{ color: "var(--trainer)", background: "color-mix(in srgb, var(--trainer) 12%, transparent)" }}
+              >
+                <Play size={10} strokeWidth={2.6} fill="currentColor" /> Guarda l’esecuzione
+              </a>
+            ) : (
+              <p className="mb-[9px] ml-[35px] text-[10.5px] text-muted">Video in arrivo da {trainer.name.split(" ")[0]}</p>
+            )}
+          </motion.div>
         ))}
       </div>
       <AnimatePresence>

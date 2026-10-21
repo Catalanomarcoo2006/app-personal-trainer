@@ -9,7 +9,6 @@ import {
   CalendarClock,
   CalendarPlus,
   Check,
-  CircleDot,
   ClipboardList,
   Dumbbell,
   Mail,
@@ -60,15 +59,14 @@ function Ring({ percent, color, track, size = 46 }: { percent: number; color: st
 
 function SideRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
-    <div className="flex h-[40px] items-center gap-[9px] rounded-[11px] border border-line px-[10px]">
-      <CircleDot size={13} strokeWidth={2.4} className="shrink-0" />
+    <div className="flex h-[40px] items-center gap-[9px] rounded-[11px] border border-line px-[8px]">
+      <span className="grid size-[26px] shrink-0 place-items-center rounded-full bg-soft text-ink/70">
+        <Icon size={13} />
+      </span>
       <div className="min-w-0 leading-none">
         <p className="text-[9.5px] text-muted">{label}</p>
         <p className="mt-[3px] truncate text-[12px] font-semibold">{value}</p>
       </div>
-      <span className="ml-auto grid size-[24px] shrink-0 place-items-center rounded-full border border-line text-ink/60">
-        <Icon size={12} />
-      </span>
     </div>
   );
 }

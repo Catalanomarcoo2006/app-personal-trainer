@@ -388,7 +388,8 @@ export const defaultPlan: PlanDay[] = [
 
 // ——— Messaggi ———
 
-export type ChatMessage = { from: "client" | "trainer" | "assistant"; text: string; time: string };
+export type Attachment = { name: string; url: string; detail: string };
+export type ChatMessage = { from: "client" | "trainer" | "assistant"; text: string; time: string; attachment?: Attachment };
 
 export const conversations: { clientId: string; unread: number; messages: ChatMessage[] }[] = [
   {

@@ -81,7 +81,7 @@
   --color-salvia: #dfebe1;
   --color-card: #ffffff;
   --color-ink: #1c1c1e;
-  --color-muted: #8f9093;
+  --color-muted: #6c6e73;
   --color-line: #ececec;
   --color-soft: #f2f2f4;
   --color-pill: #1f1f22;
@@ -271,6 +271,19 @@ html.dark body {
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+}
+/* selezione del testo e cursore nel colore del trainer */
+::selection {
+  background: color-mix(in srgb, var(--trainer) 26%, transparent);
+}
+input,
+textarea {
+  caret-color: var(--trainer);
+}
+
+/* durante il cambio tema i clic passano alla pagina: niente "clicco e non succede nulla" */
+::view-transition {
+  pointer-events: none;
 }
 ::view-transition-new(root) {
   z-index: 2;

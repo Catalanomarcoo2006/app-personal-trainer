@@ -3,21 +3,71 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp, Bot, Phone, Search, TriangleAlert, UserRound, Video } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound, Video } from "lucide-react";
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { ChatMessage, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
+import { Attachment, ChatMessage, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
+import { SentPlan, stato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./Chrome";
 import { ClientAvatar } from "./shared";
 
 const quickReplies = ["Perfetto, ci vediamo venerdì!", "Ti sposto la seduta, ti confermo a breve", "Riposa oggi e fammi sapere domani", "Bravissimo, continua così 💪"];
 const autoReplies = ["Grazie mille! 🙏", "Perfetto, a presto!", "Ok, ti aggiorno domani", "Fantastico, grazie!"];
+const planReply = "Grazie! La guardo subito, i video sono comodissimi 💪";
+
+// Il messaggio con il PDF della scheda inviata da Schede.
+const sentMessage = (p: SentPlan): ChatMessage => ({
+  from: "trainer",
+  text: "Ecco la tua nuova scheda! Sotto ogni esercizio trovi il video dell’esecuzione.",
+  time: p.time,
+  attachment: { name: p.fileName, url: p.url, detail: `${p.days.length} ${p.days.length === 1 ? "giorno" : "giorni"} · ${p.exercises} esercizi · ${p.withVideo} video` },
+});
+
+function initialThreads(): Record<string, ChatMessage[]> {
+  const threads = Object.fromEntries(conversations.map((c) => [c.clientId, c.messages])) as Record<string, ChatMessage[]>;
+  const { sent, replied } = stato.get();
+  for (const p of sent) {
+    threads[p.clientId] = [...(threads[p.clientId] ?? []), sentMessage(p)];
+    if (replied.includes(p.id)) threads[p.clientId].push({ from: "client", text: planReply, time: "Adesso" });
+  }
+  return threads;
+}
+
+function PdfMessage({ a }: { a: Attachment }) {
+  return (
+    <div className="mb-[6px] flex w-[340px] items-center gap-[10px] rounded-[12px] bg-on-contrast/10 p-[8px]">
+      <span className="grid size-[38px] shrink-0 place-items-center rounded-[10px] bg-[#e5484d] text-white">
+        <FileText size={17} />
+      </span>
+      <div className="min-w-0 flex-1 leading-tight">
+        <p className="truncate text-[12px] font-semibold">{a.name}</p>
+        <p className="mt-[2px] text-[10.5px] opacity-65">{a.detail}</p>
+      </div>
+      <a
+        href={a.url}
+        target="_blank"
+        rel="noreferrer"
+        onClick={() => playSound("tap")}
+        className="flex h-[30px] shrink-0 items-center gap-[5px] rounded-full bg-on-contrast px-[11px] text-[11px] font-semibold text-contrast"
+      >
+        <ExternalLink size={12} /> Apri PDF
+      </a>
+    </div>
+  );
+}
 
 export function MessagesView() {
-  const [activeId, setActiveId] = useState(conversations[0].clientId);
-  const [threads, setThreads] = useState(() => Object.fromEntries(conversations.map((c) => [c.clientId, c.messages])) as Record<string, ChatMessage[]>);
-  const [unread, setUnread] = useState(() => Object.fromEntries(conversations.map((c) => [c.clientId, c.unread])) as Record<string, number>);
+  const params = useSearchParams();
+  const target = params.get("cliente");
+  const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : conversations[0].clientId));
+  const [threads, setThreads] = useState(initialThreads);
+  const [unread, setUnread] = useState(() => {
+    const u = Object.fromEntries(conversations.map((c) => [c.clientId, c.unread])) as Record<string, number>;
+    if (target) u[target] = 0;
+    return u;
+  });
   const [filter, setFilter] = useState<"tutti" | "non-letti" | "segnalazioni">("tutti");
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
@@ -25,22 +75,50 @@ export function MessagesView() {
   const timers = useRef<number[]>([]);
 
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+
+  // Il cliente risponde alla scheda appena ricevuta.
+  useEffect(() => {
+    const { sent, replied } = stato.get();
+    const pending = sent.filter((p) => !replied.includes(p.id));
+    const local: number[] = [];
+    pending.forEach((p, i) => {
+      local.push(window.setTimeout(() => p.clientId === activeId && setTyping(true), 900 + i * 400));
+      local.push(
+        window.setTimeout(() => {
+          stato.markReplied(p.id);
+          setTyping(false);
+          playSound("tap");
+          setThreads((th) => ({ ...th, [p.clientId]: [...(th[p.clientId] ?? []), { from: "client", text: planReply, time: "Adesso" }] }));
+        }, 2600 + i * 400),
+      );
+    });
+    return () => local.forEach((t) => window.clearTimeout(t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
   }, [threads, activeId, typing]);
 
+  // Conversazioni: quelle esistenti, più i clienti a cui hai appena inviato una scheda.
+  const allConversations = useMemo(() => {
+    const extra = Object.keys(threads)
+      .filter((id) => !conversations.some((c) => c.clientId === id))
+      .map((clientId) => ({ clientId, unread: 0, messages: threads[clientId] }));
+    return [...extra, ...conversations];
+  }, [threads]);
+
   const list = useMemo(
     () =>
-      conversations.filter((c) => {
+      allConversations.filter((c) => {
         if (filter === "non-letti") return unread[c.clientId] > 0;
         if (filter === "segnalazioni") return threads[c.clientId].some((m) => m.from === "assistant");
         return true;
       }),
-    [filter, unread, threads],
+    [allConversations, filter, unread, threads],
   );
 
   const client = clientById(activeId)!;
-  const messages = threads[activeId];
+  const messages = threads[activeId] ?? [];
 
   const open = (id: string) => {
     playSound("tap");
@@ -55,13 +133,13 @@ export function MessagesView() {
     playSound("confirm");
     setDraft("");
     const id = activeId;
-    setThreads((th) => ({ ...th, [id]: [...th[id], { from: "trainer", text: t, time: "Adesso" }] }));
+    setThreads((th) => ({ ...th, [id]: [...(th[id] ?? []), { from: "trainer", text: t, time: "Adesso" }] }));
     timers.current.push(window.setTimeout(() => setTyping(true), 700));
     timers.current.push(
       window.setTimeout(() => {
         setTyping(false);
         playSound("tap");
-        setThreads((th) => ({ ...th, [id]: [...th[id], { from: "client", text: autoReplies[th[id].length % autoReplies.length], time: "Adesso" }] }));
+        setThreads((th) => ({ ...th, [id]: [...(th[id] ?? []), { from: "client", text: autoReplies[(th[id] ?? []).length % autoReplies.length], time: "Adesso" }] }));
       }, 2300),
     );
   };
@@ -123,14 +201,14 @@ export function MessagesView() {
                     {c.name}
                     {flagged && <TriangleAlert size={12} className="text-[#e5484d]" />}
                   </p>
-                  <p className={`truncate text-[11px] ${unread[conv.clientId] ? "font-semibold text-ink" : "text-muted"}`}>
+                  <p className={`truncate text-[11px] ${(unread[conv.clientId] ?? 0) > 0 ? "font-semibold text-ink" : "text-muted"}`}>
                     {last.from === "trainer" ? "Tu: " : last.from === "assistant" ? "Assistente: " : ""}
-                    {last.text}
+                    {last.attachment ? `Scheda in PDF · ${last.attachment.detail}` : last.text}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-[4px]">
                   <span className="text-[10px] text-muted">{last.time}</span>
-                  {unread[conv.clientId] > 0 && (
+                  {(unread[conv.clientId] ?? 0) > 0 && (
                     <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="grid size-[18px] place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: "var(--trainer)" }}>
                       {unread[conv.clientId]}
                     </motion.span>
@@ -181,13 +259,14 @@ export function MessagesView() {
                   transition={{ type: "spring", stiffness: 320, damping: 26 }}
                   className={`flex max-w-[62%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
                 >
-                  <p
-                    className={`rounded-[18px] px-[14px] py-[9px] text-[12.5px] leading-snug ${
+                  <div
+                    className={`rounded-[18px] text-[12.5px] leading-snug ${m.attachment ? "p-[6px] pb-[9px]" : "px-[14px] py-[9px]"} ${
                       m.from === "trainer" ? "rounded-br-[6px] bg-contrast text-on-contrast" : "rounded-bl-[6px] bg-soft"
                     }`}
                   >
-                    {m.text}
-                  </p>
+                    {m.attachment && <PdfMessage a={m.attachment} />}
+                    <p className={m.attachment ? "max-w-[340px] px-[8px]" : ""}>{m.text}</p>
+                  </div>
                   <span className="mt-[3px] px-[4px] text-[9.5px] text-muted">{m.time}</span>
                 </motion.div>
               ),

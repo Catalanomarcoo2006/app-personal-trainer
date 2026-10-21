@@ -21,6 +21,9 @@ import { playSound } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./Chrome";
 
+// L'assistente del trainer si chiama Leo.
+export const COACH_NAME = "Leo";
+
 // ——— Misure, in px della tela ———
 
 const FLOOR = 14; // i piedi poggiano 14 px sopra il bordo inferiore, dentro le schede
@@ -31,20 +34,21 @@ const DOCK_RIGHT = 74; // centro del posto in piedi, dal bordo destro
 const DOCK_ZONE = 270; // rilasciato negli ultimi 270 px a destra: torna in piedi al suo posto
 const LIE_MIN = 128; // centro minimo da sdraiato: la testa non esce dalla tela
 const PANEL_W = 410;
-const PANEL_GAP = 54; // distanza tra il pannello e il centro del Coach in piedi accanto
-const BUTTON_X = 44; // centro del tasto nelle altre pagine, sotto la barra laterale
+const PANEL_TOP = 112; // lascia spazio sopra il pannello a Leo che sporge
+const PANEL_LEFT_MIN = 84; // a destra della barra laterale
+const PEEK_W = 128;
+const PEEK_SHOW = 70; // quanto di Leo sporge sopra il pannello: testa, spalle e manubrio
 
-const MOVE = { type: "spring" as const, stiffness: 200, damping: 25 };
 const FALL = { type: "spring" as const, stiffness: 320, damping: 24 };
+const MOVE = { type: "spring" as const, stiffness: 200, damping: 25 };
 const POP = { type: "spring" as const, duration: 0.5, bounce: 0.3 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 type Pose = "standing" | "lying";
 type Spot = { pose: "standing" } | { pose: "lying"; x: number };
-type Side = "left" | "right";
 
-// Dove riposa il Coach sulla home: resta nel browser del trainer.
+// Dove riposa Leo sulla home: resta nel browser del trainer.
 const STORAGE_KEY = "coach-posto";
 function readSpot(): Spot {
   try {
@@ -59,7 +63,7 @@ function saveSpot(spot: Spot) {
   } catch {}
 }
 
-// ——— Il viso, per il tasto e l'intestazione della chat: i capelli escono dal cerchio ———
+// ——— Il viso, per il tasto delle altre pagine: i capelli escono dal cerchio ———
 
 export function CoachFace({ size }: { size: number }) {
   return (
@@ -130,9 +134,15 @@ function answer(question: string): Answer {
       action: { label: "Apri Calendario", href: ROUTES.calendario },
     };
   }
-  if (/pdf|import|scheda/.test(q)) {
+  if (/video|esecuzion/.test(q)) {
     return {
-      text: "Vai in Schede, scegli il cliente e premi “Importa da PDF”. Trascina il file: leggo giorni ed esercizi, li trasformo in una scheda che puoi modificare cella per cella e poi la invii al cliente.",
+      text: "In Schede, sotto ogni esercizio c’è “Collega video”: incolla il link (YouTube, Instagram, Drive) e il cliente lo trova sotto l’esercizio nella sua app. Se lo salvi in libreria, si collega da solo in tutte le schede.",
+      action: { label: "Apri Schede", href: ROUTES.schede },
+    };
+  }
+  if (/pdf|import|scheda|invi/.test(q)) {
+    return {
+      text: "Vai in Schede, scegli il cliente e premi “Importa da PDF”: leggo giorni ed esercizi e collego i video che hai già. Controlla, poi premi “Invia”: il cliente riceve la scheda nell’app e il PDF in chat.",
       action: { label: "Apri Schede", href: ROUTES.schede },
     };
   }
@@ -148,21 +158,30 @@ function answer(question: string): Answer {
   };
 }
 
-const suggestions = ["Chi deve ancora pagare?", "Chi non si allena da una settimana?", "Chi ho in agenda oggi?", "Quanto ho incassato a ottobre?", "Chi ha il pacchetto in scadenza?", "Come importo una scheda da PDF?"];
+const suggestions = ["Chi deve ancora pagare?", "Chi non si allena da una settimana?", "Chi ho in agenda oggi?", "Quanto ho incassato a ottobre?", "Chi ha il pacchetto in scadenza?", "Come collego i video agli esercizi?"];
 
-// ——— Le vignette ———
+// ——— Vignette e novità ———
 
 type Speech = { text: string; icon?: LucideIcon; alert?: boolean; ask?: string };
 
 const firstName = trainer.name.split(" ")[0];
 
-// Quattro vignette dai dati della giornata, una alla volta, poi il Coach tace.
+const lucaTip: Speech = { icon: TriangleAlert, alert: true, text: "Luca ha segnalato fastidio al ginocchio durante gli affondi.", ask: "Cosa ha segnalato Luca?" };
+const paymentsTip: Speech = { icon: Wallet, text: `${openPayments.length} pagamenti ancora aperti per ${formatEuro(openTotal)}. Te li riepilogo?`, ask: "Chi deve ancora pagare?" };
+
+// Quattro vignette dai dati della giornata, una alla volta, poi Leo tace.
 const tips: Speech[] = [
   { icon: CalendarDays, text: `Ciao ${firstName}! Oggi hai ${agenda[TODAY_INDEX].length} appuntamenti, il prossimo alle 11:00 con Antonella.`, ask: "Chi ho in agenda oggi?" },
-  { icon: TriangleAlert, alert: true, text: "Luca ha segnalato fastidio al ginocchio durante gli affondi.", ask: "Cosa ha segnalato Luca?" },
+  lucaTip,
   { icon: Trophy, text: "Davide ha fatto il nuovo massimale di panca: 90 kg! 🎉", ask: "Com’è andata a Davide?" },
-  { icon: Wallet, text: `${openPayments.length} pagamenti ancora aperti per ${formatEuro(openTotal)}. Te li riepilogo?`, ask: "Chi deve ancora pagare?" },
+  paymentsTip,
 ];
+
+// Le cose che richiedono il trainer: fanno illuminare il tasto di Leo finché non apre la chat.
+const novita: Speech[] = [lucaTip, paymentsTip];
+let novitaViste = false;
+// Quante vignette della home sono già uscite: tornando sulla home non ricominciano da capo.
+const tipCursor = { shown: 0 };
 
 // Coda del fumetto: di base punta in basso a destra; si specchia in orizzontale e in verticale.
 function Tail({ flipX, flipY, className }: { flipX?: boolean; flipY?: boolean; className: string }) {
@@ -174,8 +193,24 @@ function Tail({ flipX, flipY, className }: { flipX?: boolean; flipY?: boolean; c
   );
 }
 
-function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; place: "head-left" | "head-right" | "above"; onAsk: (q?: string) => void }) {
+function SpeechIcon({ speech, size = 24 }: { speech: Speech; size?: number }) {
   const Icon = speech.icon;
+  if (!Icon) return null;
+  return (
+    <span
+      className="mt-[1px] grid shrink-0 place-items-center rounded-full"
+      style={{
+        width: size,
+        height: size,
+        ...(speech.alert ? { background: "rgba(229,72,77,0.12)", color: "#e5484d" } : { background: "color-mix(in srgb, var(--trainer) 14%, transparent)", color: "var(--trainer)" }),
+      }}
+    >
+      <Icon size={size * 0.54} strokeWidth={2.2} />
+    </span>
+  );
+}
+
+function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; place: "head-left" | "head-right" | "above"; onAsk: (q?: string) => void }) {
   const words = speech.text.split(" ");
   const toRight = place !== "head-left";
   const below = place !== "above"; // accanto al petto: la coda sale verso il viso
@@ -191,18 +226,7 @@ function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; pla
       className="pointer-events-auto relative w-max max-w-[228px] cursor-pointer rounded-[18px] border border-line bg-card px-[12px] py-[10px] text-left [filter:drop-shadow(0_12px_22px_rgba(0,0,0,0.13))]"
     >
       <span className="flex items-start gap-[8px]">
-        {Icon && (
-          <span
-            className="mt-[1px] grid size-[24px] shrink-0 place-items-center rounded-full"
-            style={
-              speech.alert
-                ? { background: "rgba(229,72,77,0.12)", color: "#e5484d" }
-                : { background: "color-mix(in srgb, var(--trainer) 14%, transparent)", color: "var(--trainer)" }
-            }
-          >
-            <Icon size={13} strokeWidth={2.2} />
-          </span>
-        )}
+        <SpeechIcon speech={speech} />
         <span className="text-[12px] leading-snug font-semibold text-ink">
           {words.map((w, i) => (
             <motion.span key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 + i * 0.035, duration: 0.2 }}>
@@ -219,7 +243,7 @@ function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; pla
           className="mt-[6px] ml-[32px] flex items-center gap-[4px] text-[10.5px] font-bold"
           style={{ color: "var(--trainer)" }}
         >
-          Chiedi al Coach <ArrowRight size={11} strokeWidth={2.4} />
+          Chiedi a {COACH_NAME} <ArrowRight size={11} strokeWidth={2.4} />
         </motion.span>
       )}
       <Tail flipX={toRight} flipY={below} className={`${below ? "-top-[13px]" : "-bottom-[13px]"} ${toRight ? "left-[16px]" : "right-[16px]"}`} />
@@ -245,26 +269,80 @@ function Dust() {
   );
 }
 
-// ——— La chat ———
+// ——— La chat (resta mentre si cambia pagina) ———
 
 type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"] };
+type Chat = { messages: Msg[]; typing: boolean; ask: (q: string) => void };
 
-function ChatPanel({
-  side,
-  messages,
-  typing,
-  ask,
-  close,
-}: {
-  side: Side;
-  messages: Msg[];
-  typing: boolean;
-  ask: (q: string) => void;
-  close: () => void;
-}) {
+function useCoachChat(): Chat {
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [typing, setTyping] = useState(false);
+  const nextId = useRef(1);
+  const timers = useRef<number[]>([]);
+  const busy = useRef(false);
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+
+  const ask = useCallback((question: string) => {
+    const text = question.trim();
+    if (!text || busy.current) return;
+    busy.current = true;
+    playSound("tap");
+    setMessages((m) => [...m, { id: nextId.current++, from: "trainer", text }]);
+    setTyping(true);
+    const a = answer(text);
+    const words = a.text.split(" ");
+    const id = nextId.current++;
+    timers.current.push(
+      window.setTimeout(() => {
+        setTyping(false);
+        setMessages((m) => [...m, { id, from: "coach", text: "" }]);
+        words.forEach((_, i) =>
+          timers.current.push(
+            window.setTimeout(() => {
+              const last = i === words.length - 1;
+              setMessages((m) => m.map((x) => (x.id === id ? { ...x, text: words.slice(0, i + 1).join(" "), action: last ? a.action : undefined } : x)));
+              if (last) {
+                busy.current = false;
+                playSound("confirm");
+              }
+            }, i * 28),
+          ),
+        );
+      }, 550),
+    );
+  }, []);
+
+  return { messages, typing, ask };
+}
+
+// Leo che sporge dal bordo alto della chat: sale da dietro il pannello e fluttua piano.
+function Peek() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 overflow-hidden" style={{ width: PEEK_W, height: PEEK_SHOW + 8 }}>
+      <motion.div
+        className="absolute inset-x-0 top-[8px]"
+        initial={{ y: PEEK_SHOW + 10 }}
+        animate={{ y: 0 }}
+        exit={{ y: PEEK_SHOW + 10, transition: { duration: 0.18, ease: EASE_OUT } }}
+        transition={{ type: "spring", duration: 0.65, bounce: 0.35, delay: 0.16 }}
+      >
+        <motion.img
+          src="/prototipo/coach/in-piedi.webp"
+          alt=""
+          draggable={false}
+          className="w-full max-w-none select-none"
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+function ChatPanel({ left, origin, chat, close }: { left: number; origin: string; chat: Chat; close: () => void }) {
+  const { messages, typing, ask } = chat;
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
-  const from = side === "right" ? 40 : -40;
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
@@ -278,133 +356,204 @@ function ChatPanel({
 
   return (
     <motion.div
-      initial={{ x: from, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: from, opacity: 0 }}
-      transition={{ duration: 0.4, ease: EASE_OUT }}
-      className={`absolute top-[90px] bottom-[10px] z-50 flex flex-col overflow-hidden rounded-[22px] bg-card shadow-[0_30px_80px_rgba(0,0,0,0.22)] ${side === "right" ? "right-[18px]" : "left-[84px]"}`}
-      style={{ width: PANEL_W }}
+      initial={{ opacity: 0, y: 18, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 14, scale: 0.98, transition: { duration: 0.22, ease: EASE_OUT, delay: 0.08 } }}
+      transition={{ duration: 0.32, ease: EASE_OUT }}
+      style={{ left, width: PANEL_W, top: PANEL_TOP, transformOrigin: origin }}
+      className="absolute bottom-[10px] z-50"
+      role="dialog"
+      aria-label={`${COACH_NAME}, il tuo assistente`}
     >
-      <div className="flex items-center gap-[10px] border-b border-line px-[16px] py-[12px]">
-        <CoachFace size={36} />
-        <div className="leading-tight">
-          <p className="text-[14px] font-bold">Coach, il tuo assistente</p>
-          <p className="text-[11px] text-muted">Conosce clienti, pagamenti, agenda e l’app</p>
+      <Peek />
+      <div className="relative flex size-full flex-col overflow-hidden rounded-[22px] bg-card shadow-[0_30px_80px_rgba(0,0,0,0.22)]">
+        <div className="flex items-center gap-[10px] border-b border-line px-[16px] py-[12px]">
+          <div className="leading-tight">
+            <p className="flex items-center gap-[7px] text-[15px] font-bold">
+              {COACH_NAME}
+              <span className="flex items-center gap-[4px] rounded-full px-[7px] py-[2px] text-[10px] font-semibold" style={{ color: "var(--color-ok, #1f9d55)", background: "color-mix(in srgb, #1f9d55 12%, transparent)" }}>
+                <span className="size-[5px] rounded-full bg-current" /> online
+              </span>
+            </p>
+            <p className="text-[11px] text-muted">Il tuo assistente: conosce clienti, pagamenti, agenda e app</p>
+          </div>
+          <button type="button" aria-label="Chiudi" onClick={close} className="ml-auto grid size-[30px] cursor-pointer place-items-center rounded-full bg-soft transition-colors hover:bg-line">
+            <X size={14} />
+          </button>
         </div>
-        <button type="button" aria-label="Chiudi" onClick={close} className="ml-auto grid size-[30px] cursor-pointer place-items-center rounded-full bg-soft">
-          <X size={14} />
-        </button>
-      </div>
 
-      <div ref={scroller} className="flex min-h-0 flex-1 flex-col gap-[8px] overflow-y-auto px-[16px] py-[14px] [scrollbar-width:none]">
-        {messages.length === 0 && (
-          <div className="mx-auto mt-[10px] max-w-[300px] text-center">
-            <p className="text-[15px] font-bold">Ciao {firstName}! 👋</p>
-            <p className="mt-[6px] text-[12px] leading-relaxed text-muted">Chiedimi qualcosa sui tuoi clienti, sui pagamenti o su come si usa l’app. Leggo i dati della tua dashboard.</p>
-          </div>
-        )}
-        {messages.map((m) => (
-          <motion.div
-            key={m.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: EASE_OUT }}
-            className={`flex max-w-[86%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
-          >
-            <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bg-contrast text-on-contrast" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
-            {m.action && (
-              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
-                <Link
-                  href={m.action.href}
-                  onClick={() => {
-                    playSound("tap");
-                    close();
-                  }}
-                  className="mt-[6px] flex items-center gap-[5px] rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold text-white"
-                  style={{ background: "var(--trainer)" }}
-                >
-                  {m.action.label} <ArrowRight size={12} />
-                </Link>
-              </motion.div>
-            )}
-          </motion.div>
-        ))}
-        {typing && (
-          <div className="flex gap-[4px] self-start rounded-[16px] bg-soft px-[12px] py-[11px]">
-            {[0, 1, 2].map((d) => (
-              <motion.span key={d} className="size-[6px] rounded-full bg-ink/40" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: d * 0.12 }} />
-            ))}
-          </div>
-        )}
-      </div>
+        <div ref={scroller} className="flex min-h-0 flex-1 flex-col gap-[8px] overflow-y-auto px-[16px] py-[14px] [scrollbar-width:none]">
+          {messages.length === 0 && (
+            <div className="mt-[2px]">
+              <p className="text-[15px] font-bold">Ciao {firstName}! 👋</p>
+              <p className="mt-[4px] text-[12px] leading-relaxed text-muted">
+                Ho guardato la tua dashboard: ci sono {novita.length} cose che ti aspettano. Oppure chiedimi qualcosa qui sotto.
+              </p>
+              <div className="mt-[10px] flex flex-col gap-[6px]">
+                {novita.map((n, i) => (
+                  <motion.button
+                    key={n.text}
+                    type="button"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 + i * 0.06, duration: 0.3, ease: EASE_OUT }}
+                    onClick={() => n.ask && ask(n.ask)}
+                    className="flex cursor-pointer items-center gap-[10px] rounded-[14px] border border-line px-[12px] py-[10px] text-left transition-colors hover:bg-soft"
+                  >
+                    <SpeechIcon speech={n} size={26} />
+                    <span className="flex-1 text-[12px] leading-snug font-semibold">{n.text}</span>
+                    <ArrowRight size={13} className="shrink-0 text-ink/40" />
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
+          {messages.map((m) => (
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: EASE_OUT }}
+              className={`flex max-w-[86%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
+            >
+              <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bg-contrast text-on-contrast" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
+              {m.action && (
+                <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
+                  <Link
+                    href={m.action.href}
+                    prefetch
+                    onClick={() => {
+                      playSound("tap");
+                      close();
+                    }}
+                    className="mt-[6px] flex items-center gap-[5px] rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold text-white"
+                    style={{ background: "var(--trainer)" }}
+                  >
+                    {m.action.label} <ArrowRight size={12} />
+                  </Link>
+                </motion.div>
+              )}
+            </motion.div>
+          ))}
+          {typing && (
+            <div className="flex gap-[4px] self-start rounded-[16px] bg-soft px-[12px] py-[11px]">
+              {[0, 1, 2].map((d) => (
+                <motion.span key={d} className="size-[6px] rounded-full bg-ink/40" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: d * 0.12 }} />
+              ))}
+            </div>
+          )}
+        </div>
 
-      <div className="flex flex-wrap gap-[6px] px-[16px] pb-[10px]">
-        {suggestions.map((s) => (
-          <motion.button key={s} type="button" whileTap={{ scale: 0.95 }} onClick={() => ask(s)} className="cursor-pointer rounded-full border border-line px-[10px] py-[5px] text-[11px] font-medium hover:bg-soft">
-            {s}
+        <div className="flex flex-wrap gap-[6px] px-[16px] pb-[10px]">
+          {suggestions.map((s) => (
+            <motion.button key={s} type="button" whileTap={{ scale: 0.95 }} onClick={() => ask(s)} className="cursor-pointer rounded-full border border-line px-[10px] py-[5px] text-[11px] font-medium transition-colors hover:bg-soft">
+              {s}
+            </motion.button>
+          ))}
+        </div>
+        <form onSubmit={submit} className="mx-[14px] mb-[14px] flex items-center gap-[8px] rounded-full border border-line py-[5px] pr-[5px] pl-[14px] focus-within:border-[color-mix(in_srgb,var(--trainer)_55%,transparent)]">
+          <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
+          <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast">
+            <ArrowUp size={15} />
           </motion.button>
-        ))}
+        </form>
       </div>
-      <form onSubmit={submit} className="mx-[14px] mb-[14px] flex items-center gap-[8px] rounded-full border border-line py-[5px] pr-[5px] pl-[14px]">
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Chiedi al Coach…" className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
-        <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast">
-          <ArrowUp size={15} />
-        </motion.button>
-      </form>
     </motion.div>
   );
 }
 
-// ——— Il tasto delle altre pagine, sotto la barra laterale ———
+// ——— Il tasto delle altre pagine, sotto la barra laterale: si illumina quando ci sono novità ———
 
-function CoachButton({ hidden, onOpen }: { hidden: boolean; onOpen: () => void }) {
+function CoachButton({ hidden, count, onOpen }: { hidden: boolean; count: number; onOpen: () => void }) {
   const [hover, setHover] = useState(false);
+  const glowing = count > 0 && !hidden;
+
   return (
-    <motion.button
-      type="button"
-      aria-label="Chiedi al Coach, il tuo assistente"
-      onClick={onOpen}
-      onHoverStart={() => setHover(true)}
-      onHoverEnd={() => setHover(false)}
+    <motion.div
       initial={{ opacity: 0, scale: 0.85 }}
       animate={hidden ? { opacity: 0, scale: 0.85 } : { opacity: 1, scale: 1 }}
       transition={{ type: "spring", duration: 0.45, bounce: 0.25, delay: hidden ? 0 : 0.2 }}
-      whileTap={{ scale: 0.92 }}
-      className={`glass glass-3d absolute bottom-[12px] left-[22px] z-40 grid size-[44px] cursor-pointer place-items-center rounded-full ${hidden ? "pointer-events-none" : ""}`}
+      className={`absolute bottom-[12px] left-[22px] z-40 ${hidden ? "pointer-events-none" : ""}`}
+      onHoverStart={() => setHover(true)}
+      onHoverEnd={() => setHover(false)}
     >
-      {/* due onde di colore all'arrivo nella pagina, poi ferme */}
-      <motion.span
-        aria-hidden
-        className="absolute inset-0 rounded-full"
-        style={{ boxShadow: "0 0 0 2px var(--trainer)" }}
-        initial={{ opacity: 0, scale: 1 }}
-        animate={{ opacity: [0, 0.55, 0], scale: [1, 1.35, 1.5] }}
-        transition={{ duration: 1.4, delay: 0.8, repeat: 1, repeatDelay: 0.4, ease: EASE_OUT }}
-      />
-      <motion.span animate={{ y: hover ? -2 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 26 }}>
-        <CoachFace size={34} />
-      </motion.span>
-      <AnimatePresence>
-        {hover && !hidden && (
+      {glowing && (
+        <>
+          {/* bagliore che respira */}
           <motion.span
-            initial={{ opacity: 0, scale: 0.97, x: -4 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, transition: { duration: 0.1 } }}
-            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-            className="glass pointer-events-none absolute top-1/2 left-[52px] origin-left -translate-y-1/2 rounded-full px-[11px] py-[5px] text-[11px] font-semibold whitespace-nowrap text-ink"
+            aria-hidden
+            className="absolute inset-[-12px] rounded-full blur-[12px]"
+            style={{ background: "var(--trainer)" }}
+            animate={{ opacity: [0.45, 0.95, 0.45], scale: [0.9, 1.1, 0.9] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* onda che si allarga */}
+          <motion.span
+            aria-hidden
+            className="absolute inset-0 rounded-full"
+            style={{ boxShadow: "0 0 0 2.5px var(--trainer)" }}
+            animate={{ opacity: [0.9, 0], scale: [1, 1.9] }}
+            transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 0.6, ease: EASE_OUT }}
+          />
+        </>
+      )}
+      <motion.button
+        type="button"
+        aria-label={count ? `Chiedi a ${COACH_NAME}: ${count} novità` : `Chiedi a ${COACH_NAME}, il tuo assistente`}
+        onClick={onOpen}
+        whileTap={{ scale: 0.92 }}
+        className="glass glass-3d relative grid size-[44px] cursor-pointer place-items-center rounded-full"
+        style={glowing ? { boxShadow: "0 0 0 2px var(--trainer), 0 10px 24px -6px color-mix(in srgb, var(--trainer) 70%, transparent)" } : undefined}
+      >
+        <motion.span animate={{ y: [0, -1.5, 0] }} transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}>
+          <CoachFace size={34} />
+        </motion.span>
+        {count > 0 && (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0.4, delay: 0.5 }}
+            className="absolute -top-[3px] -right-[3px] grid size-[17px] place-items-center rounded-full bg-[#e5484d] text-[9.5px] font-bold text-white ring-2 ring-[var(--color-card)] tabular-nums"
           >
-            Chiedi al Coach
+            {count}
           </motion.span>
         )}
+      </motion.button>
+      <AnimatePresence>
+        {hover && !hidden && (
+          <motion.button
+            type="button"
+            onClick={onOpen}
+            initial={{ opacity: 0, scale: 0.97, x: -4 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+            className="glass absolute top-1/2 left-[54px] origin-left -translate-y-1/2 cursor-pointer rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold whitespace-nowrap text-ink"
+          >
+            {count ? (
+              <>
+                {COACH_NAME} ha {count} novità per te <ArrowRight size={11} strokeWidth={2.4} className="ml-[3px] inline" style={{ color: "var(--trainer)" }} />
+              </>
+            ) : (
+              `Chiedi a ${COACH_NAME}`
+            )}
+          </motion.button>
+        )}
       </AnimatePresence>
-    </motion.button>
+    </motion.div>
   );
 }
 
-// ——— Il Coach ———
+// ——— Leo ———
 
+// Resta montato mentre si cambia pagina (sta nel layout): la conversazione non si perde.
 export function CoachAssistant() {
   const home = usePathname() === ROUTES.oggi;
+  const chat = useCoachChat();
+  return <CoachStage key={home ? "home" : "pagine"} home={home} chat={chat} />;
+}
+
+function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
   const reduce = useReducedMotion();
   const layer = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1303, h: 640 });
@@ -425,31 +574,33 @@ export function CoachAssistant() {
 
   const [rest, setRest] = useState<Spot>(() => (typeof window === "undefined" ? { pose: "standing" } : readSpot()));
   const [open, setOpen] = useState(false);
-  const openRef = useRef(false);
-  openRef.current = open;
-  const [out, setOut] = useState(home); // nelle altre pagine il Coach è fuori solo a chat aperta
-  const [pose, setPose] = useState<Pose>(home ? rest.pose : "standing");
+  const [pose, setPose] = useState<Pose>(rest.pose);
   const [dragging, setDragging] = useState(false);
   const [inDock, setInDock] = useState(false);
   const [dust, setDust] = useState(0);
   const [hover, setHover] = useState(false);
+  const [unseen, setUnseen] = useState(novitaViste ? 0 : novita.length);
 
   const restX = (spot: Spot) => (spot.pose === "lying" ? clamp(spot.x, LIE_MIN, size.w - DOCK_ZONE - LIE_W / 2) : size.w - DOCK_RIGHT);
-  const side: Side = home && !(rest.pose === "lying" && rest.x < size.w / 2) ? "right" : "left";
-  const besidePanel = side === "right" ? size.w - 18 - PANEL_W - PANEL_GAP : 84 + PANEL_W + PANEL_GAP;
 
-  // Posizione: x è il centro della figura sul pavimento; y e lift lo sollevano; pop lo fa uscire dal tasto.
-  const x = useMotionValue(home ? restX(rest) : BUTTON_X);
+  // La chat si apre sopra Leo, centrata su di lui; nelle altre pagine accanto al tasto.
+  const panelLeft = home ? clamp(restX(rest) - PANEL_W / 2, PANEL_LEFT_MIN, size.w - 18 - PANEL_W) : PANEL_LEFT_MIN;
+  const panelOrigin = home ? `${clamp(restX(rest) - panelLeft, 0, PANEL_W)}px 100%` : "0% 100%";
+
+  // Posizione: x è il centro della figura sul pavimento; y e lift lo sollevano; float lo fa fluttuare.
+  const x = useMotionValue(restX(rest));
   const y = useMotionValue(0);
   const lift = useMotionValue(0);
-  const pop = useMotionValue(home ? 0.9 : 0.35);
+  const float = useMotionValue(0);
+  const pop = useMotionValue(0.9);
   const fade = useMotionValue(0);
   const held = useMotionValue(0);
-  const height = useTransform(() => y.get() + lift.get());
+  const airborne = useTransform(() => y.get() + lift.get());
+  const height = useTransform(() => airborne.get() + float.get());
   const vx = useVelocity(x);
   // Mentre lo porti dondola come tenuto per le spalle, in ritardo sul movimento.
   const swing = useSpring(
-    useTransform(() => (held.get() || height.get() < -4 ? clamp(vx.get() * 0.009, -15, 15) : 0)),
+    useTransform(() => (held.get() || airborne.get() < -4 ? clamp(vx.get() * 0.009, -15, 15) : 0)),
     { stiffness: 240, damping: 13 },
   );
   const shadowOpacity = useTransform(height, [-220, 0], [0.04, 1]);
@@ -474,20 +625,18 @@ export function CoachAssistant() {
     if (s && ms > 0) speechTimer.current = window.setTimeout(() => setSpeech(null), ms);
   }, []);
 
-  const nextTip = useRef(0);
   const [tipTick, setTipTick] = useState(0);
   useEffect(() => {
-    if (!home || open || dragging || nextTip.current >= tips.length) return;
+    if (!home || open || dragging || tipCursor.shown >= tips.length) return;
     const t = window.setTimeout(
       () => {
-        say(tips[nextTip.current]);
-        nextTip.current++;
+        say(tips[tipCursor.shown]);
+        tipCursor.shown++;
         setTipTick((n) => n + 1);
         // un saltello per richiamare lo sguardo sulla vignetta
-        if (!reduce && hopScope.current)
-          animateHop(hopScope.current, { y: [0, -8, 0], scaleY: [1, 1.03, 1] }, { duration: 0.45, ease: EASE_OUT });
+        if (!reduce && hopScope.current) animateHop(hopScope.current, { y: [0, -8, 0], scaleY: [1, 1.03, 1] }, { duration: 0.45, ease: EASE_OUT });
       },
-      nextTip.current === 0 ? 1800 : 7000,
+      tipCursor.shown === 0 ? 1800 : 7000,
     );
     return () => window.clearTimeout(t);
   }, [home, open, dragging, tipTick, say, reduce, animateHop, hopScope]);
@@ -500,6 +649,24 @@ export function CoachAssistant() {
     const c = [animate(fade, 1, { duration: 0.3, delay: 0.6 }), animate(pop, 1, { ...POP, delay: 0.6 })];
     return () => c.forEach((a) => a.stop());
   }, [home, fade, pop]);
+
+  // Fluttua sempre, piano, per far capire che si può toccare (fermo se lo trascini, a chat aperta o con "riduci movimento").
+  useEffect(() => {
+    if (!home) return;
+    let loop: AnimationPlaybackControls | undefined;
+    const settle = animate(float, 0, { duration: 0.35, ease: EASE_OUT });
+    if (reduce || dragging || open) return () => settle.stop();
+    const amp = pose === "lying" ? -4 : -7;
+    let cancelled = false;
+    settle.then(() => {
+      if (!cancelled) loop = animate(float, [0, amp, 0], { duration: pose === "lying" ? 4 : 3.2, repeat: Infinity, ease: "easeInOut" });
+    });
+    return () => {
+      cancelled = true;
+      settle.stop();
+      loop?.stop();
+    };
+  }, [home, reduce, dragging, open, pose, float]);
 
   // Al primo passaggio del mouse spiega che si può spostare.
   const hinted = useRef(false);
@@ -524,88 +691,32 @@ export function CoachAssistant() {
   };
   useEffect(() => () => window.clearTimeout(poseTimer.current), []);
 
-  // ——— La chat ———
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [typing, setTyping] = useState(false);
-  const nextId = useRef(1);
-  const timers = useRef<number[]>([]);
-  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
-
-  const ask = (question: string) => {
-    const text = question.trim();
-    if (!text || typing) return;
-    playSound("tap");
-    setMessages((m) => [...m, { id: nextId.current++, from: "trainer", text }]);
-    setTyping(true);
-    const a = answer(text);
-    const words = a.text.split(" ");
-    const id = nextId.current++;
-    timers.current.push(
-      window.setTimeout(() => {
-        setTyping(false);
-        setMessages((m) => [...m, { id, from: "coach", text: "" }]);
-        words.forEach((_, i) =>
-          timers.current.push(
-            window.setTimeout(() => {
-              const last = i === words.length - 1;
-              setMessages((m) => m.map((x) => (x.id === id ? { ...x, text: words.slice(0, i + 1).join(" "), action: last ? a.action : undefined } : x)));
-              if (last) playSound("confirm");
-            }, i * 32),
-          ),
-        );
-      }, 650),
-    );
-  };
-
-  // Aprendo la chat il Coach si alza e va accanto al pannello; nelle altre pagine salta fuori dal tasto.
+  // ——— Chat ———
   const openChat = (question?: string) => {
     if (open) return;
     playSound("tap");
     say(null);
+    setHover(false);
     setOpen(true);
-    stopMoves();
-    if (home) {
-      setPoseLater("standing", 0);
-      move(besidePanel);
-    } else {
-      setOut(true);
-      setPose("standing");
-      x.set(BUTTON_X);
-      y.set(0);
-      pop.set(reduce ? 1 : 0.35);
-      moves.current.push(
-        animate(fade, 1, { duration: 0.15 }),
-        animate(pop, 1, POP),
-        animate(y, 0, reduce ? { duration: 0 } : { ...FALL, velocity: -1100 }),
-      );
-      move(besidePanel);
+    if (!novitaViste) {
+      novitaViste = true;
+      setUnseen(0);
     }
-    if (question) timers.current.push(window.setTimeout(() => ask(question), 450));
+    if (question) window.setTimeout(() => chat.ask(question), 380);
   };
+  const closeChat = () => setOpen(false);
 
-  const closeChat = () => {
-    setOpen(false);
-    stopMoves();
-    if (home) {
-      move(restX(rest));
-      if (rest.pose === "lying") setPoseLater("lying", reduce ? 0 : 420);
-    } else {
-      move(BUTTON_X);
-      moves.current.push(
-        animate(y, 0, reduce ? { duration: 0 } : { ...FALL, velocity: -700 }),
-        animate(pop, 0.35, { duration: 0.35, ease: EASE_OUT, delay: 0.2 }),
-      );
-      const f = animate(fade, 0, { duration: 0.18, delay: 0.38 });
-      moves.current.push(f);
-      f.then(() => {
-        if (!openRef.current) setOut(false);
-      });
-    }
-  };
-
-  // Se cambia la tela (finestra ridimensionata), il Coach torna al suo posto senza animazione.
+  // Esc chiude la chat.
   useEffect(() => {
-    if (!home || dragging || open) return;
+    if (!open) return;
+    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Se cambia la tela (finestra ridimensionata), Leo torna al suo posto senza animazione.
+  useEffect(() => {
+    if (!home || dragging) return;
     x.set(restX(rest));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [size.w]);
@@ -621,10 +732,10 @@ export function CoachAssistant() {
     saveSpot(spot);
     stopMoves();
     move(restX(spot), velocity);
-    const airborne = height.get() < -40;
+    const high = airborne.get() < -40;
     moves.current.push(animate(y, 0, reduce ? { duration: 0 } : { ...FALL, velocity: y.getVelocity() }), animate(lift, 0, reduce ? { duration: 0 } : FALL));
     if (spot.pose === "lying") {
-      setPoseLater("lying", reduce ? 0 : airborne ? 260 : 110);
+      setPoseLater("lying", reduce ? 0 : high ? 260 : 110);
       say({ text: "Mi stendo un attimo qui 😌" }, 2600);
     } else {
       setPoseLater("standing", 0);
@@ -686,21 +797,20 @@ export function CoachAssistant() {
       e.preventDefault();
       openChat();
     } else if (e.key === "ArrowLeft" && rest.pose === "standing") {
-      dropAt({ pose: "lying", x: 200 });
+      dropAt({ pose: "lying", x: Math.round(size.w / 2) });
     } else if (e.key === "ArrowRight" && rest.pose === "lying") {
       dropAt({ pose: "standing" });
     }
   };
 
   const shown: Pose = dragging ? "standing" : pose;
-  const visible = home || out;
 
   // La vignetta: sopra la testa da sdraiato; in piedi a sinistra della testa (a destra se è vicino al bordo sinistro).
   const bubblePlace = shown === "lying" ? "above" : x.get() < 330 ? "head-right" : "head-left";
 
   return (
     <>
-      {/* il pannello e il suo velo: il Coach sta tra i due, nitido sopra la sfocatura */}
+      {/* il velo sotto la chat */}
       <AnimatePresence>
         {open && (
           <motion.button
@@ -711,13 +821,13 @@ export function CoachAssistant() {
             className="absolute inset-0 z-[45] bg-black/10 backdrop-blur-[4px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
           />
         )}
       </AnimatePresence>
-      <AnimatePresence>{open && <ChatPanel key="chat" side={side} messages={messages} typing={typing} ask={ask} close={closeChat} />}</AnimatePresence>
+      <AnimatePresence>{open && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} chat={chat} close={closeChat} />}</AnimatePresence>
 
-      {!home && <CoachButton hidden={open || out} onOpen={() => openChat()} />}
+      {!home && <CoachButton hidden={open} count={unseen} onOpen={() => openChat()} />}
 
       <div ref={layer} className="pointer-events-none absolute inset-0 z-[46]">
         {/* il posto in piedi, mentre lo trascini */}
@@ -736,112 +846,113 @@ export function CoachAssistant() {
           )}
         </AnimatePresence>
 
-        {visible && (
+        {home && (
           <motion.div className="absolute left-0" style={{ x, bottom: FLOOR, opacity: fade }}>
-            {/* ombra sul pavimento: si stringe e sbiadisce quando lo sollevi */}
-            <motion.div className="absolute bottom-[-7px] left-[-110px] h-[14px] w-[220px]" style={{ opacity: shadowOpacity, scale: shadowScale }}>
-              <motion.div
-                className="size-full rounded-[50%] bg-black/25 blur-[6px] dark:bg-black/60"
-                initial={false}
-                animate={{ scaleX: shown === "lying" ? 0.95 : 0.36, opacity: shown === "lying" ? 0.8 : 1 }}
-                transition={{ duration: 0.35, ease: EASE_OUT }}
-              />
-            </motion.div>
-
-            <AnimatePresence>
-              {dust > 0 && (
-                <motion.div key={dust} className="absolute bottom-0 left-0" exit={{ opacity: 0 }}>
-                  <Dust />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <motion.div style={{ y: height, scale: pop, originY: 1 }}>
-              <motion.div style={{ rotate: swing, transformOrigin: `0px ${-standH * 0.82}px` }} className="relative">
-                <div ref={hopScope} className="relative" style={{ transformOrigin: "50% 100%" }}>
-                  {/* respiro a riposo */}
-                  <motion.div
-                    className="relative"
-                    style={{ originY: 1 }}
-                    animate={dragging || open ? { scaleY: 1 } : { scaleY: [1, shown === "lying" ? 1.02 : 1.012, 1] }}
-                    transition={dragging || open ? { duration: 0.2 } : { duration: shown === "lying" ? 4.2 : 3.4, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <motion.img
-                      src="/prototipo/coach/in-piedi.webp"
-                      alt=""
-                      draggable={false}
-                      className="absolute bottom-0 max-w-none select-none"
-                      style={{ width: standW, left: -standW / 2, originX: 0.5, originY: 1 }}
-                      initial={false}
-                      animate={shown === "standing" ? { opacity: 1, rotate: hover && !dragging && !open ? -3 : 0 } : { opacity: 0, rotate: -78 }}
-                      transition={
-                        shown === "standing"
-                          ? { rotate: { type: "spring", duration: 0.6, bounce: 0.35 }, opacity: { duration: 0.12 } }
-                          : { rotate: { duration: 0.36, ease: [0.77, 0, 0.175, 1] }, opacity: { duration: 0.16, delay: 0.16 } }
-                      }
-                    />
-                    <motion.img
-                      src="/prototipo/coach/sdraiato.webp"
-                      alt=""
-                      draggable={false}
-                      className="absolute bottom-0 max-w-none select-none"
-                      style={{ width: LIE_W, left: -LIE_W / 2, originX: 0.5, originY: 1 }}
-                      initial={false}
-                      animate={shown === "lying" ? { opacity: 1, scaleY: 1, y: 0 } : { opacity: 0, scaleY: 0.86, y: -10 }}
-                      transition={
-                        shown === "lying"
-                          ? { opacity: { duration: 0.2, delay: 0.18 }, scaleY: { type: "spring", duration: 0.55, bounce: 0.4, delay: 0.18 }, y: { type: "spring", duration: 0.5, bounce: 0.3, delay: 0.18 } }
-                          : { duration: 0.12 }
-                      }
-                    />
-                  </motion.div>
-
-                  {/* zona da afferrare: segue la sagoma, così gli angoli vuoti non coprono la pagina */}
-                  {home && (
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      aria-label="Coach, il tuo assistente. Invio per fargli una domanda, frecce per spostarlo."
-                      onPointerDown={onPointerDown}
-                      onPointerMove={onPointerMove}
-                      onPointerUp={onPointerUp}
-                      onPointerCancel={onPointerUp}
-                      onKeyDown={onKeyDown}
-                      onMouseEnter={hint}
-                      onMouseLeave={() => setHover(false)}
-                      className={`pointer-events-auto absolute bottom-0 touch-none rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--trainer)] ${
-                        open ? "pointer-events-none" : dragging ? "cursor-grabbing" : "cursor-grab"
-                      }`}
-                      style={
-                        shown === "lying"
-                          ? { width: LIE_W, height: LIE_H, left: -LIE_W / 2, clipPath: "polygon(0% 10%, 22% 0%, 30% 25%, 55% 33%, 98% 55%, 100% 100%, 0% 100%)" }
-                          : {
-                              width: standW,
-                              height: standH,
-                              left: -standW / 2,
-                              clipPath: "polygon(26% 0%, 66% 0%, 68% 24%, 100% 24%, 100% 52%, 70% 50%, 74% 100%, 22% 100%, 26% 72%, 0% 72%, 0% 58%, 24% 30%)",
-                            }
-                      }
-                    />
-                  )}
-                </div>
+            {/* a chat aperta la figura si fa da parte: Leo sporge dal pannello */}
+            <motion.div
+              initial={false}
+              animate={open ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
+              transition={open ? { duration: 0.16, ease: EASE_OUT } : { type: "spring", duration: 0.45, bounce: 0.25, delay: 0.12 }}
+              style={{ originY: 1 }}
+              className={open ? "pointer-events-none" : ""}
+            >
+              {/* ombra sul pavimento: si stringe e sbiadisce quando sale */}
+              <motion.div className="absolute bottom-[-7px] left-[-110px] h-[14px] w-[220px]" style={{ opacity: shadowOpacity, scale: shadowScale }}>
+                <motion.div
+                  className="size-full rounded-[50%] bg-black/25 blur-[6px] dark:bg-black/60"
+                  initial={false}
+                  animate={{ scaleX: shown === "lying" ? 0.95 : 0.36, opacity: shown === "lying" ? 0.8 : 1 }}
+                  transition={{ duration: 0.35, ease: EASE_OUT }}
+                />
               </motion.div>
 
-              {/* vignetta: in piedi accanto al petto (non copre l'ultimo messaggio), da sdraiato sopra la testa */}
-              <div
-                className={`absolute w-max ${bubblePlace === "above" ? "" : "translate-y-full"}`}
-                style={
-                  bubblePlace === "above"
-                    ? { bottom: LIE_H + 10, left: -LIE_W / 2 + 30 }
-                    : bubblePlace === "head-left"
-                      ? { bottom: standH * 0.68, right: standW * 0.16 }
-                      : { bottom: standH * 0.68, left: standW * 0.16 }
-                }
-              >
-                <AnimatePresence mode="wait">
-                  {speech && !open && <Bubble key={speech.id} speech={speech} place={bubblePlace} onAsk={(q) => openChat(q)} />}
-                </AnimatePresence>
-              </div>
+              <AnimatePresence>
+                {dust > 0 && (
+                  <motion.div key={dust} className="absolute bottom-0 left-0" exit={{ opacity: 0 }}>
+                    <Dust />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.div style={{ y: airborne, scale: pop, originY: 1 }}>
+                <motion.div style={{ rotate: swing, transformOrigin: `0px ${-standH * 0.82}px` }} className="relative">
+                  <div ref={hopScope} className="relative" style={{ transformOrigin: "50% 100%" }}>
+                    <motion.div className="relative" style={{ y: float }}>
+                      <motion.img
+                        src="/prototipo/coach/in-piedi.webp"
+                        alt=""
+                        draggable={false}
+                        className="absolute bottom-0 max-w-none select-none"
+                        style={{ width: standW, left: -standW / 2, originX: 0.5, originY: 1 }}
+                        initial={false}
+                        animate={shown === "standing" ? { opacity: 1, rotate: hover && !dragging ? -3 : 0 } : { opacity: 0, rotate: -78 }}
+                        transition={
+                          shown === "standing"
+                            ? { rotate: { type: "spring", duration: 0.6, bounce: 0.35 }, opacity: { duration: 0.12 } }
+                            : { rotate: { duration: 0.36, ease: [0.77, 0, 0.175, 1] }, opacity: { duration: 0.16, delay: 0.16 } }
+                        }
+                      />
+                      <motion.img
+                        src="/prototipo/coach/sdraiato.webp"
+                        alt=""
+                        draggable={false}
+                        className="absolute bottom-0 max-w-none select-none"
+                        style={{ width: LIE_W, left: -LIE_W / 2, originX: 0.5, originY: 1 }}
+                        initial={false}
+                        animate={shown === "lying" ? { opacity: 1, scaleY: 1, y: 0 } : { opacity: 0, scaleY: 0.86, y: -10 }}
+                        transition={
+                          shown === "lying"
+                            ? { opacity: { duration: 0.2, delay: 0.18 }, scaleY: { type: "spring", duration: 0.55, bounce: 0.4, delay: 0.18 }, y: { type: "spring", duration: 0.5, bounce: 0.3, delay: 0.18 } }
+                            : { duration: 0.12 }
+                        }
+                      />
+
+                      {/* zona da afferrare: segue la sagoma, così gli angoli vuoti non coprono la pagina */}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${COACH_NAME}, il tuo assistente. Invio per fargli una domanda, frecce per spostarlo.`}
+                        onPointerDown={onPointerDown}
+                        onPointerMove={onPointerMove}
+                        onPointerUp={onPointerUp}
+                        onPointerCancel={onPointerUp}
+                        onKeyDown={onKeyDown}
+                        onMouseEnter={hint}
+                        onMouseLeave={() => setHover(false)}
+                        className={`pointer-events-auto absolute bottom-0 touch-none rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--trainer)] ${
+                          dragging ? "cursor-grabbing" : "cursor-grab"
+                        }`}
+                        style={
+                          shown === "lying"
+                            ? { width: LIE_W, height: LIE_H, left: -LIE_W / 2, clipPath: "polygon(0% 10%, 22% 0%, 30% 25%, 55% 33%, 98% 55%, 100% 100%, 0% 100%)" }
+                            : {
+                                width: standW,
+                                height: standH,
+                                left: -standW / 2,
+                                clipPath: "polygon(26% 0%, 66% 0%, 68% 24%, 100% 24%, 100% 52%, 70% 50%, 74% 100%, 22% 100%, 26% 72%, 0% 72%, 0% 58%, 24% 30%)",
+                              }
+                        }
+                      />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* vignetta: in piedi accanto al petto (non copre l'ultimo messaggio), da sdraiato sopra la testa */}
+                <div
+                  className={`absolute w-max ${bubblePlace === "above" ? "" : "translate-y-full"}`}
+                  style={
+                    bubblePlace === "above"
+                      ? { bottom: LIE_H + 10, left: -LIE_W / 2 + 30 }
+                      : bubblePlace === "head-left"
+                        ? { bottom: standH * 0.68, right: standW * 0.16 }
+                        : { bottom: standH * 0.68, left: standW * 0.16 }
+                  }
+                >
+                  <AnimatePresence mode="wait">
+                    {speech && !open && <Bubble key={speech.id} speech={speech} place={bubblePlace} onAsk={(q) => openChat(q)} />}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

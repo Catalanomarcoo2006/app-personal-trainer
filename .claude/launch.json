@@ -4,7 +4,7 @@
     {
       "name": "prototipo",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "-p", "3100"],
+      "runtimeArgs": ["run", "dev", "--", "--turbopack", "-p", "3100"],
       "port": 3100
     }
   ]

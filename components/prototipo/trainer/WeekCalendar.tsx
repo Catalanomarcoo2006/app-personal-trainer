@@ -119,17 +119,32 @@ export function WeekCalendar() {
                           <Link
                             href={ROUTES.cliente(a.clientId)}
                             onClick={() => playSound("tap")}
-                            className="relative flex h-full flex-col overflow-hidden rounded-[11px] px-[8px] py-[6px] hover:shadow-[0_10px_24px_rgba(0,0,0,0.12)]"
+                            title={`${a.time} – ${endTime(a)} · ${c?.name ?? ""}`}
+                            className={`relative flex h-full overflow-hidden rounded-[11px] px-[8px] hover:shadow-[0_10px_24px_rgba(0,0,0,0.12)] ${
+                              a.minutes < 50 ? "items-center gap-[6px]" : "flex-col py-[6px]"
+                            }`}
                             style={{ background: col.bg }}
                           >
                             <span className="absolute top-0 bottom-0 left-0 w-[3px]" style={{ background: col.strong }} />
-                            <span className="flex items-center gap-[5px] text-[10px] font-semibold" style={{ color: col.strong }}>
-                              <Icon size={10} /> {a.time} – {endTime(a)}
-                            </span>
-                            <span className="mt-[3px] flex min-w-0 items-center gap-[5px]">
-                              {c && <ClientAvatar c={c} size={18} />}
-                              <span className="truncate text-[11px] font-bold">{c?.name.split(" ")[0]}</span>
-                            </span>
+                            {a.minutes < 50 ? (
+                              // seduta breve: orario e nome su una riga, così il nome non viene tagliato
+                              <>
+                                <span className="flex shrink-0 items-center gap-[4px] text-[10px] font-semibold tabular-nums" style={{ color: col.strong }}>
+                                  <Icon size={10} /> {a.time}
+                                </span>
+                                <span className="truncate text-[11px] font-bold">{c?.name.split(" ")[0]}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="flex items-center gap-[5px] text-[10px] font-semibold tabular-nums" style={{ color: col.strong }}>
+                                  <Icon size={10} /> {a.time} – {endTime(a)}
+                                </span>
+                                <span className="mt-[3px] flex min-w-0 items-center gap-[5px]">
+                                  {c && <ClientAvatar c={c} size={18} />}
+                                  <span className="truncate text-[11px] font-bold">{c?.name.split(" ")[0]}</span>
+                                </span>
+                              </>
+                            )}
                           </Link>
                         </motion.div>
                       );

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useRef, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Avatar, FitCanvas } from "@/components/ui/basics";
-import { Appear } from "@/components/ui/motion";
+import { Appear, EASE_OUT } from "@/components/ui/motion";
 import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
@@ -50,11 +50,107 @@ const SPRING = { type: "spring" as const, duration: 0.5, bounce: 0.2 };
 
 const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
 
+// ——— Navigazione: risponde al clic subito, anche mentre la pagina nuova arriva ———
+
+type Nav = { target: string | null; pending: boolean; go: (href: string) => void };
+const NavContext = createContext<Nav>({ target: null, pending: false, go: () => {} });
+const useNav = () => useContext(NavContext);
+
+function NavProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const path = usePathname();
+  const [target, setTarget] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  // Arrivati alla pagina nuova, la richiesta è chiusa.
+  useEffect(() => setTarget(null), [path]);
+
+  const go = useCallback(
+    (href: string) => {
+      if (href === path) return;
+      setTarget(href);
+      startTransition(() => router.push(href));
+    },
+    [path, router],
+  );
+
+  // Anche i link normali (schede, "Vedi tutti", azioni di Leo) accendono subito la barra di avanzamento.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+      const url = new URL(a.href, window.location.href);
+      if (url.origin !== window.location.origin || !url.pathname.startsWith(BASE) || url.pathname === window.location.pathname) return;
+      setTarget(url.pathname);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
+
+  // Se per qualche motivo la pagina non cambia, la richiesta non resta appesa.
+  useEffect(() => {
+    if (!target) return;
+    const t = window.setTimeout(() => setTarget(null), 10000);
+    return () => window.clearTimeout(t);
+  }, [target]);
+
+  return <NavContext.Provider value={{ target, pending: pending || !!target, go }}>{children}</NavContext.Provider>;
+}
+
+// Barra sottile in alto mentre la pagina nuova arriva.
+function NavProgress() {
+  const { pending } = useNav();
+  return (
+    <AnimatePresence>
+      {pending && (
+        <motion.div key="avanzamento" aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[60] h-[2.5px] overflow-hidden" exit={{ opacity: 0, transition: { duration: 0.25, delay: 0.1 } }}>
+          <motion.div
+            className="h-full origin-left rounded-r-full"
+            style={{ background: "var(--trainer)", boxShadow: "0 0 10px var(--trainer)" }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 0.85 }}
+            exit={{ scaleX: 1 }}
+            transition={{ duration: 2.4, ease: EASE_OUT }}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Prepara in sottofondo le altre pagine, così il primo clic non aspetta.
+// In sviluppo Next compila ogni pagina alla prima visita: la "visitiamo" noi prima del trainer.
+const WARM_ROUTES = [ROUTES.oggi, ROUTES.messaggi, ROUTES.clienti, ROUTES.schede, ROUTES.calendario, ROUTES.incassi, ROUTES.impostazioni, ROUTES.cliente("giulia-bianchi")];
+
+function RouteWarmup(): null {
+  const router = useRouter();
+  useEffect(() => {
+    WARM_ROUTES.forEach((r) => router.prefetch(r));
+    if (process.env.NODE_ENV !== "development") return;
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      for (const r of WARM_ROUTES) {
+        if (cancelled) return;
+        if (r === window.location.pathname) continue;
+        try {
+          await fetch(r, { credentials: "same-origin" });
+        } catch {}
+      }
+    }, 1500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [router]);
+  return null;
+}
+
 function useSection(): Section {
   const path = usePathname();
-  const found = (["Messaggi", "Clienti", "Schede", "Calendario", "Incassi", "Impostazioni"] as const).find((s) =>
-    path.startsWith(ROUTES[s.toLowerCase() as "messaggi"]),
-  );
+  const { target } = useNav();
+  const at = target ?? path;
+  const found = (["Messaggi", "Clienti", "Schede", "Calendario", "Incassi", "Impostazioni"] as const).find((s) => at.startsWith(ROUTES[s.toLowerCase() as "messaggi"]));
   return found ?? "Oggi";
 }
 
@@ -113,7 +209,7 @@ export function ThemeButton({ size = 15 }: { size?: number }) {
 
 export function TopBar() {
   const section = useSection();
-  const router = useRouter();
+  const { go } = useNav();
 
   return (
     <div className="flex h-[35px] items-center justify-between pr-[18px] pl-[20px]">
@@ -130,9 +226,10 @@ export function TopBar() {
               key={label}
               type="button"
               whileTap={{ scale: 0.95 }}
+              aria-current={isActive ? "page" : undefined}
               onClick={() => {
                 playSound("tap");
-                router.push(href);
+                go(href);
               }}
               className={`relative flex h-[27px] cursor-pointer items-center gap-[6px] rounded-full px-[14px] text-[12.5px] font-medium transition-colors duration-300 ${
                 isActive ? "text-ink" : "text-ink/60 [@media(hover:hover)]:hover:text-ink"
@@ -214,7 +311,7 @@ function AmbientBackdrop() {
 
 export function Sidebar() {
   const section = useSection();
-  const router = useRouter();
+  const { go } = useNav();
   const [hover, setHover] = useState<string | null>(null);
   // Prima etichetta con un piccolo ritardo; spostandosi sulle icone vicine compaiono subito e senza animazione.
   const [warm, setWarm] = useState(false);
@@ -251,11 +348,12 @@ export function Sidebar() {
             <motion.button
               type="button"
               aria-label={label}
+              aria-current={isActive ? "page" : undefined}
               whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               onClick={() => {
                 playSound("tap");
-                router.push(href);
+                go(href);
               }}
               className={`relative grid size-[36px] cursor-pointer place-items-center rounded-full transition-colors duration-200 ${
                 isActive ? "text-ink" : "text-ink/50 [@media(hover:hover)]:hover:text-ink"
@@ -283,7 +381,27 @@ export function Sidebar() {
   );
 }
 
-// Cornice comune delle pagine del trainer: tela 1303 px, barra in alto, titolo, barra laterale, suoni.
+// Cornice delle pagine del trainer, montata una volta sola dal layout: tela 1303 px, barra in alto,
+// barra laterale e Leo restano fermi mentre cambia solo il contenuto.
+export function TrainerFrame({ children }: { children: ReactNode }) {
+  return (
+    <NavProvider>
+      <FitCanvas width={1303} minHeight={640}>
+        <AmbientBackdrop />
+        <NavProgress />
+        <Appear i={0} className="relative z-30 pt-[11px]">
+          <TopBar />
+        </Appear>
+        <Sidebar />
+        {children}
+        <CoachAssistant />
+        <RouteWarmup />
+      </FitCanvas>
+    </NavProvider>
+  );
+}
+
+// Parte di ogni pagina: titolo e contenuto. Barra in alto, barra laterale e Leo sono nel layout.
 export function TrainerShell({
   title,
   back,
@@ -298,15 +416,11 @@ export function TrainerShell({
   children: ReactNode;
 }) {
   return (
-    <FitCanvas width={1303} minHeight={640}>
-      <AmbientBackdrop />
-      <Appear i={0} className="relative z-30 pt-[11px]">
-        <TopBar />
+    <>
+      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: EASE_OUT }} className="relative z-30">
         <TitleRow title={title} back={back} left={titleLeft} right={titleRight} />
-      </Appear>
-      <Sidebar />
+      </motion.div>
       {children}
-      <CoachAssistant />
-    </FitCanvas>
+    </>
   );
 }

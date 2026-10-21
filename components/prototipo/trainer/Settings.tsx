@@ -145,7 +145,7 @@ export function SettingsView() {
               >
                 {trainer.initials}
               </motion.span>
-              <div className="flex flex-wrap gap-[8px]">
+              <div className="flex flex-wrap gap-[7px] pl-[4px]">
                 {ACCENTS.map((c) => (
                   <button
                     key={c}
@@ -155,7 +155,7 @@ export function SettingsView() {
                       playSound("tap");
                       setAccent(c);
                     }}
-                    className="relative grid size-[30px] cursor-pointer place-items-center rounded-full transition-transform hover:scale-110"
+                    className="relative grid size-[27px] cursor-pointer place-items-center rounded-full transition-transform [@media(hover:hover)]:hover:scale-110"
                     style={{ background: c }}
                   >
                     {accent === c && (
