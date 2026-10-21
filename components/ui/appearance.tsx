@@ -72,7 +72,9 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
             maskSize: ["0px 0px", `${end * 0.18}px ${end * 0.18}px`, `${end}px ${end}px`],
             maskPosition: [`${x}px ${y}px`, `${x - end * 0.09}px ${y - end * 0.09}px`, `${x - end / 2}px ${y - end / 2}px`],
           },
-          { duration: 900, easing: "cubic-bezier(0.7, 0, 0.3, 1)", pseudoElement: "::view-transition-new(root)" },
+          // "forwards": a fine animazione la maschera resta enorme; senza, per un istante tornava piccola
+          // e ricompariva una macchia sopra lo schermo già scuro.
+          { duration: 900, easing: "cubic-bezier(0.7, 0, 0.3, 1)", fill: "forwards", pseudoElement: "::view-transition-new(root)" },
         );
       });
     },

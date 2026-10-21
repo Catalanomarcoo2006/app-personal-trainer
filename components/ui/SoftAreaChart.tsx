@@ -8,10 +8,11 @@ import { EASE_OUT } from "./motion";
 export default function SoftAreaChart({
   points,
   color = "var(--trainer)",
-  height = 90,
+  height,
 }: {
   points: number[];
   color?: string;
+  /** Altezza in px; senza, il grafico riempie il contenitore (che deve avere un'altezza). */
   height?: number;
 }) {
   const id = useId();
@@ -43,7 +44,7 @@ export default function SoftAreaChart({
   const [lx, ly] = xy[xy.length - 1];
 
   return (
-    <div className="relative" style={{ height }}>
+    <div className={`relative ${height === undefined ? "h-full" : ""}`} style={height === undefined ? undefined : { height }}>
     <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-full w-full overflow-visible">
       <defs>
         <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">

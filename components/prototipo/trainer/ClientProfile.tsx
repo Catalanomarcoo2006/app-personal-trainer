@@ -141,17 +141,13 @@ export function ClientProfile({ c }: { c: Client }) {
           </div>
 
           <div className="mt-[12px] grid grid-cols-2 gap-[8px]">
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.96 }}
-              onClick={() => {
-                playSound("tap");
-                toast(`Editor delle schede: arriva nella Fase 2`, { icon: "🛠️" });
-              }}
-              className="flex h-[36px] cursor-pointer items-center justify-center gap-[6px] rounded-full border border-line text-[12px] font-semibold"
+            <Link
+              href={`${ROUTES.schede}?cliente=${c.id}`}
+              onClick={() => playSound("tap")}
+              className="flex h-[36px] items-center justify-center gap-[6px] rounded-full border border-line text-[12px] font-semibold transition-colors hover:bg-soft"
             >
               <ClipboardList size={14} /> Modifica scheda
-            </motion.button>
+            </Link>
             <motion.button
               type="button"
               whileTap={{ scale: 0.96 }}
@@ -215,8 +211,8 @@ export function ClientProfile({ c }: { c: Client }) {
                 </h2>
                 <span className="rounded-full bg-soft px-[9px] py-[3px] text-[10.5px] font-semibold">Ultime 8 settimane</span>
               </div>
-              <div className="mt-[10px] min-h-0 flex-1">
-                <SoftAreaChart points={c.weights} color={tone.strong} height={190} />
+              <div className="mt-[10px] min-h-0 flex-1 overflow-hidden px-[4px] py-[8px]">
+                <SoftAreaChart points={c.weights} color={tone.strong} />
               </div>
               <div className="mt-[6px] flex justify-between px-[6px] text-[10px] text-muted">
                 {c.weights.map((w, i) => (

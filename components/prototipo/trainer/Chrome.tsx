@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -11,7 +11,6 @@ import {
   Dumbbell,
   FileText,
   House,
-  Maximize2,
   MessageSquare,
   Moon,
   PanelTop,
@@ -20,16 +19,15 @@ import {
   Sun,
   TextAlignStart,
   Users,
-  Volume2,
-  VolumeX,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar, FitCanvas } from "@/components/ui/basics";
 import { Appear } from "@/components/ui/motion";
 import { useAppearance } from "@/components/ui/appearance";
-import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled } from "@/libs/ui/sound";
+import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
+import { CoachAssistant } from "./CoachAssistant";
 
 const BASE = "/prototipo/trainer";
 
@@ -246,37 +244,6 @@ export function Sidebar() {
   );
 }
 
-export function SoundPill() {
-  const [on, setOn] = useState(true);
-  useEffect(() => {
-    setOn(isSoundEnabled());
-    return onSoundChange(setOn);
-  }, []);
-
-  return (
-    <motion.button
-      type="button"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.9, duration: 0.5 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={() => {
-        const next = !on;
-        setSoundEnabled(next);
-        if (next) playSound("confirm");
-      }}
-      className="absolute right-[14px] bottom-[12px] z-30 flex h-[36px] cursor-pointer items-center gap-[10px] rounded-full bg-pill pr-[6px] pl-[14px] text-[12px] font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
-    >
-      <span className={`size-[7px] rounded-full ${on ? "bg-[#3ddc84]" : "bg-[#6b6b70]"}`} />
-      {on ? "Suoni attivi" : "Suoni spenti"}
-      {on ? <Volume2 size={14} /> : <VolumeX size={14} />}
-      <span className="grid size-[24px] place-items-center rounded-full bg-white/10">
-        <Maximize2 size={11} />
-      </span>
-    </motion.button>
-  );
-}
-
 // Cornice comune delle pagine del trainer: tela 1303 px, barra in alto, titolo, barra laterale, suoni.
 export function TrainerShell({
   title,
@@ -299,7 +266,7 @@ export function TrainerShell({
       </Appear>
       <Sidebar />
       {children}
-      <SoundPill />
+      <CoachAssistant />
     </FitCanvas>
   );
 }

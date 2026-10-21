@@ -1,14 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
-import { Dumbbell, Plus, Search, Send, X } from "lucide-react";
+import { Dumbbell, FileUp, Plus, Search, Send, X } from "lucide-react";
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { clients, defaultPlan, exerciseById, library, Muscle, PlanDay, plans } from "@/libs/prototipo/dati-finti";
+import { ParsedDay } from "@/libs/prototipo/pdf-scheda";
 import { ClientAvatar } from "./shared";
+import { PdfImport } from "./PdfImport";
 
 const muscleColors: Record<Muscle, string> = {
   Gambe: "var(--color-peach-strong)",
@@ -23,47 +26,86 @@ const muscleColors: Record<Muscle, string> = {
 
 const muscles = Object.keys(muscleColors) as Muscle[];
 
-function MuscleChip({ m }: { m: Muscle }) {
+function MuscleChip({ m }: { m?: Muscle }) {
+  const color = m ? muscleColors[m] : "var(--trainer)";
   return (
-    <span className="rounded-full px-[7px] py-[2.5px] text-[9.5px] font-semibold" style={{ color: muscleColors[m], background: `color-mix(in srgb, ${muscleColors[m]} 14%, transparent)` }}>
-      {m}
+    <span className="rounded-full px-[7px] py-[2.5px] text-[9.5px] font-semibold" style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}>
+      {m ?? "Da PDF"}
     </span>
   );
 }
 
-type Row = PlanDay["rows"][number] & { key: string; fresh?: boolean };
-type Day = Omit<PlanDay, "rows"> & { rows: Row[] };
+// Una riga della scheda: esercizio della libreria (exId) oppure scritto a mano / letto dal PDF (name).
+type Row = { exId?: string; name?: string; sets: string; load: string; rest: string; key: string; fresh?: boolean };
+type Day = { label: string; focus: string; rows: Row[] };
+type Field = "name" | "sets" | "load" | "rest";
 
-const withKeys = (days: PlanDay[]): Day[] => days.map((d) => ({ ...d, rows: d.rows.map((r, i) => ({ ...r, key: `${d.label}-${r.exId}-${i}` })) }));
+let seq = 0;
+const nextKey = () => `r${++seq}`;
+
+const fromPlan = (days: PlanDay[]): Day[] => days.map((d) => ({ ...d, rows: d.rows.map((r) => ({ ...r, key: nextKey() })) }));
+
+// Se il nome letto dal PDF corrisponde a un esercizio della libreria, lo collega.
+const fromParsed = (days: ParsedDay[]): Day[] =>
+  days.map((d) => ({
+    label: d.label,
+    focus: d.focus,
+    rows: d.rows.map((r) => {
+      const match = library.find((e) => e.name.toLowerCase() === r.name.toLowerCase());
+      return { ...r, exId: match?.id, name: match ? undefined : r.name, key: nextKey(), fresh: true };
+    }),
+  }));
+
+const rowName = (r: Row) => r.name ?? exerciseById(r.exId ?? "")?.name ?? "Esercizio";
+
+function Cell({ value, onChange, className = "", label }: { value: string; onChange: (v: string) => void; className?: string; label: string }) {
+  return (
+    <input
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`relative w-full min-w-0 rounded-[8px] bg-transparent px-[6px] py-[4px] outline-none transition-colors hover:bg-soft focus:bg-soft focus:ring-1 focus:ring-[var(--trainer)] ${className}`}
+    />
+  );
+}
 
 export function PlansView() {
-  const [clientId, setClientId] = useState("giulia-bianchi");
-  const [allPlans, setAllPlans] = useState<Record<string, Day[]>>(() =>
-    Object.fromEntries(clients.map((c) => [c.id, withKeys(plans[c.id] ?? defaultPlan)])),
-  );
+  const params = useSearchParams();
+  const fromQuery = clients.find((c) => c.id === params.get("cliente"))?.id;
+  const [clientId, setClientId] = useState(fromQuery ?? "giulia-bianchi");
+  const [allPlans, setAllPlans] = useState<Record<string, Day[]>>(() => Object.fromEntries(clients.map((c) => [c.id, fromPlan(plans[c.id] ?? defaultPlan)])));
   const [dayIndex, setDayIndex] = useState(0);
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState<Muscle | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const client = clients.find((c) => c.id === clientId)!;
   const days = allPlans[clientId];
-  const day = days[Math.min(dayIndex, days.length - 1)];
+  const current = Math.min(dayIndex, days.length - 1);
+  const day = days[current];
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return library.filter((e) => (!muscle || e.muscle === muscle) && (!q || e.name.toLowerCase().includes(q)));
   }, [query, muscle]);
 
-  const updateDay = (fn: (rows: Row[]) => Row[]) =>
-    setAllPlans((p) => ({ ...p, [clientId]: p[clientId].map((d, i) => (i === Math.min(dayIndex, days.length - 1) ? { ...d, rows: fn(d.rows) } : d)) }));
+  const updateDay = (fn: (rows: Row[]) => Row[]) => setAllPlans((p) => ({ ...p, [clientId]: p[clientId].map((d, i) => (i === current ? { ...d, rows: fn(d.rows) } : d)) }));
 
-  const add = (exId: string) => {
-    updateDay((rows) => [...rows, { exId, sets: "3 × 10", load: "—", rest: "60″", key: `${exId}-${Date.now()}`, fresh: true }]);
-  };
+  const add = (exId: string) => updateDay((rows) => [...rows, { exId, sets: "3 × 10", load: "—", rest: "60″", key: nextKey(), fresh: true }]);
+
+  const edit = (key: string, field: Field, value: string) => updateDay((rows) => rows.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
 
   const remove = (key: string) => {
     playSound("tap");
     updateDay((rows) => rows.filter((r) => r.key !== key));
+  };
+
+  const imported = (parsed: ParsedDay[]) => {
+    const next = fromParsed(parsed);
+    setAllPlans((p) => ({ ...p, [clientId]: next }));
+    setDayIndex(0);
+    setImporting(false);
+    toast.success(`Scheda importata: ${next.length} giorni. Controlla e modifica quello che vuoi.`);
   };
 
   return (
@@ -92,7 +134,7 @@ export function PlansView() {
                 <div className="min-w-0 leading-none">
                   <p className="truncate text-[12px] font-bold">{c.name}</p>
                   <p className={`mt-[4px] truncate text-[10.5px] ${active ? "opacity-60" : "text-muted"}`}>
-                    {n} {n === 1 ? "giorno" : "giorni"} · {c.plan}
+                    {n} {n === 1 ? "giorno" : "giorni"} · {allPlans[c.id][0]?.focus}
                   </p>
                 </div>
               </motion.button>
@@ -101,25 +143,37 @@ export function PlansView() {
         </div>
       </section>
 
-      <section className="flex min-h-0 flex-col rounded-[18px] bg-card px-[18px] pt-[14px] pb-[14px]">
+      <section className="relative flex min-h-0 flex-col rounded-[18px] bg-card px-[18px] pt-[14px] pb-[14px]">
         <div className="flex items-center gap-[12px]">
           <ClientAvatar c={client} size={40} />
           <div className="leading-none">
             <p className="text-[11px] text-muted">Scheda di</p>
             <p className="mt-[4px] text-[16px] font-bold">{client.name}</p>
           </div>
+          <motion.button
+            type="button"
+            whileHover={{ y: -1.5 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              playSound("tap");
+              setImporting(true);
+            }}
+            className="ml-[10px] flex h-[32px] cursor-pointer items-center gap-[6px] rounded-full border border-line px-[12px] text-[11.5px] font-semibold"
+          >
+            <FileUp size={13} style={{ color: "var(--trainer)" }} /> Importa da PDF
+          </motion.button>
           <div className="ml-auto flex gap-[4px] rounded-full bg-soft p-[4px]">
             {days.map((d, i) => (
               <button
-                key={d.label}
+                key={d.label + i}
                 type="button"
                 onClick={() => {
                   playSound("tap");
                   setDayIndex(i);
                 }}
-                className={`relative cursor-pointer rounded-full px-[14px] py-[6px] text-[12px] font-semibold ${i === dayIndex ? "text-on-contrast" : "text-ink/65"}`}
+                className={`relative cursor-pointer rounded-full px-[14px] py-[6px] text-[12px] font-semibold ${i === current ? "text-on-contrast" : "text-ink/65"}`}
               >
-                {i === dayIndex && <motion.span layoutId="giorno-scheda" className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                {i === current && <motion.span layoutId="giorno-scheda" className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                 <span className="relative">{d.label}</span>
               </button>
             ))}
@@ -128,46 +182,43 @@ export function PlansView() {
 
         <div className="mt-[14px] flex items-center justify-between">
           <p className="flex items-center gap-[7px] text-[13px] font-bold">
-            <Dumbbell size={14} style={{ color: "var(--trainer)" }} /> {day.focus}
+            <Dumbbell size={14} style={{ color: "var(--trainer)" }} /> {day.focus || day.label}
           </p>
-          <p className="text-[11px] text-muted">{day.rows.length} esercizi</p>
+          <p className="text-[11px] text-muted">{day.rows.length} esercizi · clicca un valore per modificarlo</p>
         </div>
 
-        <div className="mt-[10px] grid grid-cols-[28px_1fr_90px_70px_70px_28px] items-center gap-[10px] px-[10px] text-[10px] font-semibold tracking-wide text-muted uppercase">
+        <div className="mt-[10px] grid grid-cols-[28px_1fr_96px_84px_76px_28px] items-center gap-[8px] px-[10px] text-[10px] font-semibold tracking-wide text-muted uppercase">
           <span>#</span>
-          <span>Esercizio</span>
-          <span>Serie × rip.</span>
-          <span>Carico</span>
-          <span>Recupero</span>
+          <span className="pl-[6px]">Esercizio</span>
+          <span className="pl-[6px]">Serie × rip.</span>
+          <span className="pl-[6px]">Carico</span>
+          <span className="pl-[6px]">Recupero</span>
           <span />
         </div>
         <div className="mt-[6px] flex min-h-0 flex-1 flex-col gap-[6px] overflow-y-auto [scrollbar-width:none]">
           <AnimatePresence initial={false}>
             {day.rows.map((r, i) => {
-              const ex = exerciseById(r.exId);
-              if (!ex) return null;
+              const ex = r.exId ? exerciseById(r.exId) : undefined;
               return (
                 <motion.div
                   key={r.key}
                   initial={{ opacity: 0, y: 10, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 30, transition: { duration: 0.2 } }}
-                  transition={{ delay: r.fresh ? 0 : 0.1 + i * 0.05, type: "spring", stiffness: 300, damping: 26 }}
-                  className="relative grid grid-cols-[28px_1fr_90px_70px_70px_28px] items-center gap-[10px] overflow-hidden rounded-[13px] border border-line px-[10px] py-[9px]"
+                  transition={{ delay: r.fresh ? i * 0.06 : 0.1 + i * 0.05, type: "spring", stiffness: 300, damping: 26 }}
+                  className="relative grid grid-cols-[28px_1fr_96px_84px_76px_28px] items-center gap-[8px] overflow-hidden rounded-[13px] border border-line px-[10px] py-[7px]"
                 >
-                  {r.fresh && (
-                    <motion.span className="absolute inset-0" style={{ background: "var(--trainer)" }} initial={{ opacity: 0.22 }} animate={{ opacity: 0 }} transition={{ duration: 1.4 }} />
-                  )}
+                  {r.fresh && <motion.span className="pointer-events-none absolute inset-0" style={{ background: "var(--trainer)" }} initial={{ opacity: 0.22 }} animate={{ opacity: 0 }} transition={{ duration: 1.6, delay: i * 0.06 }} />}
                   <span className="relative grid size-[24px] place-items-center rounded-full bg-soft text-[11px] font-bold">{i + 1}</span>
                   <div className="relative min-w-0 leading-none">
-                    <p className="truncate text-[12.5px] font-semibold">{ex.name}</p>
-                    <p className="mt-[4px] flex items-center gap-[6px] text-[10px] text-muted">
-                      <MuscleChip m={ex.muscle} /> {ex.equipment}
+                    <Cell label="Esercizio" value={rowName(r)} onChange={(v) => edit(r.key, "name", v)} className="text-[12.5px] font-semibold" />
+                    <p className="mt-[2px] flex items-center gap-[6px] pl-[6px] text-[10px] text-muted">
+                      <MuscleChip m={ex?.muscle} /> {ex?.equipment ?? "Letto dal PDF"}
                     </p>
                   </div>
-                  <span className="relative text-[12px] font-semibold tabular-nums">{r.sets}</span>
-                  <span className="relative text-[12px] tabular-nums">{r.load}</span>
-                  <span className="relative text-[12px] tabular-nums">{r.rest}</span>
+                  <Cell label="Serie e ripetizioni" value={r.sets} onChange={(v) => edit(r.key, "sets", v)} className="text-[12px] font-semibold tabular-nums" />
+                  <Cell label="Carico" value={r.load} onChange={(v) => edit(r.key, "load", v)} className="text-[12px] tabular-nums" />
+                  <Cell label="Recupero" value={r.rest} onChange={(v) => edit(r.key, "rest", v)} className="text-[12px] tabular-nums" />
                   <button type="button" aria-label="Togli esercizio" onClick={() => remove(r.key)} className="relative grid size-[26px] cursor-pointer place-items-center rounded-full text-ink/40 transition-colors hover:bg-soft hover:text-ink">
                     <X size={13} />
                   </button>
@@ -230,6 +281,8 @@ export function PlansView() {
           {results.length === 0 && <p className="mt-[20px] text-center text-[11.5px] text-muted">Nessun esercizio trovato.</p>}
         </div>
       </section>
+
+      <AnimatePresence>{importing && <PdfImport clientName={client.name} onClose={() => setImporting(false)} onImported={imported} />}</AnimatePresence>
     </main>
   );
 }

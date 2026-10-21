@@ -7,7 +7,7 @@ import { TrainerShell } from "@/components/prototipo/trainer/Chrome";
 import { ClientsHeader, MessagesCard, PathCards, ProfileCard } from "@/components/prototipo/trainer/Cards";
 import { RevenueCard } from "@/components/prototipo/trainer/Revenue";
 import { AgendaCard } from "@/components/prototipo/trainer/Agenda";
-import { ClientsButton, UrgentBell, UrgentToast } from "@/components/prototipo/trainer/Urgent";
+import { ClientsButton, UrgentBell } from "@/components/prototipo/trainer/Urgent";
 import { trainer } from "@/libs/prototipo/dati-finti";
 
 // Home "Oggi" del trainer.
@@ -25,7 +25,6 @@ export default function PrototipoTrainer() {
         </>
       }
     >
-      <UrgentToast />
       <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">
         <div className="flex min-h-0 flex-col gap-[10px]">
           <Appear i={1}>

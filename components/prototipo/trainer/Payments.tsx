@@ -98,41 +98,41 @@ export function PaymentsView() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: 40, transition: { duration: 0.25 } }}
-                      className="rounded-[14px] border border-line px-[12px] py-[10px]"
+                      className="flex items-center gap-[10px] rounded-[14px] border border-line px-[10px] py-[8px]"
                     >
-                      <div className="flex items-center gap-[10px]">
-                        <ClientAvatar c={c} size={34} />
-                        <div className="min-w-0 flex-1 leading-none">
-                          <Link href={ROUTES.cliente(c.id)} onClick={() => playSound("tap")} className="text-[12.5px] font-bold hover:underline">
-                            {c.name}
-                          </Link>
-                          <p className="mt-[4px] truncate text-[10.5px] text-muted">
-                            {m.label} · dal {m.date}
-                          </p>
-                        </div>
-                        <p className="text-[15px] font-extrabold">{formatEuro(m.amount)}</p>
+                      <ClientAvatar c={c} size={32} />
+                      <div className="min-w-0 flex-1 leading-none">
+                        <Link href={ROUTES.cliente(c.id)} onClick={() => playSound("tap")} className="text-[12px] font-bold hover:underline">
+                          {c.name}
+                        </Link>
+                        <p className="mt-[4px] truncate text-[10.5px] text-muted">
+                          {m.label} · dal {m.date}
+                        </p>
                       </div>
-                      <div className="mt-[9px] grid grid-cols-2 gap-[6px]">
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            playSound("tap");
-                            toast(`Promemoria inviato a ${c.name.split(" ")[0]}`, { icon: "🔔" });
-                          }}
-                          className="flex h-[30px] cursor-pointer items-center justify-center gap-[5px] rounded-full border border-line text-[11px] font-semibold"
-                        >
-                          <BellRing size={12} /> Sollecita
-                        </motion.button>
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => markPaid(m.key)}
-                          className="flex h-[30px] cursor-pointer items-center justify-center gap-[5px] rounded-full bg-contrast text-[11px] font-semibold text-on-contrast"
-                        >
-                          <Check size={12} /> Segna pagato
-                        </motion.button>
-                      </div>
+                      <p className="text-[14px] font-extrabold tabular-nums">{formatEuro(m.amount)}</p>
+                      <motion.button
+                        type="button"
+                        aria-label="Sollecita"
+                        title="Sollecita"
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => {
+                          playSound("tap");
+                          toast(`Promemoria inviato a ${c.name.split(" ")[0]}`, { icon: "🔔" });
+                        }}
+                        className="grid size-[30px] shrink-0 cursor-pointer place-items-center rounded-full border border-line hover:bg-soft"
+                      >
+                        <BellRing size={13} />
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        aria-label="Segna pagato"
+                        title="Segna pagato"
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => markPaid(m.key)}
+                        className="grid size-[30px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast"
+                      >
+                        <Check size={14} />
+                      </motion.button>
                     </motion.div>
                   );
                 })}

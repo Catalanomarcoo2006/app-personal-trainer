@@ -135,8 +135,8 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
           </div>
         </div>
 
-        <div className="mt-[10px] min-h-0 flex-1">
-          <SoftAreaChart points={c.weights} color={tone.strong} height={118} />
+        <div className="mt-[10px] min-h-0 flex-1 overflow-hidden px-[4px] py-[8px]">
+          <SoftAreaChart points={c.weights} color={tone.strong} />
         </div>
 
         <div className="mt-[6px] flex items-center justify-between text-[10px]">

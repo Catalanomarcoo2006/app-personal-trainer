@@ -121,31 +121,31 @@
 /* Tema scuro: stessi nomi, valori diversi */
 .dark {
   color-scheme: dark;
-  --color-salvia: #0e1011;
-  --color-card: #191b1d;
-  --color-ink: #f1f1ee;
-  --color-muted: #8b8f94;
-  --color-line: #2a2d31;
-  --color-soft: #24272a;
-  --color-pill: #232528;
-  --color-contrast: #f1f1ee;
-  --color-on-contrast: #131313;
+  --color-salvia: #0c0e0f;
+  --color-card: #16181b;
+  --color-ink: #ecece9;
+  --color-muted: #8a8e94;
+  --color-line: #26292e;
+  --color-soft: #1f2226;
+  --color-pill: #1f2226;
+  --color-contrast: #e6e6e2;
+  --color-on-contrast: #111214;
 
-  --color-peach: #2b2217;
-  --color-peach-track: #4a3923;
-  --color-sky: #142731;
-  --color-sky-track: #1f4258;
-  --color-rose: #301d24;
-  --color-rose-track: #57303d;
-  --color-violet: #211e38;
-  --color-violet-track: #3a3466;
-  --color-mint: #142a20;
-  --color-mint-track: #1f4a36;
+  --color-peach: #241e16;
+  --color-peach-track: #3d3222;
+  --color-sky: #131f28;
+  --color-sky-track: #1e3747;
+  --color-rose: #251a1e;
+  --color-rose-track: #43262f;
+  --color-violet: #1b192c;
+  --color-violet-track: #312b55;
+  --color-mint: #12211a;
+  --color-mint-track: #1d3d2d;
 
-  --color-cal-default: #222528;
-  --color-cal-done: #3a4150;
-  --color-ok-soft: #133022;
-  --color-ok-line: #1f5236;
+  --color-cal-default: #1f2226;
+  --color-cal-done: #333a47;
+  --color-ok-soft: #12281c;
+  --color-ok-line: #1c4a30;
 }
 
 html.dark body {
