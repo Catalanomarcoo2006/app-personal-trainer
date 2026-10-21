@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // il pallino "N" di Next in basso a sinistra finirebbe sotto il tasto del Coach
+  devIndicators: false,
   images: {
     remotePatterns: [
       {
