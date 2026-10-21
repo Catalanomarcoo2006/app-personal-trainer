@@ -188,7 +188,7 @@
   left: 7px;
   right: 7px;
   height: 34%;
-  border-radius: 9999px;
+  border-radius: inherit;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
   opacity: 0.6;
   pointer-events: none;

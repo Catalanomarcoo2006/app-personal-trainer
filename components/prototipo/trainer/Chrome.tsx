@@ -45,6 +45,9 @@ export const ROUTES = {
 type Section = "Oggi" | "Messaggi" | "Clienti" | "Schede" | "Calendario" | "Incassi" | "Impostazioni";
 type NavItem = { label: Section; icon: LucideIcon; href: string };
 
+// Molla stile Apple per le "gocce" di vetro che scivolano tra le voci.
+const SPRING = { type: "spring" as const, duration: 0.5, bounce: 0.2 };
+
 const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
 
 function useSection(): Section {
@@ -62,7 +65,7 @@ function SquareButton({ icon: Icon, label, size = 16 }: { icon: LucideIcon; labe
       aria-label={label}
       {...tap}
       onClick={() => playSound("tap")}
-      className="grid size-[33px] cursor-pointer place-items-center rounded-[10px] bg-card text-ink"
+      className="glass glass-3d relative grid size-[33px] cursor-pointer place-items-center rounded-[11px] text-ink"
     >
       <Icon size={size} strokeWidth={2} />
     </motion.button>
@@ -119,7 +122,7 @@ export function TopBar() {
         <SquareButton icon={PanelTop} label="Pannelli" size={14} />
       </div>
 
-      <nav className="flex h-[35px] w-[395px] items-center justify-between rounded-full bg-card px-[4px]">
+      <nav className="glass glass-3d relative flex h-[35px] w-[395px] items-center justify-between rounded-full px-[4px]">
         {navItems.map(({ label, icon: Icon, href }) => {
           const isActive = label === section;
           return (
@@ -132,10 +135,10 @@ export function TopBar() {
                 router.push(href);
               }}
               className={`relative flex h-[27px] cursor-pointer items-center gap-[6px] rounded-full px-[14px] text-[12.5px] font-medium transition-colors duration-300 ${
-                isActive ? "text-on-contrast" : "text-ink/75 hover:text-ink"
+                isActive ? "text-ink" : "text-ink/60 [@media(hover:hover)]:hover:text-ink"
               }`}
             >
-              {isActive && <span className="absolute inset-0 rounded-full bg-contrast" />}
+              {isActive && <motion.span layoutId="goccia-menu" className="glass-drop absolute inset-0 rounded-full" transition={SPRING} />}
               <Icon size={14} strokeWidth={1.9} className="relative" />
               <span className="relative">{label}</span>
             </motion.button>
@@ -143,7 +146,7 @@ export function TopBar() {
         })}
       </nav>
 
-      <div className="flex h-[35px] w-[147px] items-center justify-between rounded-full bg-card pr-[4px] pl-[14px] text-ink">
+      <div className="glass glass-3d relative flex h-[35px] w-[147px] items-center justify-between rounded-full pr-[4px] pl-[14px] text-ink">
         <ThemeButton />
         <motion.button type="button" {...tap} onClick={() => playSound("tap")} className="relative cursor-pointer" aria-label="Avvisi">
           <Bell size={15} strokeWidth={1.9} />
@@ -201,11 +204,13 @@ function AmbientBackdrop() {
       <span className="ambient-blob" style={{ left: -70, top: "calc(50% - 170px)", width: 210, height: 210, background: "var(--trainer)" }} />
       <span className="ambient-blob" style={{ left: -40, top: "calc(50% + 40px)", width: 180, height: 180, background: "var(--color-sky-strong)", animationDelay: "-6s" }} />
       <span className="ambient-blob" style={{ left: 10, top: "calc(50% + 170px)", width: 140, height: 140, background: "var(--color-mint-strong)", animationDelay: "-11s" }} />
+      <span className="ambient-blob" style={{ left: 470, top: -90, width: 220, height: 130, background: "var(--trainer)", animationDelay: "-3s" }} />
+      <span className="ambient-blob" style={{ left: 700, top: -80, width: 200, height: 120, background: "var(--color-violet-strong)", animationDelay: "-9s" }} />
+      <span className="ambient-blob" style={{ right: 40, top: -80, width: 180, height: 120, background: "var(--color-sky-strong)", animationDelay: "-13s" }} />
+      <span className="ambient-blob" style={{ left: 0, top: -70, width: 160, height: 110, background: "var(--color-mint-strong)", animationDelay: "-5s" }} />
     </div>
   );
 }
-
-const SPRING = { type: "spring" as const, duration: 0.5, bounce: 0.2 };
 
 export function Sidebar() {
   const section = useSection();
