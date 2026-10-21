@@ -75,6 +75,44 @@
   }
 }
 
+/* Token di stile del prodotto (riferimento: docs/riferimenti/dashboard-principale.png) */
+@theme {
+  --color-salvia: #dfebe1;
+  --color-ink: #1c1c1e;
+  --color-muted: #9b9b9b;
+  --color-line: #ececec;
+  --color-soft: #f2f2f4;
+  --color-pill: #1f1f22;
+
+  --color-peach: #fdf4e2;
+  --color-peach-strong: #da9f4a;
+  --color-peach-track: #f8e3c0;
+  --color-sky: #ddf1fe;
+  --color-sky-strong: #2f7dac;
+  --color-sky-track: #bdd8ea;
+  --color-rose: #ffe5eb;
+  --color-rose-strong: #ce4a66;
+  --color-rose-track: #f4c5cc;
+
+  --color-cal-default: #f0f3f0;
+  --color-cal-done: #2f3541;
+  --color-cal-selected: #f86565;
+  --color-cal-planned: #8b97b2;
+  --color-cal-planned-light: #c5cfdf;
+  --color-cal-check: #569afa;
+  --color-cal-payment: #fdb621;
+  --color-cal-event: #5a5af0;
+
+  --color-ok: #3cae5c;
+  --color-ok-soft: #e1ffea;
+  --color-ok-line: #b5e8c3;
+}
+
+/* Colore del trainer: lo imposta ogni trainer, qui il valore di default */
+:root {
+  --trainer: #ff6b2c;
+}
+
 html,
 body {
   scroll-behavior: smooth !important;
