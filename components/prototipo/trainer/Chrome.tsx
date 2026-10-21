@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -194,44 +194,78 @@ const sideItems: NavItem[] = [
   { label: "Impostazioni", icon: Settings, href: ROUTES.impostazioni },
 ];
 
+// Macchie di colore molto sfocate dietro l'interfaccia: il vetro della barra laterale le sfoca e le ravviva.
+function AmbientBackdrop() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <span className="ambient-blob" style={{ left: -70, top: 230, width: 210, height: 210, background: "var(--trainer)" }} />
+      <span className="ambient-blob" style={{ left: -40, top: 470, width: 180, height: 180, background: "var(--color-sky-strong)", animationDelay: "-6s" }} />
+      <span className="ambient-blob" style={{ left: 10, top: 600, width: 140, height: 140, background: "var(--color-mint-strong)", animationDelay: "-11s" }} />
+    </div>
+  );
+}
+
+const SPRING = { type: "spring" as const, duration: 0.5, bounce: 0.2 };
+
 export function Sidebar() {
   const section = useSection();
   const router = useRouter();
   const [hover, setHover] = useState<string | null>(null);
+  // Prima etichetta con un piccolo ritardo; spostandosi sulle icone vicine compaiono subito e senza animazione.
+  const [warm, setWarm] = useState(false);
+  const timer = useRef<number | null>(null);
+
+  const enter = (label: string) => {
+    if (timer.current) window.clearTimeout(timer.current);
+    if (warm) setHover(label);
+    else
+      timer.current = window.setTimeout(() => {
+        setHover(label);
+        setWarm(true);
+      }, 280);
+  };
+  const leaveBar = () => {
+    if (timer.current) window.clearTimeout(timer.current);
+    setHover(null);
+    timer.current = window.setTimeout(() => setWarm(false), 300);
+  };
 
   return (
     <motion.aside
       initial={{ opacity: 0, x: -16 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.15, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute top-[218px] left-[18px] z-20 flex h-[420px] w-[49px] flex-col items-center gap-[19.7px] rounded-full bg-pill pt-[33px]"
+      onMouseLeave={leaveBar}
+      className="glass absolute top-[218px] left-[18px] z-20 flex h-[420px] w-[52px] flex-col items-center gap-[19px] rounded-full pt-[32px]"
     >
       {sideItems.map(({ label, icon: Icon, href }) => {
         const isActive = section === label;
         return (
-          <div key={label} className="relative" onMouseEnter={() => setHover(label)} onMouseLeave={() => setHover(null)}>
+          <div key={label} className="relative" onMouseEnter={() => enter(label)}>
+            {isActive && <motion.span layoutId="goccia-barra" className="glass-drop absolute inset-[-1px] rounded-full" transition={SPRING} />}
             <motion.button
               type="button"
               aria-label={label}
-              whileTap={{ scale: 0.88 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
               onClick={() => {
                 playSound("tap");
                 router.push(href);
               }}
-              className={`grid size-[34px] cursor-pointer place-items-center rounded-full transition-colors duration-200 ${
-                isActive ? "bg-[#4c4c4e] text-white" : hover === label ? "bg-[#2c2c2f] text-white" : "text-[#a9a9ad]"
+              className={`relative grid size-[36px] cursor-pointer place-items-center rounded-full transition-colors duration-200 ${
+                isActive ? "text-ink" : "text-ink/50 [@media(hover:hover)]:hover:text-ink"
               }`}
             >
-              <Icon size={18} strokeWidth={1.9} />
+              <Icon size={18} strokeWidth={isActive ? 2.1 : 1.8} />
             </motion.button>
             <AnimatePresence>
               {hover === label && (
                 <motion.span
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -6 }}
-                  transition={{ duration: 0.18 }}
-                  className="pointer-events-none absolute top-1/2 left-[46px] -translate-y-1/2 rounded-full bg-pill px-[10px] py-[5px] text-[11px] font-medium whitespace-nowrap text-white shadow-lg"
+                  initial={warm ? false : { opacity: 0, scale: 0.97, x: -4 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                  transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+                  className="glass pointer-events-none absolute top-1/2 left-[50px] origin-left -translate-y-1/2 rounded-full px-[11px] py-[5px] text-[11px] font-semibold whitespace-nowrap text-ink"
                 >
                   {label}
                 </motion.span>
@@ -260,6 +294,7 @@ export function TrainerShell({
 }) {
   return (
     <FitCanvas width={1303} minHeight={640}>
+      <AmbientBackdrop />
       <Appear i={0} className="relative z-30 pt-[11px]">
         <TopBar />
         <TitleRow title={title} back={back} left={titleLeft} right={titleRight} />

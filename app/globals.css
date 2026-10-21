@@ -148,6 +148,64 @@
   --color-ok-line: #1c4a30;
 }
 
+/* Vetro stile Apple (Liquid Glass): sfoca e ravviva ciò che c'è dietro,
+   riempimento semitrasparente, luce sul bordo alto e ombra morbida a due livelli. */
+.glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.34));
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.04),
+    0 14px 34px rgba(30, 48, 36, 0.12),
+    0 2px 6px rgba(30, 48, 36, 0.06);
+}
+.dark .glass {
+  background: linear-gradient(180deg, rgba(44, 47, 52, 0.58), rgba(20, 22, 25, 0.42));
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 14px 34px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+}
+/* La "goccia" che evidenzia la voce attiva */
+.glass-drop {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 4px 14px rgba(30, 48, 36, 0.12);
+}
+.dark .glass-drop {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* Macchie di colore sfocate nel fondo: danno al vetro qualcosa da sfocare */
+@keyframes deriva {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(24px, -30px, 0) scale(1.08); }
+}
+.ambient-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(56px);
+  opacity: 0.34;
+  animation: deriva 16s cubic-bezier(0.77, 0, 0.175, 1) infinite alternate;
+}
+.dark .ambient-blob {
+  opacity: 0.22;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blob {
+    animation: none;
+  }
+}
+
 html.dark body {
   background-color: var(--color-salvia);
 }
