@@ -198,9 +198,9 @@ const sideItems: NavItem[] = [
 function AmbientBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <span className="ambient-blob" style={{ left: -70, top: 230, width: 210, height: 210, background: "var(--trainer)" }} />
-      <span className="ambient-blob" style={{ left: -40, top: 470, width: 180, height: 180, background: "var(--color-sky-strong)", animationDelay: "-6s" }} />
-      <span className="ambient-blob" style={{ left: 10, top: 600, width: 140, height: 140, background: "var(--color-mint-strong)", animationDelay: "-11s" }} />
+      <span className="ambient-blob" style={{ left: -70, top: "calc(50% - 170px)", width: 210, height: 210, background: "var(--trainer)" }} />
+      <span className="ambient-blob" style={{ left: -40, top: "calc(50% + 40px)", width: 180, height: 180, background: "var(--color-sky-strong)", animationDelay: "-6s" }} />
+      <span className="ambient-blob" style={{ left: 10, top: "calc(50% + 170px)", width: 140, height: 140, background: "var(--color-mint-strong)", animationDelay: "-11s" }} />
     </div>
   );
 }
@@ -236,7 +236,7 @@ export function Sidebar() {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.15, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       onMouseLeave={leaveBar}
-      className="glass absolute top-[218px] left-[18px] z-20 flex h-[420px] w-[52px] flex-col items-center gap-[19px] rounded-full pt-[32px]"
+      className="glass glass-3d absolute top-[calc(50%+40px)] left-[16px] z-20 flex h-[420px] w-[56px] -translate-y-1/2 flex-col items-center gap-[19px] rounded-full pt-[32px]"
     >
       {sideItems.map(({ label, icon: Icon, href }) => {
         const isActive = section === label;

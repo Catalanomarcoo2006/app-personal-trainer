@@ -169,20 +169,75 @@
     0 14px 34px rgba(0, 0, 0, 0.45),
     0 2px 6px rgba(0, 0, 0, 0.3);
 }
-/* La "goccia" che evidenzia la voce attiva */
+/* Versione in rilievo per la barra laterale: spigolo di luce, riflesso interno, ombra profonda */
+.glass-3d {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -14px 22px -14px rgba(255, 255, 255, 0.75),
+    inset 3px 0 8px -4px rgba(255, 255, 255, 0.8),
+    inset -3px 0 8px -4px rgba(255, 255, 255, 0.8),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.05),
+    0 28px 50px -14px rgba(20, 40, 28, 0.3),
+    0 10px 18px -8px rgba(20, 40, 28, 0.16),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.glass-3d::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  right: 7px;
+  height: 34%;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  opacity: 0.6;
+  pointer-events: none;
+}
+.glass-3d::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.2) 35%, rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.85));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.dark .glass-3d {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -14px 22px -14px rgba(255, 255, 255, 0.1),
+    inset 3px 0 8px -4px rgba(255, 255, 255, 0.12),
+    inset -3px 0 8px -4px rgba(255, 255, 255, 0.12),
+    0 28px 50px -14px rgba(0, 0, 0, 0.7),
+    0 10px 18px -8px rgba(0, 0, 0, 0.5);
+}
+.dark .glass-3d::before {
+  opacity: 0.12;
+}
+.dark .glass-3d::after {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.04) 35%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0.25));
+}
+
+/* La "goccia" che evidenzia la voce attiva: una piccola bolla di vetro in rilievo */
 .glass-drop {
-  background: rgba(255, 255, 255, 0.8);
+  background: radial-gradient(circle at 50% 22%, #ffffff, rgba(255, 255, 255, 0.8) 55%, rgba(255, 255, 255, 0.6));
   border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow:
     inset 0 1px 0 #fff,
-    0 4px 14px rgba(30, 48, 36, 0.12);
+    inset 0 -4px 7px rgba(20, 40, 28, 0.08),
+    0 8px 16px -4px rgba(20, 40, 28, 0.22),
+    0 2px 4px rgba(20, 40, 28, 0.1);
 }
 .dark .glass-drop {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.12) 55%, rgba(255, 255, 255, 0.06));
+  border-color: rgba(255, 255, 255, 0.16);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 4px 14px rgba(0, 0, 0, 0.35);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -4px 7px rgba(0, 0, 0, 0.25),
+    0 8px 16px -4px rgba(0, 0, 0, 0.55);
 }
 
 /* Macchie di colore sfocate nel fondo: danno al vetro qualcosa da sfocare */
