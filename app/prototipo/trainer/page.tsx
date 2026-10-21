@@ -1,28 +1,38 @@
 "use client";
 
-import { FitCanvas } from "@/components/ui/basics";
 import { Appear } from "@/components/ui/motion";
-import { Sidebar, SoundPill, TitleRow, TopBar } from "@/components/prototipo/trainer/Chrome";
-import { AlertsCard, CalendarCard, MonthCard, PathCards, PathHeader, ProfileCard } from "@/components/prototipo/trainer/Cards";
+import { Pill } from "@/components/ui/basics";
+import { CalendarDays } from "lucide-react";
+import { TrainerShell } from "@/components/prototipo/trainer/Chrome";
+import { MessagesCard, PathCards, PathHeader, ProfileCard } from "@/components/prototipo/trainer/Cards";
+import { RevenueCard } from "@/components/prototipo/trainer/Revenue";
+import { AgendaCard } from "@/components/prototipo/trainer/Agenda";
+import { ClientsButton, UrgentBell, UrgentToast } from "@/components/prototipo/trainer/Urgent";
+import { trainer } from "@/libs/prototipo/dati-finti";
 
-// Home "Oggi" del trainer. Tela disegnata a 1303 px come il riferimento, adattata alla finestra.
+// Home "Oggi" del trainer.
 export default function PrototipoTrainer() {
   return (
-    <FitCanvas width={1303} minHeight={640}>
-      <Appear i={0} className="pt-[11px]">
-        <TopBar />
-        <TitleRow />
-      </Appear>
-
-      <Sidebar />
-
-      <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[316px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">
+    <TrainerShell
+      title="La tua giornata"
+      titleLeft={<ClientsButton />}
+      titleRight={
+        <>
+          <UrgentBell />
+          <Pill className="h-[26px] px-[12px] text-[11px] font-medium">
+            {trainer.month} <CalendarDays size={12} strokeWidth={2} />
+          </Pill>
+        </>
+      }
+    >
+      <UrgentToast />
+      <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">
         <div className="flex min-h-0 flex-col gap-[9px]">
           <Appear i={1}>
             <ProfileCard />
           </Appear>
           <Appear i={3} className="min-h-0 flex-1">
-            <MonthCard />
+            <RevenueCard />
           </Appear>
         </div>
 
@@ -31,18 +41,16 @@ export default function PrototipoTrainer() {
             <PathHeader />
           </Appear>
           <PathCards />
-          <div className="mt-[9px] grid min-h-0 flex-1 grid-cols-[434px_1fr] gap-[10px]">
-            <Appear i={4} className="flex min-h-0 [&>section]:flex-1">
-              <CalendarCard />
+          <div className="mt-[9px] grid min-h-0 flex-1 grid-cols-[1.12fr_1fr] gap-[10px]">
+            <Appear i={4} className="flex min-h-0">
+              <AgendaCard />
             </Appear>
-            <Appear i={5} className="flex min-h-0 [&>section]:flex-1">
-              <AlertsCard />
+            <Appear i={5} className="flex min-h-0">
+              <MessagesCard />
             </Appear>
           </div>
         </div>
       </main>
-
-      <SoundPill />
-    </FitCanvas>
+    </TrainerShell>
   );
 }

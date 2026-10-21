@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
+import toast from "react-hot-toast";
 import {
   ArrowLeft,
   Bell,
@@ -11,22 +14,31 @@ import {
   House,
   Mail,
   Maximize2,
-  TextAlignStart,
   MessageSquare,
   PanelTop,
   Search,
   Settings,
+  TextAlignStart,
   Users,
   Volume2,
   VolumeX,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { Avatar, Pill } from "@/components/ui/basics";
+import { Avatar, FitCanvas } from "@/components/ui/basics";
+import { Appear } from "@/components/ui/motion";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 
+export const ROUTES = {
+  oggi: "/prototipo/trainer",
+  clienti: "/prototipo/trainer/clienti",
+  cliente: (id: string) => `/prototipo/trainer/clienti/${id}`,
+};
+
 const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
+
+const notYet = (label: string) => toast(`${label}: arriva nelle prossime fasi`, { icon: "🛠️" });
 
 function SquareButton({ icon: Icon, label, size = 16 }: { icon: LucideIcon; label: string; size?: number }) {
   return (
@@ -42,15 +54,23 @@ function SquareButton({ icon: Icon, label, size = 16 }: { icon: LucideIcon; labe
   );
 }
 
-const navItems: { label: string; icon: LucideIcon }[] = [
-  { label: "Oggi", icon: House },
-  { label: "Clienti", icon: Users },
+type NavItem = { label: string; icon: LucideIcon; href?: string };
+
+const navItems: NavItem[] = [
+  { label: "Oggi", icon: House, href: ROUTES.oggi },
+  { label: "Clienti", icon: Users, href: ROUTES.clienti },
   { label: "Incassi", icon: FileText },
   { label: "Impostazioni", icon: Settings },
 ];
 
+function useSection() {
+  const path = usePathname();
+  return path.startsWith(ROUTES.clienti) ? "Clienti" : "Oggi";
+}
+
 export function TopBar() {
-  const [active, setActive] = useState("Oggi");
+  const section = useSection();
+  const router = useRouter();
 
   return (
     <div className="flex h-[35px] items-center justify-between pr-[18px] pl-[20px]">
@@ -60,8 +80,8 @@ export function TopBar() {
       </div>
 
       <nav className="flex h-[35px] w-[395px] items-center justify-between rounded-full bg-white px-[4px]">
-        {navItems.map(({ label, icon: Icon }) => {
-          const isActive = label === active;
+        {navItems.map(({ label, icon: Icon, href }) => {
+          const isActive = label === section;
           return (
             <motion.button
               key={label}
@@ -69,19 +89,14 @@ export function TopBar() {
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 playSound("tap");
-                setActive(label);
+                if (href) router.push(href);
+                else notYet(label);
               }}
               className={`relative flex h-[27px] cursor-pointer items-center gap-[6px] rounded-full px-[14px] text-[12.5px] font-medium transition-colors duration-300 ${
                 isActive ? "text-white" : "text-ink/75 hover:text-ink"
               }`}
             >
-              {isActive && (
-                <motion.span
-                  layoutId="nav-attivo"
-                  className="absolute inset-0 rounded-full bg-[#101214]"
-                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                />
-              )}
+              {isActive && <span className="absolute inset-0 rounded-full bg-[#101214]" />}
               <Icon size={14} strokeWidth={1.9} className="relative" />
               <span className="relative">{label}</span>
             </motion.button>
@@ -108,34 +123,30 @@ export function TopBar() {
   );
 }
 
-export function TitleRow() {
+// Riga del titolo: freccia indietro (se c'è dove tornare), titolo, contenuti a sinistra e a destra.
+export function TitleRow({ title, back, left, right }: { title: string; back?: string; left?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="mt-[10px] flex h-[24px] items-center justify-between pr-[18px] pl-[24px]">
+    <div className="relative z-30 mt-[10px] flex h-[24px] items-center justify-between pr-[18px] pl-[24px]">
       <div className="flex items-center gap-[12px]">
-        <ArrowLeft size={17} strokeWidth={2.1} />
-        <h1 className="text-[17px] font-bold tracking-[-0.02em] text-[#1f2421]">La tua giornata</h1>
+        {back && (
+          <Link href={back} onClick={() => playSound("tap")} aria-label="Indietro" className="grid place-items-center">
+            <motion.span whileHover={{ x: -2 }} whileTap={{ scale: 0.9 }}>
+              <ArrowLeft size={17} strokeWidth={2.1} />
+            </motion.span>
+          </Link>
+        )}
+        <h1 className="text-[17px] font-bold tracking-[-0.02em] text-[#1f2421]">{title}</h1>
+        {left}
       </div>
-      <div className="flex gap-[8px]">
-        <Pill className="h-[24px] px-[12px] text-[11px] font-medium">
-          <motion.span
-            className="size-[5px] rounded-full bg-[#f5a524]"
-            animate={{ opacity: [1, 0.35, 1] }}
-            transition={{ duration: 1.6, repeat: Infinity }}
-          />
-          {trainer.openAlerts} avvisi
-        </Pill>
-        <Pill className="h-[24px] px-[12px] text-[11px] font-medium">
-          {trainer.month} <CalendarDays size={12} strokeWidth={2} />
-        </Pill>
-      </div>
+      <div className="flex items-center gap-[8px]">{right}</div>
     </div>
   );
 }
 
-const sideItems: { label: string; icon: LucideIcon }[] = [
-  { label: "Oggi", icon: House },
-  { label: "Avvisi", icon: MessageSquare },
-  { label: "Clienti", icon: Users },
+const sideItems: NavItem[] = [
+  { label: "Oggi", icon: House, href: ROUTES.oggi },
+  { label: "Messaggi", icon: MessageSquare },
+  { label: "Clienti", icon: Users, href: ROUTES.clienti },
   { label: "Schede", icon: Dumbbell },
   { label: "Calendario", icon: CalendarDays },
   { label: "Incassi", icon: Wallet },
@@ -143,7 +154,8 @@ const sideItems: { label: string; icon: LucideIcon }[] = [
 ];
 
 export function Sidebar() {
-  const [active, setActive] = useState("Oggi");
+  const section = useSection();
+  const router = useRouter();
   const [hover, setHover] = useState<string | null>(null);
 
   return (
@@ -153,8 +165,8 @@ export function Sidebar() {
       transition={{ delay: 0.15, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       className="absolute top-[218px] left-[18px] z-20 flex h-[420px] w-[49px] flex-col items-center gap-[19.7px] rounded-full bg-pill pt-[33px]"
     >
-      {sideItems.map(({ label, icon: Icon }) => {
-        const isActive = active === label;
+      {sideItems.map(({ label, icon: Icon, href }) => {
+        const isActive = section === label;
         return (
           <div key={label} className="relative" onMouseEnter={() => setHover(label)} onMouseLeave={() => setHover(null)}>
             <motion.button
@@ -163,7 +175,8 @@ export function Sidebar() {
               whileTap={{ scale: 0.88 }}
               onClick={() => {
                 playSound("tap");
-                setActive(label);
+                if (href) router.push(href);
+                else notYet(label);
               }}
               className={`grid size-[34px] cursor-pointer place-items-center rounded-full transition-colors duration-200 ${
                 isActive ? "bg-[#4c4c4e] text-white" : hover === label ? "bg-[#2c2c2f] text-white" : "text-[#a9a9ad]"
@@ -219,5 +232,32 @@ export function SoundPill() {
         <Maximize2 size={11} />
       </span>
     </motion.button>
+  );
+}
+
+// Cornice comune delle pagine del trainer: tela 1303 px, barra in alto, titolo, barra laterale, suoni.
+export function TrainerShell({
+  title,
+  back,
+  titleLeft,
+  titleRight,
+  children,
+}: {
+  title: string;
+  back?: string;
+  titleLeft?: ReactNode;
+  titleRight?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <FitCanvas width={1303} minHeight={640}>
+      <Appear i={0} className="relative z-30 pt-[11px]">
+        <TopBar />
+        <TitleRow title={title} back={back} left={titleLeft} right={titleRight} />
+      </Appear>
+      <Sidebar />
+      {children}
+      <SoundPill />
+    </FitCanvas>
   );
 }

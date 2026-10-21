@@ -63,6 +63,8 @@ function note(ac: AudioContext, at: number, from: number, to: number, duration: 
 
 export function playSound(kind: SoundKind): void {
   if (typeof window === "undefined" || !isSoundEnabled()) return;
+  // Prima di un clic il browser blocca l'audio: non ci proviamo nemmeno.
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
   const ac = audio();
   if (!ac) return;
   const t = ac.currentTime;
