@@ -10,10 +10,10 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Stato attuale (Completato)
 - Brainstorming chiuso, stile fissato su riferimenti Instagram (bozzetto vecchio scartato).
 - Design approvato: `docs/specs/2026-10-21-design.md`
-- Setup: cartella, git (ramo `setup-iniziale`), boilerplate ZeroToShip applicato, `npm install` fatto, build ok con chiavi finte, CLAUDE.md, PROGRESS.md.
+- Setup: cartella, git (ramo `setup-iniziale`), boilerplate ZeroToShip applicato, `npm install` fatto, build ok con chiavi finte, CLAUDE.md, PROGRESS.md, gruppo sidebar "🏋️ APP PERSONAL TRAINER".
 
 ## In corso
-- Piano di sviluppo in `docs/plans/`.
+- Piano Fase 1 (fondamenta) scritto: `docs/plans/2026-10-21-piano-v1.md`, 7 task; Fasi 2-5 nella roadmap del piano.
 
 ## Da fare (TODO)
 - Prototipo visivo di 2 schermate (Oggi del trainer, allenamento del cliente) da approvare.
@@ -35,9 +35,11 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Fornitore AI in UE da scegliere prima del primo cliente vero.
 - Informativa, DPA e termini da far rivedere a un professionista.
 - Nome del prodotto da scegliere.
+- Nota nel vault non creata: il brain è stato azzerato il 2026-10-21; aggiungerla quando la nuova struttura è pronta.
 
 ## Prossimi passi immediati
-- Task 1 del piano `docs/plans/2026-10-21-piano-v1.md`.
+- Task 1 del piano `docs/plans/2026-10-21-piano-v1.md`: prototipo visivo (Oggi del trainer + allenamento del cliente), poi approvazione di Marco.
+- Marco: creare il progetto Supabase di sviluppo (UE) prima del Task 3.
 
 ## Contesto tecnico utile
 - Build senza chiavi: fallisce su `/tos` (Supabase richiede URL e chiave). Per una verifica: `NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npm run build`.
