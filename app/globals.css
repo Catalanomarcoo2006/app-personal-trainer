@@ -75,14 +75,18 @@
   }
 }
 
-/* Token di stile del prodotto (riferimento: docs/riferimenti/dashboard-principale.png) */
-@theme {
+/* Token di stile del prodotto (riferimento: docs/riferimenti/dashboard-principale.png).
+   Tutti i colori dell'interfaccia passano da qui: il tema scuro ridefinisce le stesse variabili. */
+@theme static {
   --color-salvia: #dfebe1;
+  --color-card: #ffffff;
   --color-ink: #1c1c1e;
-  --color-muted: #9b9b9b;
+  --color-muted: #8f9093;
   --color-line: #ececec;
   --color-soft: #f2f2f4;
   --color-pill: #1f1f22;
+  --color-contrast: #131313;
+  --color-on-contrast: #ffffff;
 
   --color-peach: #fdf4e2;
   --color-peach-strong: #da9f4a;
@@ -93,17 +97,18 @@
   --color-rose: #ffe5eb;
   --color-rose-strong: #ce4a66;
   --color-rose-track: #f4c5cc;
+  --color-violet: #ece9ff;
+  --color-violet-strong: #6a5ae0;
+  --color-violet-track: #d3cdfa;
+  --color-mint: #e2f6ec;
+  --color-mint-strong: #2f9a68;
+  --color-mint-track: #bfe6d2;
 
   --color-cal-default: #f0f3f0;
   --color-cal-done: #2f3541;
-  --color-cal-selected: #f86565;
   --color-cal-planned: #8b97b2;
-  --color-cal-planned-light: #c5cfdf;
-  --color-cal-check: #569afa;
-  --color-cal-payment: #fdb621;
-  --color-cal-event: #5a5af0;
 
-  --color-ok: #3cae5c;
+  --color-ok: #2f9e55;
   --color-ok-soft: #e1ffea;
   --color-ok-line: #b5e8c3;
 }
@@ -111,6 +116,53 @@
 /* Colore del trainer: lo imposta ogni trainer, qui il valore di default */
 :root {
   --trainer: #ff6b2c;
+}
+
+/* Tema scuro: stessi nomi, valori diversi */
+.dark {
+  color-scheme: dark;
+  --color-salvia: #0e1011;
+  --color-card: #191b1d;
+  --color-ink: #f1f1ee;
+  --color-muted: #8b8f94;
+  --color-line: #2a2d31;
+  --color-soft: #24272a;
+  --color-pill: #232528;
+  --color-contrast: #f1f1ee;
+  --color-on-contrast: #131313;
+
+  --color-peach: #2b2217;
+  --color-peach-track: #4a3923;
+  --color-sky: #142731;
+  --color-sky-track: #1f4258;
+  --color-rose: #301d24;
+  --color-rose-track: #57303d;
+  --color-violet: #211e38;
+  --color-violet-track: #3a3466;
+  --color-mint: #142a20;
+  --color-mint-track: #1f4a36;
+
+  --color-cal-default: #222528;
+  --color-cal-done: #3a4150;
+  --color-ok-soft: #133022;
+  --color-ok-line: #1f5236;
+}
+
+html.dark body {
+  background-color: var(--color-salvia);
+}
+
+/* Cambio tema: il nuovo tema "dilaga" con una macchia irregolare che parte dal punto del clic
+   (riferimento: docs/riferimenti/frames-dark/transizione.jpg) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  z-index: 2;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M147 36c22 17 37 44 37 70 0 27-13 52-35 68-21 16-49 22-74 15-26-7-49-26-58-51-9-24-4-53 11-74 14-20 38-33 63-36 20-2 40 0 56 8z' fill='black'/%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
 }
 
 html,

@@ -43,7 +43,7 @@ export function AssistantOrb({ onOpen, size = 58 }: { onOpen: () => void; size?:
         {[0, 1].map((eye) => (
           <motion.span
             key={eye}
-            className="block rounded-full bg-white"
+            className="block rounded-full bg-card"
             style={{ width: size * 0.09, height: size * 0.2 }}
             animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
             transition={{ duration: 4.5, repeat: Infinity, times: [0, 0.9, 0.93, 0.96, 1] }}
@@ -125,7 +125,7 @@ export function AssistantPanel({
         <motion.div className="absolute inset-0 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <button type="button" aria-label="Chiudi" onClick={onClose} className="absolute inset-0 bg-black/10 backdrop-blur-[6px]" />
           <motion.div
-            className="absolute inset-x-[10px] bottom-[10px] flex h-[78%] flex-col overflow-hidden rounded-[26px] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.18)]"
+            className="absolute inset-x-[10px] bottom-[10px] flex h-[78%] flex-col overflow-hidden rounded-[26px] bg-card shadow-[0_20px_60px_rgba(0,0,0,0.18)]"
             initial={{ y: "105%" }}
             animate={{ y: 0 }}
             exit={{ y: "105%" }}
@@ -159,7 +159,7 @@ export function AssistantPanel({
                     key={m.id}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="mx-auto flex items-center gap-[6px] rounded-full bg-[#141414] px-[12px] py-[6px] text-[11px] font-semibold text-white"
+                    className="mx-auto flex items-center gap-[6px] rounded-full bg-contrast px-[12px] py-[6px] text-[11px] font-semibold text-on-contrast"
                   >
                     <BellRing size={12} /> {m.text}
                   </motion.p>
@@ -171,7 +171,7 @@ export function AssistantPanel({
                     transition={{ duration: 0.3, ease: EASE_OUT }}
                     className={
                       m.role === "user"
-                        ? "max-w-[80%] self-end rounded-[16px] rounded-br-[6px] bg-[#141414] px-[12px] py-[8px] text-[12.5px] text-white"
+                        ? "max-w-[80%] self-end rounded-[16px] rounded-br-[6px] bg-contrast px-[12px] py-[8px] text-[12.5px] text-on-contrast"
                         : "max-w-[86%] self-start rounded-[16px] rounded-bl-[6px] bg-soft px-[12px] py-[8px] text-[12.5px] leading-relaxed"
                     }
                   >
@@ -200,14 +200,14 @@ export function AssistantPanel({
                   type="button"
                   whileTap={{ scale: 0.94 }}
                   onClick={() => ask(s)}
-                  className="shrink-0 cursor-pointer rounded-full border border-line bg-white px-[11px] py-[6px] text-[11.5px] font-medium whitespace-nowrap"
+                  className="shrink-0 cursor-pointer rounded-full border border-line bg-card px-[11px] py-[6px] text-[11.5px] font-medium whitespace-nowrap"
                 >
                   {s}
                 </motion.button>
               ))}
             </div>
 
-            <form onSubmit={submit} className="mx-[12px] mb-[12px] flex items-center gap-[8px] rounded-full border border-line bg-white py-[5px] pr-[5px] pl-[14px]">
+            <form onSubmit={submit} className="mx-[12px] mb-[12px] flex items-center gap-[8px] rounded-full border border-line bg-card py-[5px] pr-[5px] pl-[14px]">
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -218,7 +218,7 @@ export function AssistantPanel({
                 type="submit"
                 aria-label="Invia"
                 whileTap={{ scale: 0.9 }}
-                className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full bg-[#141414] text-white"
+                className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast"
               >
                 <ArrowUp size={15} />
               </motion.button>

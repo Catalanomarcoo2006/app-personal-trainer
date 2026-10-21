@@ -22,6 +22,7 @@ export type Client = {
   id: string;
   name: string;
   initials: string;
+  photo?: string;
   tone: Tone;
   since: string;
   goal: string;
@@ -70,7 +71,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0101", email: "antonella.russo@esempio.it",
   },
   {
-    id: "giulia-bianchi", name: "Giulia Bianchi", initials: "GB", tone: "rose", since: "Dal 05 Ott 2026",
+    id: "giulia-bianchi", name: "Giulia Bianchi", initials: "GB", photo: "/prototipo/cliente-giulia.jpg", tone: "rose", since: "Dal 05 Ott 2026",
     goal: "Dimagrimento −8 kg", unit: "kg", start: 72, current: 68.9, target: 64, weights: series(72, 68.9),
     measures: m([86, 82], [104, 101], [95, 93], [31, 30], [60, 58]),
     pkg: { label: "Pacchetto 10 lezioni", left: "2 lezioni rimaste", expiring: true },
@@ -81,7 +82,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0102", email: "giulia.bianchi@esempio.it",
   },
   {
-    id: "luca-ferri", name: "Luca Ferri", initials: "LF", tone: "sky", since: "Dal 08 Set 2026",
+    id: "luca-ferri", name: "Luca Ferri", initials: "LF", photo: "/prototipo/cliente-luca.jpg", tone: "sky", since: "Dal 08 Set 2026",
     goal: "Mezza maratona (21 km)", unit: "km", start: 8, current: 14.5, target: 21, weights: series(79, 77.4, 0.2),
     measures: m([88, 85], [98, 97], [100, 99], [33, 33], [57, 56]),
     pkg: { label: "Mensile", left: "Scade il 31 ottobre", expiring: false },
@@ -106,7 +107,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0104", email: "sara.conti@esempio.it",
   },
   {
-    id: "davide-greco", name: "Davide Greco", initials: "DG", tone: "mint", since: "Dal 01 Lug 2026",
+    id: "davide-greco", name: "Davide Greco", initials: "DG", photo: "/prototipo/cliente-davide.jpg", tone: "mint", since: "Dal 01 Lug 2026",
     goal: "Massa muscolare +4 kg", unit: "kg", start: 74, current: 76.2, target: 78, weights: series(74, 76.2, 0.2),
     measures: m([80, 81], [95, 96], [98, 102], [33, 35], [56, 58]),
     pkg: { label: "Trimestrale", left: "Scade il 30 novembre", expiring: false },
@@ -160,11 +161,11 @@ export const toneColors: Record<Tone, { bg: string; strong: string; track: strin
   peach: { bg: "var(--color-peach)", strong: "var(--color-peach-strong)", track: "var(--color-peach-track)", sub: "#9b9184" },
   sky: { bg: "var(--color-sky)", strong: "var(--color-sky-strong)", track: "var(--color-sky-track)", sub: "#7f909b" },
   rose: { bg: "var(--color-rose)", strong: "var(--color-rose-strong)", track: "var(--color-rose-track)", sub: "#a08890" },
-  violet: { bg: "#ece9ff", strong: "#6a5ae0", track: "#d3cdfa", sub: "#8a85a8" },
-  mint: { bg: "#e2f6ec", strong: "#2f9a68", track: "#bfe6d2", sub: "#7a978a" },
+  violet: { bg: "var(--color-violet)", strong: "var(--color-violet-strong)", track: "var(--color-violet-track)", sub: "#8a85a8" },
+  mint: { bg: "var(--color-mint)", strong: "var(--color-mint-strong)", track: "var(--color-mint-track)", sub: "#7a978a" },
 };
 
-export const pathCards = ["giulia-bianchi", "luca-ferri", "sara-conti"];
+export const pathCards = ["giulia-bianchi", "luca-ferri", "davide-greco"];
 
 export const quickStats = [
   { key: "clienti", label: "Clienti attivi", value: clients.length, href: "/prototipo/trainer/clienti" },
@@ -224,7 +225,7 @@ export const agenda: Appointment[][] = [
 export const appointmentColors: Record<AppointmentType, { bg: string; strong: string }> = {
   Workout: { bg: "var(--color-peach)", strong: "var(--color-peach-strong)" },
   Valutazione: { bg: "var(--color-sky)", strong: "var(--color-sky-strong)" },
-  Online: { bg: "#ece9ff", strong: "#6a5ae0" },
+  Online: { bg: "var(--color-violet)", strong: "var(--color-violet-strong)" },
   Corsa: { bg: "var(--color-rose)", strong: "var(--color-rose-strong)" },
 };
 
@@ -319,3 +320,124 @@ export const assistantAnswers: Record<string, string> = {
 
 export const assistantFallback =
   "Posso aiutarti con il tuo allenamento, gli esercizi e le abitudini. Per l'alimentazione segui la dieta del tuo nutrizionista che trovi nei documenti.";
+
+// ——— Schede di allenamento ———
+
+export type Muscle = "Gambe" | "Glutei" | "Petto" | "Schiena" | "Spalle" | "Braccia" | "Core" | "Cardio";
+
+export type LibraryExercise = { id: string; name: string; muscle: Muscle; equipment: string };
+
+export const library: LibraryExercise[] = [
+  { id: "squat", name: "Squat con bilanciere", muscle: "Gambe", equipment: "Bilanciere" },
+  { id: "goblet", name: "Goblet squat", muscle: "Gambe", equipment: "Manubrio" },
+  { id: "affondi", name: "Affondi camminati", muscle: "Gambe", equipment: "Manubri" },
+  { id: "leg-press", name: "Leg press", muscle: "Gambe", equipment: "Macchina" },
+  { id: "stacco-rumeno", name: "Stacco rumeno", muscle: "Glutei", equipment: "Bilanciere" },
+  { id: "hip-thrust", name: "Hip thrust", muscle: "Glutei", equipment: "Bilanciere" },
+  { id: "ponte", name: "Ponte glutei", muscle: "Glutei", equipment: "Corpo libero" },
+  { id: "abductor", name: "Abduzioni con elastico", muscle: "Glutei", equipment: "Elastico" },
+  { id: "panca", name: "Panca piana", muscle: "Petto", equipment: "Bilanciere" },
+  { id: "spinte-manubri", name: "Spinte con manubri inclinata", muscle: "Petto", equipment: "Manubri" },
+  { id: "piegamenti", name: "Piegamenti", muscle: "Petto", equipment: "Corpo libero" },
+  { id: "trazioni", name: "Trazioni alla sbarra", muscle: "Schiena", equipment: "Sbarra" },
+  { id: "lat", name: "Lat machine", muscle: "Schiena", equipment: "Macchina" },
+  { id: "rematore", name: "Rematore con manubrio", muscle: "Schiena", equipment: "Manubrio" },
+  { id: "military", name: "Military press", muscle: "Spalle", equipment: "Bilanciere" },
+  { id: "alzate", name: "Alzate laterali", muscle: "Spalle", equipment: "Manubri" },
+  { id: "curl", name: "Curl con manubri", muscle: "Braccia", equipment: "Manubri" },
+  { id: "french", name: "French press", muscle: "Braccia", equipment: "Bilanciere EZ" },
+  { id: "plank", name: "Plank", muscle: "Core", equipment: "Corpo libero" },
+  { id: "dead-bug", name: "Dead bug", muscle: "Core", equipment: "Corpo libero" },
+  { id: "pallof", name: "Pallof press", muscle: "Core", equipment: "Cavo" },
+  { id: "corsa", name: "Corsa a ritmo lento", muscle: "Cardio", equipment: "—" },
+  { id: "ripetute", name: "Ripetute 4 × 1 km", muscle: "Cardio", equipment: "—" },
+  { id: "bike", name: "Bike a intervalli", muscle: "Cardio", equipment: "Cyclette" },
+];
+
+export const exerciseById = (id: string) => library.find((e) => e.id === id);
+
+export type PlanRow = { exId: string; sets: string; load: string; rest: string };
+export type PlanDay = { label: string; focus: string; rows: PlanRow[] };
+
+const row = (exId: string, sets: string, load: string, rest: string): PlanRow => ({ exId, sets, load, rest });
+
+export const plans: Record<string, PlanDay[]> = {
+  "giulia-bianchi": [
+    { label: "Giorno A", focus: "Gambe e glutei", rows: [row("squat", "4 × 10", "40 kg", "90″"), row("affondi", "3 × 12", "8 kg", "75″"), row("hip-thrust", "4 × 12", "50 kg", "75″"), row("plank", "3 × 45″", "—", "45″")] },
+    { label: "Giorno B", focus: "Upper body", rows: [row("lat", "4 × 10", "35 kg", "90″"), row("spinte-manubri", "3 × 10", "10 kg", "90″"), row("alzate", "3 × 15", "4 kg", "60″"), row("dead-bug", "3 × 12", "—", "45″")] },
+    { label: "Giorno C", focus: "Metabolico", rows: [row("bike", "6 × 1′", "alta", "1′"), row("goblet", "3 × 15", "12 kg", "60″"), row("piegamenti", "3 × 10", "—", "60″")] },
+  ],
+  "antonella-russo": [
+    { label: "Giorno A", focus: "Total body", rows: [row("goblet", "4 × 12", "14 kg", "75″"), row("rematore", "3 × 12", "12 kg", "75″"), row("ponte", "3 × 15", "—", "60″"), row("plank", "3 × 40″", "—", "45″")] },
+    { label: "Giorno B", focus: "Cardio e core", rows: [row("bike", "8 × 30″", "alta", "60″"), row("dead-bug", "3 × 12", "—", "45″"), row("pallof", "3 × 10", "8 kg", "45″")] },
+  ],
+  "luca-ferri": [
+    { label: "Corsa", focus: "Ripetute", rows: [row("corsa", "15′", "Z2", "—"), row("ripetute", "4 × 1 km", "4:50/km", "2′"), row("corsa", "10′", "Z1", "—")] },
+    { label: "Forza", focus: "Gambe per runner", rows: [row("stacco-rumeno", "3 × 8", "50 kg", "90″"), row("affondi", "3 × 10", "12 kg", "75″"), row("plank", "3 × 60″", "—", "45″")] },
+  ],
+  "davide-greco": [
+    { label: "Push", focus: "Petto, spalle, tricipiti", rows: [row("panca", "5 × 5", "85 kg", "2′"), row("spinte-manubri", "4 × 8", "26 kg", "90″"), row("military", "4 × 8", "45 kg", "90″"), row("french", "3 × 12", "25 kg", "60″")] },
+    { label: "Pull", focus: "Schiena e bicipiti", rows: [row("trazioni", "5 × 6", "+5 kg", "2′"), row("rematore", "4 × 10", "32 kg", "90″"), row("curl", "3 × 12", "14 kg", "60″")] },
+    { label: "Legs", focus: "Gambe", rows: [row("squat", "5 × 5", "110 kg", "2′30″"), row("leg-press", "4 × 10", "200 kg", "90″"), row("stacco-rumeno", "3 × 8", "90 kg", "2′")] },
+  ],
+};
+
+export const defaultPlan: PlanDay[] = [
+  { label: "Giorno A", focus: "Total body", rows: [row("goblet", "3 × 12", "10 kg", "75″"), row("rematore", "3 × 12", "10 kg", "75″"), row("plank", "3 × 30″", "—", "45″")] },
+];
+
+// ——— Messaggi ———
+
+export type ChatMessage = { from: "client" | "trainer" | "assistant"; text: string; time: string };
+
+export const conversations: { clientId: string; unread: number; messages: ChatMessage[] }[] = [
+  {
+    clientId: "luca-ferri",
+    unread: 2,
+    messages: [
+      { from: "trainer", text: "Com'è andata la corsa di ieri?", time: "Lun 18:40" },
+      { from: "client", text: "Bene! 4 ripetute sotto i 5 minuti al km", time: "Lun 19:02" },
+      { from: "assistant", text: "Luca ha segnalato un fastidio al ginocchio durante gli affondi. Gli ho proposto il ponte glutei al posto degli affondi e di sentire un medico se il dolore continua.", time: "Mar 20:15" },
+      { from: "client", text: "Oggi il ginocchio mi dava un po' fastidio negli affondi", time: "Mar 20:16" },
+      { from: "client", text: "Domani faccio comunque la corsa?", time: "Mar 20:17" },
+    ],
+  },
+  {
+    clientId: "giulia-bianchi",
+    unread: 1,
+    messages: [
+      { from: "client", text: "Ciao Marco! Ho fatto tutto il Giorno A", time: "Ieri 19:30" },
+      { from: "trainer", text: "Grandissima! Venerdì aumentiamo il carico dello squat", time: "Ieri 20:05" },
+      { from: "client", text: "Posso spostare la seduta di venerdì alle 18 a sabato?", time: "09:12" },
+    ],
+  },
+  {
+    clientId: "sara-conti",
+    unread: 1,
+    messages: [
+      { from: "trainer", text: "Ti resta 1 lezione nel pacchetto", time: "Lun 10:00" },
+      { from: "client", text: "Mi piacerebbe rinnovare il pacchetto, quando ne parliamo?", time: "Lun 11:20" },
+    ],
+  },
+  {
+    clientId: "davide-greco",
+    unread: 0,
+    messages: [
+      { from: "client", text: "Nuovo massimale di panca: 90 kg! Grazie per la scheda", time: "Dom 12:30" },
+      { from: "trainer", text: "Ottimo lavoro! Settimana prossima proviamo il 5 × 5 a 87,5 kg", time: "Dom 13:10" },
+    ],
+  },
+  {
+    clientId: "elena-marini",
+    unread: 0,
+    messages: [{ from: "client", text: "Giovedì non riesco a collegarmi, possiamo fare venerdì?", time: "Lun 08:45" }],
+  },
+  {
+    clientId: "antonella-russo",
+    unread: 0,
+    messages: [
+      { from: "trainer", text: "Ci vediamo oggi alle 11 in palestra", time: "08:00" },
+      { from: "client", text: "Perfetto, a dopo!", time: "08:14" },
+    ],
+  },
+];

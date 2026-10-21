@@ -11,13 +11,13 @@ import { playSound } from "@/libs/ui/sound";
 import { client, trainer, workout } from "@/libs/prototipo/dati-finti";
 
 const tint = (p: number) => `color-mix(in srgb, var(--trainer) ${p}%, white)`;
-const card = "rounded-[20px] bg-white";
+const card = "rounded-[20px] bg-card";
 
 export function ClientHeader() {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-[10px]">
-        <span className="grid size-[40px] place-items-center rounded-[12px] bg-white text-[14px] font-extrabold tracking-[-0.03em]" style={{ color: "var(--trainer)" }}>
+        <span className="grid size-[40px] place-items-center rounded-[12px] bg-card text-[14px] font-extrabold tracking-[-0.03em]" style={{ color: "var(--trainer)" }}>
           {trainer.initials}
         </span>
         <div className="leading-none">
@@ -27,7 +27,7 @@ export function ClientHeader() {
           </p>
         </div>
       </div>
-      <div className="flex h-[38px] items-center gap-[10px] rounded-full bg-white pr-[4px] pl-[12px]">
+      <div className="flex h-[38px] items-center gap-[10px] rounded-full bg-card pr-[4px] pl-[12px]">
         <span className="relative">
           <Bell size={16} strokeWidth={1.9} />
           <span className="absolute -top-[2px] right-0 size-[5px] rounded-full bg-[#e5484d]" />
@@ -95,7 +95,7 @@ export function GoalCard() {
       style={{ background: tint(11) }}
     >
       <div className="flex items-center justify-between">
-        <span className="rounded-full bg-white/90 px-[8px] py-[3px] text-[10px] leading-none font-semibold text-ink/85">{client.since}</span>
+        <span className="rounded-full bg-card/90 px-[8px] py-[3px] text-[10px] leading-none font-semibold text-ink/85">{client.since}</span>
         <EllipsisVertical size={14} className="text-ink/60" />
       </div>
       <div className="mt-[11px] flex items-center justify-between">
@@ -104,7 +104,7 @@ export function GoalCard() {
       </div>
       <div className="mt-[9px] flex items-center justify-between">
         <p className="text-[12px] leading-none text-ink/55">{client.goalDetail}</p>
-        <span className="flex items-center gap-[5px] rounded-full bg-white px-[8px] py-[3px] text-[10px] leading-none">
+        <span className="flex items-center gap-[5px] rounded-full bg-card px-[8px] py-[3px] text-[10px] leading-none">
           <b className="text-[11px]">
             <CountUp value={client.goalPercent} delay={0.45} />%
           </b>
@@ -119,17 +119,17 @@ export function GoalCard() {
           {client.weekDone.map((d, k) => (
             <span
               key={k}
-              className="-ml-[5px] grid size-[22px] place-items-center rounded-full border-[1.5px] border-white text-[9px] font-bold text-white first:ml-0"
+              className="-ml-[5px] grid size-[22px] place-items-center rounded-full border-[1.5px] border-card text-[9px] font-bold text-white first:ml-0"
               style={{ background: "var(--trainer)" }}
             >
               {d}
             </span>
           ))}
-          <span className="-ml-[4px] grid size-[17px] place-items-center rounded-full border border-white" style={{ background: tint(30), color: "var(--trainer)" }}>
+          <span className="-ml-[4px] grid size-[17px] place-items-center rounded-full border border-card" style={{ background: tint(30), color: "var(--trainer)" }}>
             <Plus size={10} strokeWidth={3} />
           </span>
         </div>
-        <span className="rounded-full bg-white px-[9px] py-[4px] text-[10px] leading-none font-medium text-ink/80">2 allenamenti su 3</span>
+        <span className="rounded-full bg-card px-[9px] py-[4px] text-[10px] leading-none font-medium text-ink/80">2 allenamenti su 3</span>
       </div>
     </motion.article>
   );
@@ -138,13 +138,13 @@ export function GoalCard() {
 export function NextSession() {
   const [sent, setSent] = useState(false);
   return (
-    <motion.div whileTap={{ scale: 0.985 }} className="flex h-[58px] items-center gap-[10px] rounded-[16px] bg-[#131411] px-[10px] text-white shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
-      <span className="grid size-[36px] place-items-center rounded-full bg-white/10">
+    <motion.div whileTap={{ scale: 0.985 }} className="flex h-[58px] items-center gap-[10px] rounded-[16px] bg-contrast px-[10px] text-on-contrast shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
+      <span className="grid size-[36px] place-items-center rounded-full bg-on-contrast/10">
         <CalendarDays size={16} />
       </span>
       <div className="min-w-0 leading-none">
         <p className="text-[12.5px] font-bold">Prossima seduta con {trainer.name.split(" ")[0]}</p>
-        <p className="mt-[4px] truncate text-[10.5px] text-white/65">
+        <p className="mt-[4px] truncate text-[10.5px] text-on-contrast/65">
           {client.nextSession.when} · {client.nextSession.where}
         </p>
       </div>
@@ -157,7 +157,7 @@ export function NextSession() {
           setSent(true);
           toast.success(`Richiesta inviata a ${trainer.name.split(" ")[0]}`);
         }}
-        className="ml-auto flex h-[28px] shrink-0 cursor-pointer items-center gap-[4px] rounded-full bg-white px-[11px] text-[11px] font-semibold text-ink disabled:cursor-default"
+        className="ml-auto flex h-[28px] shrink-0 cursor-pointer items-center gap-[4px] rounded-full bg-on-contrast px-[11px] text-[11px] font-semibold text-contrast disabled:cursor-default"
       >
         {sent ? (
           <>
@@ -194,8 +194,7 @@ export function WorkoutCard() {
           key={count}
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
-          className="rounded-full px-[10px] py-[5px] text-[11px] font-bold text-white"
-          style={{ background: all ? "var(--color-ok)" : "#141414" }}
+          className={`rounded-full px-[10px] py-[5px] text-[11px] font-bold ${all ? "bg-ok text-white" : "bg-contrast text-on-contrast"}`}
         >
           {count}/{done.length}
         </motion.span>
@@ -218,8 +217,9 @@ export function WorkoutCard() {
               <p className={`mt-[4px] truncate text-[13px] font-semibold transition-opacity ${done[i] ? "opacity-45" : ""}`}>{ex.name}</p>
             </div>
             <motion.span
-              animate={{ backgroundColor: done[i] ? "#141414" : "#ffffff", color: done[i] ? "#ffffff" : "rgba(28,28,30,0.35)" }}
-              className="ml-auto grid size-[30px] shrink-0 place-items-center rounded-full border border-line"
+              animate={{ scale: done[i] ? [1, 1.18, 1] : 1 }}
+              transition={{ duration: 0.3 }}
+              className={`ml-auto grid size-[30px] shrink-0 place-items-center rounded-full border border-line transition-colors duration-300 ${done[i] ? "bg-contrast text-on-contrast" : "bg-card text-ink/35"}`}
             >
               <Check size={14} strokeWidth={2.6} />
             </motion.span>
@@ -233,7 +233,7 @@ export function WorkoutCard() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ type: "spring", stiffness: 380, damping: 22 }}
-            className="mt-[10px] rounded-[12px] bg-[#141414] px-[12px] py-[10px] text-center text-[12.5px] font-semibold text-white"
+            className="mt-[10px] rounded-[12px] bg-contrast px-[12px] py-[10px] text-center text-[12.5px] font-semibold text-on-contrast"
           >
             Allenamento completato! {trainer.name.split(" ")[0]} lo vedrà nella tua scheda.
           </motion.p>
@@ -273,7 +273,7 @@ export function HabitsRow() {
       <section className={`${card} px-[13px] pt-[12px] pb-[12px]`}>
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-[5px] text-[12px] font-bold">
-            <Droplet size={13} className="text-cal-check" /> Acqua
+            <Droplet size={13} className="text-sky-strong" /> Acqua
           </span>
           <IconCircle
             icon={Plus}
@@ -293,23 +293,23 @@ export function HabitsRow() {
           {Array.from({ length: 8 }, (_, i) => (
             <motion.span
               key={i}
-              animate={{ backgroundColor: i < glasses ? "#569afa" : "#f0f3f0" }}
+              animate={{ scaleY: i < glasses ? 1 : 0.7 }}
               transition={{ duration: 0.3 }}
-              className="h-[16px] rounded-[4px]"
+              className={`h-[16px] rounded-[4px] transition-colors duration-300 ${i < glasses ? "bg-sky-strong" : "bg-cal-default"}`}
             />
           ))}
         </div>
       </section>
       <section className={`${card} px-[13px] pt-[12px] pb-[12px]`}>
         <span className="flex items-center gap-[5px] text-[12px] font-bold">
-          <Footprints size={13} className="text-cal-event" /> Passi
+          <Footprints size={13} className="text-violet-strong" /> Passi
         </span>
         <p className="mt-[16px] text-[18px] leading-none font-bold">
           <CountUp value={client.steps} format={(n) => new Intl.NumberFormat("it-IT", { useGrouping: "always" }).format(Math.round(n))} delay={0.5} />
         </p>
         <p className="mt-[4px] text-[10.5px] text-muted">su 10.000 di oggi</p>
         <div className="mt-[8px]">
-          <ProgressBar percent={(client.steps / 10000) * 100} fill="var(--color-cal-event)" track="#e4e4fb" delay={0.5} />
+          <ProgressBar percent={(client.steps / 10000) * 100} fill="var(--color-violet-strong)" track="var(--color-violet-track)" delay={0.5} />
         </div>
       </section>
     </div>

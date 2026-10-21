@@ -6,12 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { EllipsisVertical, Search, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
-import { Avatar } from "@/components/ui/basics";
 import { EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { Client, clients, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./Chrome";
+import { ClientAvatar } from "./shared";
 
 const unpaid = (c: Client) => c.payments.some((p) => !p.paid);
 
@@ -53,18 +53,18 @@ export function ClientList() {
                   setFilter(f.key);
                 }}
                 className={`relative flex h-[30px] cursor-pointer items-center gap-[7px] rounded-full px-[13px] text-[12px] font-semibold transition-colors ${
-                  active ? "text-white" : "bg-white text-ink/75 hover:text-ink"
+                  active ? "text-on-contrast" : "bg-card text-ink/75 hover:text-ink"
                 }`}
               >
-                {active && <motion.span layoutId="filtro-clienti" className="absolute inset-0 rounded-full bg-[#131313]" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                {active && <motion.span layoutId="filtro-clienti" className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                 <span className="relative">{f.label}</span>
-                <span className={`relative grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[10px] font-bold ${active ? "bg-white text-ink" : "bg-soft"}`}>{count}</span>
+                <span className={`relative grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[10px] font-bold ${active ? "bg-on-contrast text-contrast" : "bg-soft"}`}>{count}</span>
               </motion.button>
             );
           })}
         </div>
         <div className="flex gap-[8px]">
-          <label className="flex h-[30px] w-[230px] items-center gap-[7px] rounded-full bg-white px-[12px]">
+          <label className="flex h-[30px] w-[230px] items-center gap-[7px] rounded-full bg-card px-[12px]">
             <Search size={13} className="text-muted" />
             <input
               value={query}
@@ -80,7 +80,7 @@ export function ClientList() {
               playSound("tap");
               toast("Nuovo cliente: arriva nella Fase 2", { icon: "🛠️" });
             }}
-            className="flex h-[30px] cursor-pointer items-center gap-[6px] rounded-full bg-[#131313] px-[13px] text-[12px] font-semibold text-white"
+            className="flex h-[30px] cursor-pointer items-center gap-[6px] rounded-full bg-contrast px-[13px] text-[12px] font-semibold text-on-contrast"
           >
             <UserPlus size={13} /> Nuovo cliente
           </motion.button>
@@ -102,9 +102,9 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
   const percent = progressOf(c);
   const weight = c.weights[c.weights.length - 1];
   const badges = [
-    c.needsAttention && { label: "Da seguire", cls: "bg-[#fff3d6] text-[#b7791f]" },
-    c.pkg.expiring && { label: "In scadenza", cls: "bg-[#ece9ff] text-[#6a5ae0]" },
-    unpaid(c) && { label: "Pagamento mancante", cls: "bg-[#ffe3e7] text-[#d43b4f]" },
+    c.needsAttention && { label: "Da seguire", cls: "bg-[rgba(201,138,30,0.16)] text-[#c98a1e]" },
+    c.pkg.expiring && { label: "In scadenza", cls: "bg-[rgba(106,90,224,0.16)] text-violet-strong" },
+    unpaid(c) && { label: "Pagamento mancante", cls: "bg-[rgba(212,59,79,0.14)] text-[#d43b4f]" },
   ].filter(Boolean) as { label: string; cls: string }[];
 
   return (
@@ -122,11 +122,11 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
         style={{ background: tone.bg }}
       >
         <div className="flex items-center justify-between">
-          <span className="rounded-full bg-white/90 px-[7px] py-[2.5px] text-[9.5px] leading-none font-semibold text-ink/85">{c.since}</span>
+          <span className="rounded-full bg-card/90 px-[7px] py-[2.5px] text-[9.5px] leading-none font-semibold text-ink/85">{c.since}</span>
           <EllipsisVertical size={13} className="text-ink/60" />
         </div>
         <div className="mt-[10px] flex items-center gap-[10px]">
-          <Avatar initials={c.initials} size={40} className="border-2 border-white" />
+          <ClientAvatar c={c} size={40} className="ring-2 ring-card" />
           <div className="min-w-0 leading-none">
             <p className="truncate text-[15px] font-bold">{c.name}</p>
             <p className="mt-[4px] truncate text-[11px]" style={{ color: tone.sub }}>
@@ -143,7 +143,7 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
           <span className="text-ink/60">
             Peso <b className="text-ink">{weight.toString().replace(".", ",")} kg</b>
           </span>
-          <span className="rounded-full bg-white px-[7px] py-[2.5px] leading-none">
+          <span className="rounded-full bg-card px-[7px] py-[2.5px] leading-none">
             <b>{percent}%</b> <span className="text-ink/70">obiettivo</span>
           </span>
         </div>
@@ -152,7 +152,7 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
         </div>
         <div className="mt-[9px] flex items-center justify-between text-[10px] text-ink/60">
           <span>Ultimo allenamento: {c.lastWorkout.toLowerCase()}</span>
-          <span className="rounded-full bg-white px-[7px] py-[2.5px] leading-none font-medium text-ink/80">{c.pkg.left}</span>
+          <span className="rounded-full bg-card px-[7px] py-[2.5px] leading-none font-medium text-ink/80">{c.pkg.left}</span>
         </div>
         <div className="mt-[8px] flex h-[18px] flex-wrap gap-[4px] overflow-hidden">
           {badges.map((b) => (

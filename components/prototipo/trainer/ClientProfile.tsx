@@ -26,14 +26,15 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { Avatar, IconCircle } from "@/components/ui/basics";
+import { IconCircle } from "@/components/ui/basics";
 import { Appear, CountUp, EASE_OUT, formatEuro, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, appointmentColors, Client, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./Chrome";
+import { ClientAvatar } from "./shared";
 
-const card = "rounded-[18px] bg-white";
+const card = "rounded-[18px] bg-card";
 const kg = (n: number) => n.toFixed(1).replace(".", ",");
 
 function Ring({ percent, color, track, size = 46 }: { percent: number; color: string; track: string; size?: number }) {
@@ -90,8 +91,8 @@ export function ClientProfile({ c }: { c: Client }) {
       <Appear i={1} className="min-h-0">
         <section className={`${card} flex h-full flex-col px-[16px] pt-[14px] pb-[14px]`}>
           <div className="flex items-center gap-[12px]">
-            <span className="grid size-[66px] shrink-0 place-items-center rounded-full border-2 bg-white p-[2px]" style={{ borderColor: tone.strong }}>
-              <Avatar initials={c.initials} size={58} />
+            <span className="grid size-[66px] shrink-0 place-items-center rounded-full border-2 bg-card p-[2px]" style={{ borderColor: tone.strong }}>
+              <ClientAvatar c={c} size={58} />
             </span>
             <div className="min-w-0 leading-none">
               <span className="rounded-full px-[7px] py-[2.5px] text-[9.5px] font-semibold" style={{ background: tone.bg }}>
@@ -158,7 +159,7 @@ export function ClientProfile({ c }: { c: Client }) {
                 playSound("confirm");
                 toast.success(`Seduta proposta a ${c.name.split(" ")[0]}`);
               }}
-              className="flex h-[36px] cursor-pointer items-center justify-center gap-[6px] rounded-full bg-[#131313] text-[12px] font-semibold text-white"
+              className="flex h-[36px] cursor-pointer items-center justify-center gap-[6px] rounded-full bg-contrast text-[12px] font-semibold text-on-contrast"
             >
               <CalendarPlus size={14} /> Fissa seduta
             </motion.button>
@@ -278,7 +279,7 @@ export function ClientProfile({ c }: { c: Client }) {
                         <b className="mt-[2px] block text-[12px] tabular-nums">{a.time}</b>
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold">{a.type}</span>
-                      {today && <span className="rounded-full bg-[#131313] px-[7px] py-[2.5px] text-[9px] font-bold text-white">oggi</span>}
+                      {today && <span className="rounded-full bg-contrast px-[7px] py-[2.5px] text-[9px] font-bold text-on-contrast">oggi</span>}
                       {past && <Check size={12} strokeWidth={3} />}
                     </div>
                   );
@@ -294,7 +295,7 @@ export function ClientProfile({ c }: { c: Client }) {
                   Pagamenti <Wallet size={13} className="text-ink/60" />
                 </h2>
                 {outstanding > 0 ? (
-                  <span className="rounded-full bg-[#ffe3e7] px-[8px] py-[3px] text-[10px] font-bold text-[#d43b4f]">Da incassare {formatEuro(outstanding)}</span>
+                  <span className="rounded-full bg-[rgba(212,59,79,0.14)] px-[8px] py-[3px] text-[10px] font-bold text-[#d43b4f]">Da incassare {formatEuro(outstanding)}</span>
                 ) : (
                   <span className="rounded-full bg-ok-soft px-[8px] py-[3px] text-[10px] font-bold text-ok">Tutto pagato</span>
                 )}
@@ -321,7 +322,7 @@ export function ClientProfile({ c }: { c: Client }) {
                           setPayments((ps) => ps.map((x, k) => (k === i ? { ...x, paid: true } : x)));
                           toast.success(`${formatEuro(p.amount)} segnati come incassati`);
                         }}
-                        className="cursor-pointer rounded-full bg-[#131313] px-[9px] py-[4px] text-[9.5px] font-bold text-white"
+                        className="cursor-pointer rounded-full bg-contrast px-[9px] py-[4px] text-[9.5px] font-bold text-on-contrast"
                       >
                         Segna pagato
                       </motion.button>
@@ -345,7 +346,7 @@ export function ClientProfile({ c }: { c: Client }) {
                     initial={{ opacity: 0, x: 8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 + i * 0.08 }}
-                    className={`rounded-[13px] rounded-br-[5px] px-[10px] py-[7px] text-[11px] ${/male|dolore/i.test(q) ? "bg-[#131411] text-white" : "bg-soft"}`}
+                    className={`rounded-[13px] rounded-br-[5px] px-[10px] py-[7px] text-[11px] ${/male|dolore/i.test(q) ? "bg-contrast text-on-contrast" : "bg-soft"}`}
                   >
                     {q}
                   </motion.p>
@@ -363,7 +364,7 @@ export function ClientProfile({ c }: { c: Client }) {
 export function ClientNotFound() {
   return (
     <main className="absolute inset-x-0 top-[90px] grid place-items-center pl-[80px]">
-      <div className="rounded-[18px] bg-white px-[28px] py-[24px] text-center">
+      <div className="rounded-[18px] bg-card px-[28px] py-[24px] text-center">
         <p className="text-[15px] font-bold">Cliente non trovato</p>
         <Link href={ROUTES.clienti} className="mt-[10px] inline-block text-[12px] font-semibold underline">
           Torna alla lista dei clienti

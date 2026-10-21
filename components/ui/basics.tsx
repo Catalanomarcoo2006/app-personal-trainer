@@ -9,10 +9,10 @@ import { playSound, SoundKind } from "@/libs/ui/sound";
 type Variant = "outline" | "soft" | "dark" | "white";
 
 const variants: Record<Variant, string> = {
-  outline: "bg-white border border-line text-ink/70",
+  outline: "bg-card border border-line text-ink/70",
   soft: "bg-soft text-ink/70",
-  dark: "bg-[#141414] text-white",
-  white: "bg-white text-ink/70",
+  dark: "bg-contrast text-on-contrast",
+  white: "bg-card text-ink/70",
 };
 
 // Bottone tondo con icona: si solleva al passaggio, si schiaccia al tocco e fa "pop".
@@ -57,7 +57,7 @@ export function IconCircle({
 
 // Pillola bianca piccola (date, contatori, badge).
 export function Pill({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <span className={`inline-flex items-center gap-[5px] rounded-full bg-white whitespace-nowrap ${className}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-[5px] rounded-full bg-card whitespace-nowrap ${className}`}>{children}</span>;
 }
 
 const avatarTones = [
@@ -138,4 +138,25 @@ export function useMounted() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return mounted;
+}
+
+// Interruttore on/off.
+export function Toggle({ on, onChange, label }: { on: boolean; onChange: (on: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={() => onChange(!on)}
+      className="relative h-[24px] w-[42px] shrink-0 cursor-pointer rounded-full transition-colors duration-300"
+      style={{ background: on ? "var(--trainer)" : "var(--color-line)" }}
+    >
+      <motion.span
+        className="absolute top-[3px] left-[3px] size-[18px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.2)]"
+        animate={{ x: on ? 18 : 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 32 }}
+      />
+    </button>
+  );
 }

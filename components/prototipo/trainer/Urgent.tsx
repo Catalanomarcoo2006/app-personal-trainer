@@ -4,17 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, ChevronRight, Clock, Package, TriangleAlert, Users, Wallet, X, type LucideIcon } from "lucide-react";
-import { Avatar } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { clientById, clients, urgent, UrgentKind } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./Chrome";
+import { ClientAvatar } from "./shared";
 
 const kinds: Record<UrgentKind, { icon: LucideIcon; color: string; bg: string; group: string }> = {
-  imminente: { icon: Clock, color: "#e0562b", bg: "#ffe9df", group: "Appuntamenti imminenti" },
-  pagamento: { icon: Wallet, color: "#b7791f", bg: "#fff3d6", group: "Pagamenti mancanti" },
-  dolore: { icon: TriangleAlert, color: "#d43b4f", bg: "#ffe3e7", group: "Segnalazioni" },
-  pacchetto: { icon: Package, color: "#6a5ae0", bg: "#ece9ff", group: "Pacchetti in scadenza" },
+  imminente: { icon: Clock, color: "#e0562b", bg: "rgba(224,86,43,0.14)", group: "Appuntamenti imminenti" },
+  pagamento: { icon: Wallet, color: "#c98a1e", bg: "rgba(201,138,30,0.16)", group: "Pagamenti mancanti" },
+  dolore: { icon: TriangleAlert, color: "#d43b4f", bg: "rgba(212,59,79,0.14)", group: "Segnalazioni" },
+  pacchetto: { icon: Package, color: "#6a5ae0", bg: "rgba(106,90,224,0.16)", group: "Pacchetti in scadenza" },
 };
 
 const order: UrgentKind[] = ["imminente", "pagamento", "dolore", "pacchetto"];
@@ -26,10 +26,10 @@ export function ClientsButton() {
       <motion.span
         whileHover={{ y: -1.5 }}
         whileTap={{ scale: 0.95 }}
-        className="flex h-[26px] items-center gap-[7px] rounded-full bg-[#131313] pr-[4px] pl-[12px] text-[12px] font-semibold text-white"
+        className="flex h-[26px] items-center gap-[7px] rounded-full bg-contrast pr-[4px] pl-[12px] text-[12px] font-semibold text-on-contrast"
       >
         <Users size={13} /> Clienti
-        <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-white px-[5px] text-[10px] font-bold text-ink">{clients.length}</span>
+        <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-on-contrast px-[5px] text-[10px] font-bold text-contrast">{clients.length}</span>
       </motion.span>
     </Link>
   );
@@ -59,7 +59,7 @@ export function UrgentBell() {
           playSound("tap");
           setOpen((o) => !o);
         }}
-        className="flex h-[26px] cursor-pointer items-center gap-[7px] rounded-full bg-white pr-[4px] pl-[11px] text-[11.5px] font-semibold"
+        className="flex h-[26px] cursor-pointer items-center gap-[7px] rounded-full bg-card pr-[4px] pl-[11px] text-[11.5px] font-semibold"
       >
         <motion.span
           className="grid origin-top"
@@ -86,7 +86,7 @@ export function UrgentBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.25, ease: EASE_OUT }}
-            className="absolute top-[34px] right-0 z-50 w-[360px] origin-top-right rounded-[20px] bg-white p-[14px] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+            className="absolute top-[34px] right-0 z-50 w-[360px] origin-top-right rounded-[20px] bg-card p-[14px] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
           >
             <div className="flex items-center justify-between">
               <p className="text-[14px] font-bold">Da fare subito</p>
@@ -119,7 +119,7 @@ export function UrgentBell() {
                                 <p className="text-[12px] font-bold">{u.title}</p>
                                 <p className="mt-[3px] truncate text-[10.5px] text-muted">{u.detail}</p>
                               </div>
-                              {c && <Avatar initials={c.initials} size={22} />}
+                              {c && <ClientAvatar c={c} size={24} />}
                               <ChevronRight size={14} className="text-ink/40 transition-transform group-hover:translate-x-[2px]" />
                             </Link>
                           </motion.div>
@@ -165,27 +165,27 @@ export function UrgentToast() {
           animate={{ opacity: 1, y: 0, x: "-50%" }}
           exit={{ opacity: 0, y: -40, x: "-50%" }}
           transition={{ type: "spring", stiffness: 300, damping: 24 }}
-          className="absolute top-[54px] left-1/2 z-40 flex h-[42px] items-center gap-[10px] rounded-full bg-[#131411] pr-[5px] pl-[6px] text-white shadow-[0_16px_40px_rgba(0,0,0,0.28)]"
+          className="absolute top-[47px] left-1/2 z-40 flex h-[40px] items-center gap-[10px] rounded-full bg-contrast pr-[5px] pl-[6px] text-on-contrast shadow-[0_16px_40px_rgba(0,0,0,0.28)]"
         >
-          <span className="relative grid size-[30px] place-items-center rounded-full bg-white/10">
+          <span className="relative grid size-[30px] place-items-center rounded-full bg-on-contrast/10">
             <motion.span
-              className="absolute inset-0 rounded-full border-2 border-[#ff6b2c]"
+              className="absolute inset-0 rounded-full border-2 border-[var(--trainer)]"
               animate={{ scale: [1, 1.35], opacity: [0.8, 0] }}
               transition={{ duration: 1.3, repeat: Infinity }}
             />
             <Clock size={14} />
           </span>
           <p className="text-[12px] whitespace-nowrap">
-            <b>{next.title}</b> <span className="text-white/65">· {c?.name}, ore 11:00</span>
+            <b>{next.title}</b> <span className="text-on-contrast/65">· {c?.name}, ore 11:00</span>
           </p>
           <Link
             href={ROUTES.cliente(next.clientId)}
             onClick={() => playSound("tap")}
-            className="rounded-full bg-white px-[12px] py-[7px] text-[11px] font-bold text-ink"
+            className="rounded-full bg-on-contrast px-[12px] py-[7px] text-[11px] font-bold text-contrast"
           >
             Apri scheda
           </Link>
-          <button type="button" aria-label="Chiudi" onClick={() => setShow(false)} className="grid size-[28px] cursor-pointer place-items-center rounded-full text-white/60 hover:text-white">
+          <button type="button" aria-label="Chiudi" onClick={() => setShow(false)} className="grid size-[28px] cursor-pointer place-items-center rounded-full text-on-contrast/60 hover:text-on-contrast">
             <X size={13} />
           </button>
         </motion.div>

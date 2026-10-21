@@ -65,7 +65,7 @@ export default function SoftAreaChart({
     </svg>
       {/* Il punto finale è HTML: nell'SVG deformato diventerebbe un'ellisse */}
       <motion.span
-        className="absolute size-[10px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[2.2px] bg-white"
+        className="absolute size-[10px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[2.2px] bg-card"
         style={{ left: `${(lx / w) * 100}%`, top: `${(ly / h) * 100}%`, borderColor: color }}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}

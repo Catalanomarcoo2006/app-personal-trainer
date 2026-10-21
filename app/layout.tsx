@@ -22,7 +22,9 @@ export const metadata = getSEOTags();
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html
-			lang="en"
+			lang="it"
+			translate="no"
+			suppressHydrationWarning
 			data-theme={config.colors.theme}
 			className={font.className}
 		>

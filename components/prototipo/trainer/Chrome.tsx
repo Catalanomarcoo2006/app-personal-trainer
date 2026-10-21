@@ -4,7 +4,6 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import toast from "react-hot-toast";
 import {
   ArrowLeft,
   Bell,
@@ -12,12 +11,13 @@ import {
   Dumbbell,
   FileText,
   House,
-  Mail,
   Maximize2,
   MessageSquare,
+  Moon,
   PanelTop,
   Search,
   Settings,
+  Sun,
   TextAlignStart,
   Users,
   Volume2,
@@ -27,18 +27,35 @@ import {
 } from "lucide-react";
 import { Avatar, FitCanvas } from "@/components/ui/basics";
 import { Appear } from "@/components/ui/motion";
+import { useAppearance } from "@/components/ui/appearance";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 
+const BASE = "/prototipo/trainer";
+
 export const ROUTES = {
-  oggi: "/prototipo/trainer",
-  clienti: "/prototipo/trainer/clienti",
-  cliente: (id: string) => `/prototipo/trainer/clienti/${id}`,
+  oggi: BASE,
+  clienti: `${BASE}/clienti`,
+  cliente: (id: string) => `${BASE}/clienti/${id}`,
+  messaggi: `${BASE}/messaggi`,
+  schede: `${BASE}/schede`,
+  calendario: `${BASE}/calendario`,
+  incassi: `${BASE}/incassi`,
+  impostazioni: `${BASE}/impostazioni`,
 };
+
+type Section = "Oggi" | "Messaggi" | "Clienti" | "Schede" | "Calendario" | "Incassi" | "Impostazioni";
+type NavItem = { label: Section; icon: LucideIcon; href: string };
 
 const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
 
-const notYet = (label: string) => toast(`${label}: arriva nelle prossime fasi`, { icon: "🛠️" });
+function useSection(): Section {
+  const path = usePathname();
+  const found = (["Messaggi", "Clienti", "Schede", "Calendario", "Incassi", "Impostazioni"] as const).find((s) =>
+    path.startsWith(ROUTES[s.toLowerCase() as "messaggi"]),
+  );
+  return found ?? "Oggi";
+}
 
 function SquareButton({ icon: Icon, label, size = 16 }: { icon: LucideIcon; label: string; size?: number }) {
   return (
@@ -47,25 +64,50 @@ function SquareButton({ icon: Icon, label, size = 16 }: { icon: LucideIcon; labe
       aria-label={label}
       {...tap}
       onClick={() => playSound("tap")}
-      className="grid size-[33px] cursor-pointer place-items-center rounded-[10px] bg-white text-ink"
+      className="grid size-[33px] cursor-pointer place-items-center rounded-[10px] bg-card text-ink"
     >
       <Icon size={size} strokeWidth={2} />
     </motion.button>
   );
 }
 
-type NavItem = { label: string; icon: LucideIcon; href?: string };
-
 const navItems: NavItem[] = [
   { label: "Oggi", icon: House, href: ROUTES.oggi },
   { label: "Clienti", icon: Users, href: ROUTES.clienti },
-  { label: "Incassi", icon: FileText },
-  { label: "Impostazioni", icon: Settings },
+  { label: "Incassi", icon: FileText, href: ROUTES.incassi },
+  { label: "Impostazioni", icon: Settings, href: ROUTES.impostazioni },
 ];
 
-function useSection() {
-  const path = usePathname();
-  return path.startsWith(ROUTES.clienti) ? "Clienti" : "Oggi";
+// Interruttore del tema: il nuovo tema parte dal punto del clic.
+export function ThemeButton({ size = 15 }: { size?: number }) {
+  const { theme, setTheme } = useAppearance();
+  const dark = theme === "dark";
+  return (
+    <motion.button
+      type="button"
+      aria-label={dark ? "Tema chiaro" : "Tema scuro"}
+      title={dark ? "Tema chiaro" : "Tema scuro"}
+      {...tap}
+      onClick={(e) => {
+        playSound("tap");
+        setTheme(dark ? "light" : "dark", { x: e.clientX, y: e.clientY });
+      }}
+      className="relative grid cursor-pointer place-items-center"
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={theme}
+          initial={{ rotate: -90, scale: 0.4, opacity: 0 }}
+          animate={{ rotate: 0, scale: 1, opacity: 1 }}
+          exit={{ rotate: 90, scale: 0.4, opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="grid"
+        >
+          {dark ? <Sun size={size} strokeWidth={1.9} /> : <Moon size={size} strokeWidth={1.9} />}
+        </motion.span>
+      </AnimatePresence>
+    </motion.button>
+  );
 }
 
 export function TopBar() {
@@ -79,7 +121,7 @@ export function TopBar() {
         <SquareButton icon={PanelTop} label="Pannelli" size={14} />
       </div>
 
-      <nav className="flex h-[35px] w-[395px] items-center justify-between rounded-full bg-white px-[4px]">
+      <nav className="flex h-[35px] w-[395px] items-center justify-between rounded-full bg-card px-[4px]">
         {navItems.map(({ label, icon: Icon, href }) => {
           const isActive = label === section;
           return (
@@ -89,14 +131,13 @@ export function TopBar() {
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 playSound("tap");
-                if (href) router.push(href);
-                else notYet(label);
+                router.push(href);
               }}
               className={`relative flex h-[27px] cursor-pointer items-center gap-[6px] rounded-full px-[14px] text-[12.5px] font-medium transition-colors duration-300 ${
-                isActive ? "text-white" : "text-ink/75 hover:text-ink"
+                isActive ? "text-on-contrast" : "text-ink/75 hover:text-ink"
               }`}
             >
-              {isActive && <span className="absolute inset-0 rounded-full bg-[#101214]" />}
+              {isActive && <span className="absolute inset-0 rounded-full bg-contrast" />}
               <Icon size={14} strokeWidth={1.9} className="relative" />
               <span className="relative">{label}</span>
             </motion.button>
@@ -104,20 +145,22 @@ export function TopBar() {
         })}
       </nav>
 
-      <div className="flex h-[35px] w-[147px] items-center justify-between rounded-full bg-white pr-[4px] pl-[14px] text-ink">
-        {[Mail, Bell, Search].map((Icon, i) => (
-          <motion.button key={i} type="button" {...tap} onClick={() => playSound("tap")} className="relative cursor-pointer" aria-label={["Email", "Avvisi", "Cerca"][i]}>
-            <Icon size={15} strokeWidth={1.9} />
-            {i === 1 && (
-              <motion.span
-                className="absolute -top-[2px] right-[0px] size-[5px] rounded-full bg-[#e5484d]"
-                animate={{ scale: [1, 1.5, 1] }}
-                transition={{ duration: 1.8, repeat: Infinity }}
-              />
-            )}
-          </motion.button>
-        ))}
-        <Avatar initials={trainer.initials} src={trainer.photo} size={27} />
+      <div className="flex h-[35px] w-[147px] items-center justify-between rounded-full bg-card pr-[4px] pl-[14px] text-ink">
+        <ThemeButton />
+        <motion.button type="button" {...tap} onClick={() => playSound("tap")} className="relative cursor-pointer" aria-label="Avvisi">
+          <Bell size={15} strokeWidth={1.9} />
+          <motion.span
+            className="absolute -top-[2px] right-[0px] size-[5px] rounded-full bg-[#e5484d]"
+            animate={{ scale: [1, 1.5, 1] }}
+            transition={{ duration: 1.8, repeat: Infinity }}
+          />
+        </motion.button>
+        <motion.button type="button" {...tap} onClick={() => playSound("tap")} className="cursor-pointer" aria-label="Cerca">
+          <Search size={15} strokeWidth={1.9} />
+        </motion.button>
+        <Link href={ROUTES.impostazioni} onClick={() => playSound("tap")} aria-label="Il tuo profilo">
+          <Avatar initials={trainer.initials} src={trainer.photo} size={27} />
+        </Link>
       </div>
     </div>
   );
@@ -135,7 +178,7 @@ export function TitleRow({ title, back, left, right }: { title: string; back?: s
             </motion.span>
           </Link>
         )}
-        <h1 className="text-[17px] font-bold tracking-[-0.02em] text-[#1f2421]">{title}</h1>
+        <h1 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{title}</h1>
         {left}
       </div>
       <div className="flex items-center gap-[8px]">{right}</div>
@@ -145,12 +188,12 @@ export function TitleRow({ title, back, left, right }: { title: string; back?: s
 
 const sideItems: NavItem[] = [
   { label: "Oggi", icon: House, href: ROUTES.oggi },
-  { label: "Messaggi", icon: MessageSquare },
+  { label: "Messaggi", icon: MessageSquare, href: ROUTES.messaggi },
   { label: "Clienti", icon: Users, href: ROUTES.clienti },
-  { label: "Schede", icon: Dumbbell },
-  { label: "Calendario", icon: CalendarDays },
-  { label: "Incassi", icon: Wallet },
-  { label: "Impostazioni", icon: Settings },
+  { label: "Schede", icon: Dumbbell, href: ROUTES.schede },
+  { label: "Calendario", icon: CalendarDays, href: ROUTES.calendario },
+  { label: "Incassi", icon: Wallet, href: ROUTES.incassi },
+  { label: "Impostazioni", icon: Settings, href: ROUTES.impostazioni },
 ];
 
 export function Sidebar() {
@@ -175,8 +218,7 @@ export function Sidebar() {
               whileTap={{ scale: 0.88 }}
               onClick={() => {
                 playSound("tap");
-                if (href) router.push(href);
-                else notYet(label);
+                router.push(href);
               }}
               className={`grid size-[34px] cursor-pointer place-items-center rounded-full transition-colors duration-200 ${
                 isActive ? "bg-[#4c4c4e] text-white" : hover === label ? "bg-[#2c2c2f] text-white" : "text-[#a9a9ad]"
@@ -223,7 +265,7 @@ export function SoundPill() {
         setSoundEnabled(next);
         if (next) playSound("confirm");
       }}
-      className="absolute right-[14px] bottom-[12px] z-30 flex h-[36px] cursor-pointer items-center gap-[10px] rounded-full bg-[#1d1f22] pr-[6px] pl-[14px] text-[12px] font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
+      className="absolute right-[14px] bottom-[12px] z-30 flex h-[36px] cursor-pointer items-center gap-[10px] rounded-full bg-pill pr-[6px] pl-[14px] text-[12px] font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
     >
       <span className={`size-[7px] rounded-full ${on ? "bg-[#3ddc84]" : "bg-[#6b6b70]"}`} />
       {on ? "Suoni attivi" : "Suoni spenti"}

@@ -1,10 +1,10 @@
 "use client";
 
+import { CalendarDays } from "lucide-react";
 import { Appear } from "@/components/ui/motion";
 import { Pill } from "@/components/ui/basics";
-import { CalendarDays } from "lucide-react";
 import { TrainerShell } from "@/components/prototipo/trainer/Chrome";
-import { MessagesCard, PathCards, PathHeader, ProfileCard } from "@/components/prototipo/trainer/Cards";
+import { ClientsHeader, MessagesCard, PathCards, ProfileCard } from "@/components/prototipo/trainer/Cards";
 import { RevenueCard } from "@/components/prototipo/trainer/Revenue";
 import { AgendaCard } from "@/components/prototipo/trainer/Agenda";
 import { ClientsButton, UrgentBell, UrgentToast } from "@/components/prototipo/trainer/Urgent";
@@ -27,7 +27,7 @@ export default function PrototipoTrainer() {
     >
       <UrgentToast />
       <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">
-        <div className="flex min-h-0 flex-col gap-[9px]">
+        <div className="flex min-h-0 flex-col gap-[10px]">
           <Appear i={1}>
             <ProfileCard />
           </Appear>
@@ -38,10 +38,10 @@ export default function PrototipoTrainer() {
 
         <div className="flex min-h-0 flex-col">
           <Appear i={1}>
-            <PathHeader />
+            <ClientsHeader />
           </Appear>
           <PathCards />
-          <div className="mt-[9px] grid min-h-0 flex-1 grid-cols-[1.12fr_1fr] gap-[10px]">
+          <div className="mt-[10px] grid min-h-0 flex-1 grid-cols-[1.25fr_1fr] gap-[10px]">
             <Appear i={4} className="flex min-h-0">
               <AgendaCard />
             </Appear>
