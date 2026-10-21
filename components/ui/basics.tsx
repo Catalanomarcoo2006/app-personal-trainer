@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useLayoutEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "motion/react";
 import type { LucideIcon } from "lucide-react";
 import { playSound, SoundKind } from "@/libs/ui/sound";
@@ -67,8 +68,33 @@ const avatarTones = [
   ["#c9b6f0", "#6a4fc8"],
 ];
 
-// Avatar con le iniziali (nel prodotto vero: la foto caricata).
-export function Avatar({ initials, size = 24, tone, className = "" }: { initials: string; size?: number; tone?: number; className?: string }) {
+// Avatar: la foto se c'è, altrimenti le iniziali.
+export function Avatar({
+  initials,
+  size = 24,
+  tone,
+  src,
+  className = "",
+}: {
+  initials: string;
+  size?: number;
+  tone?: number;
+  src?: string;
+  className?: string;
+}) {
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={initials}
+        width={size}
+        height={size}
+        loading="eager"
+        className={`shrink-0 rounded-full object-cover ${className}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   const [a, b] = avatarTones[tone ?? (initials.charCodeAt(0) + initials.charCodeAt(initials.length - 1)) % avatarTones.length];
   return (
     <span

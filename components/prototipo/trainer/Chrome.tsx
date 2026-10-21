@@ -102,7 +102,7 @@ export function TopBar() {
             )}
           </motion.button>
         ))}
-        <Avatar initials={trainer.initials} size={27} tone={0} />
+        <Avatar initials={trainer.initials} src={trainer.photo} size={27} />
       </div>
     </div>
   );

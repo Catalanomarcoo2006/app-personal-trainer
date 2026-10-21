@@ -35,7 +35,7 @@ export function ProfileCard() {
     <section className={`${card} h-[153px] px-[16px] pt-[8px] pb-[9px]`}>
       <div className="flex items-center">
         <span className="grid size-[46px] shrink-0 place-items-center rounded-full border-[2px] border-[#f3a54a] bg-white p-[2px]">
-          <Avatar initials={trainer.initials} size={38} tone={0} />
+          <Avatar initials={trainer.initials} src={trainer.photo} size={38} />
         </span>
         <div className="ml-[9px] leading-none">
           <p className="text-[15px] font-bold tracking-[-0.01em]">{trainer.name}</p>

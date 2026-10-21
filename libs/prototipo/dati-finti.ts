@@ -4,6 +4,7 @@ export const trainer = {
   name: "Marco Rossi",
   role: "Personal trainer",
   initials: "MR",
+  photo: "/prototipo/trainer-foto.jpg",
   color: "#FF6B2C",
   today: "21 Ottobre",
   month: "Ottobre 2026",
