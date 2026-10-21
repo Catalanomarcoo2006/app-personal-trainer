@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App personal trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ECEDEF; --paper:#FFFFFF; --soft:#F5F6F7; --ink:#111214; --muted:#6B6F76; --line:#E3E5E8;
+    --brand:#FF5A1F; --brand-soft:#FFE9E0; --ok:#1F9D63; --ok-soft:#DFF5EA; --warn:#C98A00; --warn-soft:#FFF3D6; --blue:#2563EB; --blue-soft:#E3ECFD;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.45}
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 20px 60px}
+  .gt{font-family:"Space Grotesk",Inter,sans-serif}
+  h1{font-family:"Space Grotesk";font-size:30px;margin:0 0 6px}
+  .lead{color:var(--muted);max-width:780px;margin:0 0 24px}
+  .step{display:flex;gap:14px;align-items:baseline;margin:40px 0 14px}
+  .step .n{font-family:"Space Grotesk";font-size:28px;font-weight:700;color:var(--brand)}
+  .step h2{font-family:"Space Grotesk";font-size:21px;margin:0}
+  .step p{margin:2px 0 0;color:var(--muted)}
+
+  .win{background:var(--paper);border-radius:14px;box-shadow:0 20px 50px -24px rgba(0,0,0,.35);overflow:hidden;border:1px solid var(--line)}
+  .bar{height:30px;background:#E4E6E9;display:flex;align-items:center;gap:6px;padding:0 12px}
+  .bar i{width:10px;height:10px;border-radius:50%;background:#C9CCD1;display:block}
+  .bar .url{margin-left:14px;font-size:11px;color:var(--muted);background:var(--paper);padding:3px 10px;border-radius:6px}
+  .app{display:grid;grid-template-columns:210px 1fr;min-height:540px}
+  .side{background:var(--ink);color:#fff;padding:20px 14px}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+  .logo{width:34px;height:34px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-family:"Space Grotesk";font-weight:700}
+  .brand b{display:block;font-size:13px}.brand span{font-size:11px;opacity:.6}
+  .nav a{display:flex;justify-content:space-between;padding:9px 10px;border-radius:8px;color:#fff;opacity:.75;margin-bottom:2px}
+  .nav a.on{background:rgba(255,255,255,.1);opacity:1;font-weight:600}
+  .nav em{font-style:normal;background:var(--brand);border-radius:9px;padding:0 7px;font-size:11px}
+  .main{padding:22px 26px;background:var(--soft)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .top h3{font-family:"Space Grotesk";font-size:24px;margin:0}
+  .btn{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:600;font-size:13px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .kpi small{color:var(--muted);display:block}
+  .kpi b{font-family:"Space Grotesk";font-size:24px}
+  .kpi .d{font-size:12px;color:var(--ok)}
+  .cols{display:grid;grid-template-columns:1fr 1.3fr;gap:14px}
+  .box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .box h4{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .slot{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .slot:last-child{border:0}
+  .time{font-family:"Space Grotesk";font-weight:700;width:46px}
+  .av{width:30px;height:30px;border-radius:50%;background-size:cover;background-position:center;flex:none}
+  .slot small{color:var(--muted);display:block}
+  .tag{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+  .t-w{background:var(--warn-soft);color:var(--warn)}.t-b{background:var(--brand-soft);color:var(--brand)}.t-o{background:var(--ok-soft);color:var(--ok)}.t-bl{background:var(--blue-soft);color:var(--blue)}
+  .crow{display:grid;grid-template-columns:30px 1.4fr 1fr 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .crow:last-child{border:0}
+  .mini{height:5px;background:var(--line);border-radius:9px;overflow:hidden}.mini i{display:block;height:100%;background:var(--brand)}
+  .crow small{color:var(--muted)}
+
+  /* scheda cliente */
+  .head{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+  .head .av{width:62px;height:62px}
+  .head h3{font-family:"Space Grotesk";font-size:24px;margin:0}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .tabs span{padding:9px 12px;color:var(--muted);font-weight:500}
+  .tabs span.on{color:var(--ink);border-bottom:2px solid var(--brand)}
+  .g3{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}
+  .ex{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .ex:last-child{border:0}
+  .thumb{width:44px;height:44px;border-radius:9px;background-size:cover;background-position:center}
+  .ex small{color:var(--muted);display:block}
+  .chip{background:var(--soft);border-radius:7px;padding:3px 8px;font-family:"Space Grotesk";font-weight:700;font-size:12px}
+  svg text{font-family:Inter;font-size:10px;fill:var(--muted)}
+
+  /* telefoni */
+  .phones{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .phone{width:290px;background:#0B0B0C;border-radius:40px;padding:10px;box-shadow:0 25px 60px -25px rgba(0,0,0,.55);flex:none}
+  .screen{background:var(--soft);border-radius:31px;overflow:hidden;height:600px;overflow-y:auto;position:relative}
+  .ph-top{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 6px}
+  .ph-top .logo{width:28px;height:28px;font-size:13px;border-radius:8px}
+  .hi{padding:2px 16px 10px}
+  .hi b{font-family:"Space Grotesk";font-size:20px;display:block}
+  .hi small{color:var(--muted)}
+  .card{background:var(--paper);border-radius:18px;margin:0 12px 10px;padding:14px}
+  .today{background:var(--ink);color:#fff}
+  .today small{opacity:.65}
+  .today b{font-family:"Space Grotesk";font-size:19px;display:block;margin:2px 0 10px}
+  .go{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:10px;width:100%;font-weight:700}
+  .goal{display:flex;gap:12px;align-items:center}
+  .ring{width:64px;height:64px;flex:none}
+  .goal b{font-family:"Space Grotesk";font-size:16px;display:block}
+  .habits{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px 10px}
+  .habit{background:var(--paper);border-radius:16px;padding:12px}
+  .habit b{font-family:"Space Grotesk";font-size:18px}
+  .habit small{color:var(--muted);display:block}
+  .plus{float:right;width:26px;height:26px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700}
+  .tabbar{position:sticky;bottom:0;background:var(--paper);display:flex;justify-content:space-around;padding:10px 0 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .tabbar span.on{color:var(--brand);font-weight:700}
+  .chat{padding:6px 12px}
+  .msg{max-width:84%;padding:9px 12px;border-radius:16px;margin:6px 0;font-size:13px}
+  .me{background:var(--brand);color:#fff;margin-left:auto;border-bottom-right-radius:5px}
+  .bot{background:var(--paper);border-bottom-left-radius:5px}
+  .sugg{display:flex;gap:6px;flex-wrap:wrap;padding:4px 12px}
+  .sugg span{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:11px}
+  .note{font-size:13px;color:var(--muted);max-width:330px}
+  .note b{color:var(--ink)}
+  @media (max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.kpis{grid-template-columns:1fr 1fr}.cols,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>L'app del personal trainer: come me la immagino</h1>
+  <p class="lead">Stile sportivo ma "premium", come le app di fitness che i clienti già conoscono: pulito, numeri grandi, un solo colore forte. <b>L'arancione è il colore del trainer</b>: ognuno mette il suo, insieme al logo. Nomi, foto e cifre sono finti, per la demo.</p>
+
+  <!-- 1 HOME TRAINER -->
+  <div class="step"><span class="n">1</span><div><h2>La home del trainer: "Oggi"</h2><p>Apre il computer e in 5 secondi sa chi allena oggi, chi ha bisogno di attenzione e quanto ha incassato.</p></div></div>
+  <div class="win">
+    <div class="bar"><i></i><i></i><i></i><span class="url">nomeprodotto.it/luca-fit/oggi</span></div>
+    <div class="app">
+      <div class="side">
+        <div class="brand"><div class="logo">LF</div><div><b>Luca Fit</b><span>Personal trainer · Treviso</span></div></div>
+        <nav class="nav"><a class="on">Oggi</a><a>Clienti <em>3</em></a><a>Calendario</a><a>Schede</a><a>Incassi</a><a>Impostazioni</a></nav>
+      </div>
+      <div class="main">
+        <div class="top"><h3>Ciao Luca, martedì 21 ottobre</h3><button class="btn">+ Nuovo cliente</button></div>
+        <div class="kpis">
+          <div class="kpi"><small>Incassato a ottobre</small><b>2.340 €</b><div class="d">+12% su settembre</div></div>
+          <div class="kpi"><small>Clienti attivi</small><b>24</b><div class="d">+2 questo mese</div></div>
+          <div class="kpi"><small>Allenamenti oggi</small><b>5</b><div style="font-size:12px;color:var(--muted)">prossimo alle 9:30</div></div>
+          <div class="kpi"><small>Pacchetti in scadenza</small><b style="color:var(--brand)">3</b><div style="font-size:12px;color:var(--muted)">da rinnovare</div></div>
+        </div>
+        <div class="cols">
+          <div class="box"><h4>Agenda di oggi</h4>
+            <div class="slot"><span class="time">09:30</span><span class="av" style="background-image:url(https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=60)"></span><div><b>Sara Conti</b><small>Forza · Scheda B</small></div><span class="tag t-bl">in palestra</span></div>
+            <div class="slot"><span class="time">11:00</span><span class="av" style="background-image:url(https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=60)"></span><div><b>Marco Galli</b><small>Dimagrimento · Scheda A</small></div><span class="tag t-w">ultima lezione</span></div>
+            <div class="slot"><span class="time">18:00</span><span class="av" style="background-image:url(https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&q=60)"></span><div><b>Elena Rossi</b><small>Tonificazione · online</small></div><span class="tag t-o">-4,2 kg</span></div>
+            <div class="slot"><span class="time">19:00</span><span class="av" style="background-image:url(https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&q=60)"></span><div><b>Davide Neri</b><small>Preparazione gara</small></div><span class="tag t-b">pagamento</span></div>
+          </div>
+          <div class="box"><h4>Clienti che hanno bisogno di te</h4>
+            <div class="crow"><span class="av" style="background-image:url(https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&q=60)"></span><div><b>Marco Galli</b><br><small>Pacchetto 10 lezioni</small></div><div><div class="mini"><i style="width:90%"></i></div><small>9 / 10 usate</small></div><small>Proporgli il rinnovo</small><span class="tag t-w">scade</span></div>
+            <div class="crow"><span class="av" style="background-image:url(https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&q=60)"></span><div><b>Giulia Ferri</b><br><small>Obiettivo -6 kg</small></div><div><div class="mini"><i style="width:20%;background:var(--muted)"></i></div><small>non si allena da 9 gg</small></div><small>Mandale un messaggio</small><span class="tag t-b">ferma</span></div>
+            <div class="crow"><span class="av" style="background-image:url(https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&q=60)"></span><div><b>Davide Neri</b><br><small>Mensile 160 €</small></div><div><div class="mini"><i style="width:100%;background:var(--warn)"></i></div><small>scaduto il 15 ott</small></div><small>Ricorda il pagamento</small><span class="tag t-w">da pagare</span></div>
+            <div class="crow"><span class="av" style="background-image:url(https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&q=60)"></span><div><b>Elena Rossi</b><br><small>Obiettivo -6 kg</small></div><div><div class="mini"><i style="width:70%;background:var(--ok)"></i></div><small>-4,2 kg su 6</small></div><small>Complimentati!</small><span class="tag t-o">in forma</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 SCHEDA CLIENTE -->
+  <div class="step"><span class="n">2</span><div><h2>La scheda del cliente</h2><p>Tutto il percorso di una persona: progressi, scheda di allenamento, pacchetto, documenti e domande fatte all'assistente.</p></div></div>
+  <div class="win">
+    <div class="bar"><i></i><i></i><i></i><span class="url">nomeprodotto.it/luca-fit/clienti/elena-rossi</span></div>
+    <div class="app">
+      <div class="side">
+        <div class="brand"><div class="logo">LF</div><div><b>Luca Fit</b><span>Personal trainer · Treviso</span></div></div>
+        <nav class="nav"><a>Oggi</a><a class="on">Clienti <em>3</em></a><a>Calendario</a><a>Schede</a><a>Incassi</a><a>Impostazioni</a></nav>
+      </div>
+      <div class="main">
+        <div class="head"><span class="av" style="background-image:url(https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=160&q=60)"></span><div><h3>Elena Rossi</h3><span style="color:var(--muted)">34 anni · obiettivo: -6 kg entro marzo · cliente da agosto</span></div><span class="tag t-o" style="margin-left:auto">Pacchetto 20 lezioni · 12 rimaste</span></div>
+        <div class="tabs"><span class="on">Progressi</span><span>Scheda</span><span>Pacchetti</span><span>Documenti</span><span>Assistente</span></div>
+        <div class="g3">
+          <div class="box"><h4>Peso · ultimi 3 mesi</h4>
+            <svg viewBox="0 0 420 170" width="100%">
+              <line x1="30" y1="20" x2="410" y2="20" stroke="#E3E5E8"/><line x1="30" y1="70" x2="410" y2="70" stroke="#E3E5E8"/><line x1="30" y1="120" x2="410" y2="120" stroke="#E3E5E8"/>
+              <text x="0" y="24">72</text><text x="0" y="74">70</text><text x="0" y="124">68</text>
+              <line x1="30" y1="95" x2="410" y2="95" stroke="#1F9D63" stroke-dasharray="4 4"/><text x="352" y="90" style="fill:#1F9D63">obiettivo 66</text>
+              <polyline fill="none" stroke="#FF5A1F" stroke-width="3" stroke-linejoin="round" points="30,10 70,18 110,26 150,30 190,45 230,52 270,60 310,72 350,78 390,82"/>
+              <circle cx="390" cy="82" r="5" fill="#FF5A1F"/>
+              <text x="30" y="160">ago</text><text x="190" y="160">set</text><text x="370" y="160">ott</text>
+            </svg>
+            <div style="display:flex;gap:18px;margin-top:4px"><div><small style="color:var(--muted)">Partenza</small><br><b class="gt">72,4 kg</b></div><div><small style="color:var(--muted)">Oggi</small><br><b class="gt">68,2 kg</b></div><div><small style="color:var(--muted)">Vita</small><br><b class="gt">-5 cm</b></div><div><small style="color:var(--muted)">Allenamenti</small><br><b class="gt">31</b></div></div>
+          </div>
+          <div class="box"><h4>Scheda attuale · Tonificazione A</h4>
+            <div class="ex"><span class="thumb" style="background-image:url(https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=100&q=60)"></span><div><b>Squat con bilanciere</b><small>recupero 90"</small></div><span class="chip">4×10 · 40 kg</span></div>
+            <div class="ex"><span class="thumb" style="background-image:url(https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=100&q=60)"></span><div><b>Affondi alternati</b><small>recupero 60"</small></div><span class="chip">3×12</span></div>
+            <div class="ex"><span class="thumb" style="background-image:url(https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=100&q=60)"></span><div><b>Lat machine</b><small>recupero 75"</small></div><span class="chip">4×10 · 30 kg</span></div>
+            <div class="ex"><span class="thumb" style="background-image:url(https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=100&q=60)"></span><div><b>Plank</b><small>recupero 45"</small></div><span class="chip">3×45"</span></div>
+            <div style="margin-top:10px;font-size:12px;color:var(--muted)">💬 Ultima domanda all'assistente: <i>"Posso fare gli affondi se mi fa un po' male il ginocchio?"</i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 APP CLIENTE -->
+  <div class="step"><span class="n">3</span><div><h2>L'app del cliente, sul telefono</h2><p>Con il logo e il colore del trainer. Si installa dal browser sulla schermata home, come un'app vera (senza passare dagli store).</p></div></div>
+  <div class="phones">
+    <div class="phone"><div class="screen">
+      <div class="ph-top"><div class="logo">LF</div><span style="font-size:12px;color:var(--muted)">mar 21 ott</span></div>
+      <div class="hi"><b>Ciao Elena 💪</b><small>Ti mancano 2,2 kg all'obiettivo</small></div>
+      <div class="card today"><small>Allenamento di oggi · 18:00 con Luca</small><b>Tonificazione A · 4 esercizi</b><button class="go">Inizia allenamento</button></div>
+      <div class="card"><div class="goal">
+        <svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#E3E5E8" stroke-width="8"/><circle cx="32" cy="32" r="26" fill="none" stroke="#FF5A1F" stroke-width="8" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="49" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" style="font-family:'Space Grotesk';font-size:14px;font-weight:700;fill:#111214">70%</text></svg>
+        <div><small style="color:var(--muted)">Obiettivo</small><b>-6 kg entro marzo</b><small style="color:var(--ok)">-4,2 kg finora · sei in anticipo</small></div></div></div>
+      <div class="habits">
+        <div class="habit"><span class="plus">+</span><small>Acqua</small><b>1,5 / 2 L</b></div>
+        <div class="habit"><span class="plus">+</span><small>Passi</small><b>7.240</b></div>
+        <div class="habit"><small>Peso</small><b>68,2 kg</b></div>
+        <div class="habit"><small>Lezioni rimaste</small><b>12</b></div>
+      </div>
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:var(--muted)">I miei documenti</small><br><b>Dieta · dott.ssa Bianchi.pdf</b></div><span>›</span></div>
+      <div class="tabbar"><span class="on">Oggi</span><span>Progressi</span><span>Assistente</span><span>Documenti</span></div>
+    </div></div>
+
+    <div class="phone"><div class="screen">
+      <div class="ph-top"><div class="logo">LF</div><b style="font-size:13px">Assistente di Luca Fit</b><span></span></div>
+      <div class="chat">
+        <div class="msg bot">Ciao Elena! Sono l'assistente di Luca. Conosco la tua scheda e i tuoi obiettivi: chiedimi pure 🙂</div>
+        <div class="msg me">Posso fare gli affondi se mi fa un po' male il ginocchio?</div>
+        <div class="msg bot">Se il dolore è leggero, oggi sostituisci gli affondi con il <b>ponte glutei</b> (3×15): lavora gli stessi muscoli senza caricare il ginocchio. Se il dolore continua o aumenta, <b>fermati e dillo a Luca</b> prima del prossimo allenamento. Gliel'ho segnalato io ✅</div>
+        <div class="msg me">Oggi ho poco tempo, posso accorciare?</div>
+        <div class="msg bot">Sì: fai squat, lat machine e plank, 3 serie invece di 4. Sono circa 25 minuti. Meglio un allenamento corto che saltarlo! 💪</div>
+      </div>
+      <div class="sugg"><span>Cosa mangio prima dell'allenamento?</span><span>Come miglioro lo squat?</span></div>
+      <div class="tabbar" style="position:absolute;left:0;right:0"><span>Oggi</span><span>Progressi</span><span class="on">Assistente</span><span>Documenti</span></div>
+    </div></div>
+
+    <div class="note">
+      <p><b>Cosa vende questo prodotto, nel video:</b> il trainer che apre "Oggi" e sa subito chi rinnovare (= soldi), e il cliente che chiede all'assistente e riceve una risposta personalizzata sulla <i>sua</i> scheda.</p>
+      <p><b>L'assistente</b> risponde sapendo scheda, obiettivo e progressi del cliente. Se c'è un dolore, consiglia un'alternativa prudente e <b>avvisa il trainer</b>: il trainer resta il capo, l'assistente lo aiuta.</p>
+      <p><b>La dieta</b> è solo un PDF del nutrizionista, da consultare: nessuna prescrizione.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
