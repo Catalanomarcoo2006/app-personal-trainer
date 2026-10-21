@@ -78,9 +78,10 @@ export function WeekCalendar() {
           {week.map((d, i) => (
             <div
               key={d.n}
-              className={`flex items-center justify-center gap-[8px] rounded-[12px] py-[8px] ${i === TODAY_INDEX ? "bg-contrast text-on-contrast" : "bg-soft"}`}
+              className={`flex items-center justify-center gap-[8px] rounded-[12px] border py-[8px] ${i === TODAY_INDEX ? "" : "border-transparent bg-soft"}`}
+              style={i === TODAY_INDEX ? { background: "color-mix(in srgb, var(--trainer) 13%, var(--color-card))", borderColor: "color-mix(in srgb, var(--trainer) 35%, transparent)" } : undefined}
             >
-              <span className={`text-[11px] ${i === TODAY_INDEX ? "opacity-70" : "text-muted"}`}>{d.long.slice(0, 3)}</span>
+              <span className="text-[11px] text-muted">{d.long.slice(0, 3)}</span>
               <span className="text-[15px] font-bold">{d.n}</span>
               {agenda[i].length > 0 && (
                 <span className="grid size-[17px] place-items-center rounded-full text-[9.5px] font-bold text-white" style={{ background: "var(--trainer)" }}>

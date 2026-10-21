@@ -342,7 +342,7 @@ export function ClientProfile({ c }: { c: Client }) {
                     initial={{ opacity: 0, x: 8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 + i * 0.08 }}
-                    className={`rounded-[13px] rounded-br-[5px] px-[10px] py-[7px] text-[11px] ${/male|dolore/i.test(q) ? "bg-contrast text-on-contrast" : "bg-soft"}`}
+                    className={`rounded-[13px] rounded-br-[5px] px-[10px] py-[7px] text-[11px] ${/male|dolore/i.test(q) ? "border border-[rgba(212,59,79,0.22)] bg-[rgba(212,59,79,0.07)]" : "bg-soft"}`}
                   >
                     {q}
                   </motion.p>

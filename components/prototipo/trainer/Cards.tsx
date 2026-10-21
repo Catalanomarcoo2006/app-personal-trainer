@@ -138,7 +138,7 @@ export function MessagesCard() {
               <Link
                 href={ROUTES.messaggi}
                 onClick={() => playSound("tap")}
-                className={`flex items-center gap-[10px] rounded-[14px] px-[10px] py-[10px] ${a.urgent ? "bg-contrast text-on-contrast shadow-[0_10px_24px_rgba(0,0,0,0.18)]" : "border border-line"}`}
+                className={`flex items-center gap-[10px] rounded-[14px] border px-[10px] py-[10px] ${a.urgent ? "border-[rgba(212,59,79,0.22)] bg-[rgba(212,59,79,0.07)]" : "border-line"}`}
               >
                 <ClientAvatar c={c} size={32} />
                 <div className="min-w-0 flex-1 leading-snug">
@@ -146,7 +146,7 @@ export function MessagesCard() {
                     {c.name}
                     {a.urgent && <span className="rounded-full bg-[#e5484d] px-[6px] py-[1px] text-[9px] font-bold text-white">dolore</span>}
                   </p>
-                  <p className={`truncate text-[10.5px] ${a.urgent ? "text-on-contrast/70" : "text-muted"}`}>{a.text}</p>
+                  <p className="truncate text-[10.5px] text-muted">{a.text}</p>
                 </div>
               </Link>
             </motion.div>

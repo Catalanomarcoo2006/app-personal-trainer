@@ -176,10 +176,17 @@ export function AgendaCard() {
                 setDay(i);
               }}
               className={`relative flex h-[56px] cursor-pointer flex-col items-center justify-center gap-[4px] rounded-[14px] transition-colors duration-200 ${
-                selected ? "text-on-contrast" : "bg-soft text-ink"
+                selected ? "text-ink" : "bg-soft text-ink"
               }`}
             >
-              {selected && <motion.span layoutId="giorno-agenda" className="absolute inset-0 rounded-[14px] bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+              {selected && (
+                <motion.span
+                  layoutId="giorno-agenda"
+                  className="absolute inset-0 rounded-[14px] border"
+                  style={{ background: "color-mix(in srgb, var(--trainer) 13%, var(--color-card))", borderColor: "color-mix(in srgb, var(--trainer) 35%, transparent)" }}
+                  transition={{ type: "spring", duration: 0.5, bounce: 0.2 }}
+                />
+              )}
               {i === TODAY_INDEX && (
                 <motion.span
                   className="absolute top-[6px] right-[7px] size-[5px] rounded-full"
@@ -188,9 +195,9 @@ export function AgendaCard() {
                   transition={{ duration: 1.6, repeat: Infinity }}
                 />
               )}
-              <span className={`relative text-[10px] ${selected ? "opacity-60" : "text-muted"}`}>{d.short}</span>
+              <span className="relative text-[10px] text-muted">{d.short}</span>
               <span className="relative text-[15px] leading-none font-bold">{d.n}</span>
-              <span className={`relative h-[3px] w-[22px] overflow-hidden rounded-full ${selected ? "bg-on-contrast/20" : "bg-line"}`}>
+              <span className="relative h-[3px] w-[22px] overflow-hidden rounded-full bg-line">
                 <motion.span
                   className="block h-full rounded-full"
                   style={{ background: "var(--trainer)" }}
