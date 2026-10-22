@@ -1,20 +1,9 @@
 "use client";
 
-import { FormEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  animate,
-  AnimatePresence,
-  motion,
-  useAnimate,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-  useVelocity,
-  type AnimationPlaybackControls,
-} from "motion/react";
+import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
@@ -26,46 +15,25 @@ export const COACH_NAME = "Leo";
 
 // ——— Misure, in px della tela ———
 
-const FLOOR = 14; // i piedi poggiano 14 px sopra il bordo inferiore, dentro le schede
-const STAND_RATIO = 357 / 577; // larghezza / altezza di in-piedi.webp
-const LIE_W = 230;
-const LIE_H = Math.round((LIE_W * 273) / 690); // sdraiato.webp
-const DOCK_RIGHT = 74; // centro del posto in piedi, dal bordo destro
-const DOCK_ZONE = 270; // rilasciato negli ultimi 270 px a destra: torna in piedi al suo posto
-const LIE_MIN = 128; // centro minimo da sdraiato: la testa non esce dalla tela
-const PANEL_W = 410;
-const PANEL_TOP = 112; // lascia spazio sopra il pannello a Leo che sporge
-const PANEL_LEFT_MIN = 84; // a destra della barra laterale
-const PEEK_W = 128;
-const PEEK_SHOW = 70; // quanto di Leo sporge sopra il pannello: testa, spalle e manubrio
+// Chat chiusa: Leo in piedi nell'angolo in basso a destra della home (in-piedi.webp).
+const STAND_RATIO = 294 / 640; // larghezza / altezza di in-piedi.webp
+const STAND_RIGHT = 74; // centro della figura, dal bordo destro della tela
+const FLOOR = 14; // i piedi poggiano 14 px sopra il bordo inferiore
 
-const FALL = { type: "spring" as const, stiffness: 320, damping: 24 };
-const MOVE = { type: "spring" as const, stiffness: 200, damping: 25 };
+// Chat aperta: Leo si sporge dal bordo destro della chat, aggrappato con le mani (spunta.webp).
+const LEAN_W = 112;
+const LEAN_H = Math.round(LEAN_W / (385 / 560));
+const LEAN_EDGE = 0.1276; // dove cade il bordo a cui si tiene, in frazione della larghezza: a sinistra le dita, a destra il corpo
+const LEAN_BODY = Math.round(LEAN_W * (1 - LEAN_EDGE)); // quanto spazio occupa a destra della chat
+const LEAN_BOTTOM = 26; // distanza dal fondo della chat
+
+const PANEL_W = 410;
+const PANEL_TOP = 112;
+const PANEL_LEFT_MIN = 84; // a destra della barra laterale
+
 const POP = { type: "spring" as const, duration: 0.5, bounce: 0.3 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-
-type Pose = "standing" | "lying";
-type Spot = { pose: "standing" } | { pose: "lying"; x: number };
-
-// Dove riposa Leo sulla home: resta nel browser del trainer.
-const STORAGE_KEY = "coach-posto";
-function readSpot(): Spot {
-  try {
-    const v = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
-    if (v?.pose === "lying" && typeof v.x === "number") return { pose: "lying", x: v.x };
-  } catch {
-    // memoria del browser non disponibile: si parte dal posto in piedi
-  }
-  return { pose: "standing" };
-}
-function saveSpot(spot: Spot) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(spot));
-  } catch {
-    // memoria del browser non disponibile: la posizione vale solo fino a ricarica
-  }
-}
 
 // ——— Il viso, per il tasto delle altre pagine: i capelli escono dal cerchio ———
 
@@ -255,24 +223,6 @@ function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; pla
   );
 }
 
-// Nuvolette di polvere quando si sdraia.
-function Dust() {
-  return (
-    <>
-      {[-104, -68, -30, 18, 60, 98].map((dx, i) => (
-        <motion.span
-          key={dx}
-          className="absolute bottom-[-4px] rounded-full bg-ink/12"
-          style={{ left: dx - 9, width: 14 + (i % 3) * 4, height: 14 + (i % 3) * 4 }}
-          initial={{ opacity: 0.6, scale: 0.4, x: 0, y: 0 }}
-          animate={{ opacity: 0, scale: 1.4, x: Math.sign(dx) * 16, y: -10 }}
-          transition={{ duration: 0.7, ease: EASE_OUT, delay: i * 0.02 }}
-        />
-      ))}
-    </>
-  );
-}
-
 // ——— La chat (resta mentre si cambia pagina) ———
 
 type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"] };
@@ -319,27 +269,21 @@ function useCoachChat(): Chat {
   return { messages, typing, ask };
 }
 
-// Leo che sporge dal bordo alto della chat: sale da dietro il pannello e fluttua piano.
-function Peek() {
+// Leo che si sporge dal bordo destro della chat, aggrappato con le mani: esce da dietro la chat quando si apre.
+function SidePeek() {
   return (
-    <div aria-hidden className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 overflow-hidden" style={{ width: PEEK_W, height: PEEK_SHOW + 8 }}>
-      <motion.div
-        className="absolute inset-x-0 top-[8px]"
-        initial={{ y: PEEK_SHOW + 10 }}
-        animate={{ y: 0 }}
-        exit={{ y: PEEK_SHOW + 10, transition: { duration: 0.18, ease: EASE_OUT } }}
-        transition={{ type: "spring", duration: 0.65, bounce: 0.35, delay: 0.16 }}
-      >
-        <motion.img
-          src="/prototipo/coach/in-piedi.webp"
-          alt=""
-          draggable={false}
-          className="w-full max-w-none select-none"
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-        />
-      </motion.div>
-    </div>
+    <motion.img
+      src="/prototipo/coach/spunta.webp"
+      alt=""
+      aria-hidden
+      draggable={false}
+      className="pointer-events-none absolute max-w-none select-none"
+      style={{ width: LEAN_W, height: LEAN_H, left: `calc(100% - ${Math.round(LEAN_W * LEAN_EDGE)}px)`, bottom: LEAN_BOTTOM }}
+      initial={{ opacity: 0, x: -26 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -18, transition: { duration: 0.16, ease: EASE_OUT } }}
+      transition={{ opacity: { duration: 0.2, delay: 0.16 }, x: { type: "spring", duration: 0.55, bounce: 0.3, delay: 0.16 } }}
+    />
   );
 }
 
@@ -369,7 +313,7 @@ function ChatPanel({ left, origin, chat, close }: { left: number; origin: string
       role="dialog"
       aria-label={`${COACH_NAME}, il tuo assistente`}
     >
-      <Peek />
+      <SidePeek />
       <div className="relative flex size-full flex-col overflow-hidden rounded-[22px] bg-card shadow-[0_30px_80px_rgba(0,0,0,0.22)]">
         <div className="flex items-center gap-[10px] border-b border-line px-[16px] py-[12px]">
           <div className="leading-tight">
@@ -572,56 +516,27 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
     return () => ro.disconnect();
   }, []);
 
-  // In piedi cresce con l'altezza della tela; sulle tele basse la testa sfiora l'ultimo messaggio (Davide Greco).
+  // In piedi cresce con l'altezza della tela; sulle tele basse la testa sfiora l'ultimo messaggio.
   const standH = Math.round(clamp(size.h - 500, 132, 168));
   const standW = Math.round(standH * STAND_RATIO);
+  const standX = size.w - STAND_RIGHT;
 
-  const [rest, setRest] = useState<Spot>(() => (typeof window === "undefined" ? { pose: "standing" } : readSpot()));
   const [open, setOpen] = useState(false);
-  const [pose, setPose] = useState<Pose>(rest.pose);
-  const [dragging, setDragging] = useState(false);
-  const [inDock, setInDock] = useState(false);
-  const [dust, setDust] = useState(0);
-  const [hover, setHover] = useState(false);
   const [unseen, setUnseen] = useState(novitaViste ? 0 : novita.length);
 
-  const restX = (spot: Spot) => (spot.pose === "lying" ? clamp(spot.x, LIE_MIN, size.w - DOCK_ZONE - LIE_W / 2) : size.w - DOCK_RIGHT);
+  // Cliccato, Leo lascia l'angolo e si sporge dal bordo destro della chat: sulla home la chat si apre
+  // a sinistra dell'angolo, lasciando a Leo lo spazio; nelle altre pagine accanto al tasto.
+  const panelLeft = home ? clamp(size.w - 18 - LEAN_BODY - PANEL_W, PANEL_LEFT_MIN, size.w - 18 - PANEL_W) : PANEL_LEFT_MIN;
+  const panelOrigin = home ? "100% 100%" : "0% 100%";
 
-  // La chat si apre sopra Leo, centrata su di lui; nelle altre pagine accanto al tasto.
-  const panelLeft = home ? clamp(restX(rest) - PANEL_W / 2, PANEL_LEFT_MIN, size.w - 18 - PANEL_W) : PANEL_LEFT_MIN;
-  const panelOrigin = home ? `${clamp(restX(rest) - panelLeft, 0, PANEL_W)}px 100%` : "0% 100%";
-
-  // Posizione: x è il centro della figura sul pavimento; y e lift lo sollevano; float lo fa fluttuare.
-  const x = useMotionValue(restX(rest));
-  const y = useMotionValue(0);
-  const lift = useMotionValue(0);
-  const float = useMotionValue(0);
-  const pop = useMotionValue(0.9);
+  // Ingresso: compare salendo appena da sotto, una volta sola; poi resta fermo.
+  const rise = useMotionValue(16);
   const fade = useMotionValue(0);
-  const held = useMotionValue(0);
-  const airborne = useTransform(() => y.get() + lift.get());
-  const height = useTransform(() => airborne.get() + float.get());
-  const vx = useVelocity(x);
-  // Mentre lo porti dondola come tenuto per le spalle, in ritardo sul movimento.
-  const swing = useSpring(
-    useTransform(() => (held.get() || airborne.get() < -4 ? clamp(vx.get() * 0.009, -15, 15) : 0)),
-    { stiffness: 240, damping: 13 },
-  );
-  const shadowOpacity = useTransform(height, [-220, 0], [0.04, 1]);
-  const shadowScale = useTransform(height, [-220, 0], [0.55, 1]);
-
-  const moves = useRef<AnimationPlaybackControls[]>([]);
-  const stopMoves = () => {
-    moves.current.forEach((c) => c.stop());
-    moves.current = [];
-  };
-  const move = (to: number, velocity = 0) => moves.current.push(animate(x, to, reduce ? { duration: 0 } : { ...MOVE, velocity }));
 
   // ——— Vignette ———
   const [speech, setSpeech] = useState<(Speech & { id: number }) | null>(null);
   const speechId = useRef(1);
   const speechTimer = useRef<number | undefined>(undefined);
-  const [hopScope, animateHop] = useAnimate();
 
   const say = useCallback((s: Speech | null, ms = 5200) => {
     window.clearTimeout(speechTimer.current);
@@ -631,76 +546,40 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
 
   const [tipTick, setTipTick] = useState(0);
   useEffect(() => {
-    if (!home || open || dragging || tipCursor.shown >= tips.length) return;
+    if (!home || open || tipCursor.shown >= tips.length) return;
     const t = window.setTimeout(
       () => {
         say(tips[tipCursor.shown]);
         tipCursor.shown++;
         setTipTick((n) => n + 1);
-        // un saltello per richiamare lo sguardo sulla vignetta
-        if (!reduce && hopScope.current) animateHop(hopScope.current, { y: [0, -8, 0], scaleY: [1, 1.03, 1] }, { duration: 0.45, ease: EASE_OUT });
       },
       tipCursor.shown === 0 ? 1800 : 7000,
     );
     return () => window.clearTimeout(t);
-  }, [home, open, dragging, tipTick, say, reduce, animateHop, hopScope]);
+  }, [home, open, tipTick, say]);
 
   useEffect(() => () => window.clearTimeout(speechTimer.current), []);
 
-  // Sulla home entra con un piccolo salto dopo le schede.
+  // Sulla home compare salendo da sotto, dopo le schede.
   useEffect(() => {
     if (!home) return;
-    const c = [animate(fade, 1, { duration: 0.3, delay: 0.6 }), animate(pop, 1, { ...POP, delay: 0.6 })];
+    const c = [animate(fade, 1, { duration: 0.3, delay: 0.6 }), animate(rise, 0, reduce ? { duration: 0 } : { type: "spring", duration: 0.6, bounce: 0.25, delay: 0.6 })];
     return () => c.forEach((a) => a.stop());
-  }, [home, fade, pop]);
+  }, [home, fade, rise, reduce]);
 
-  // Fluttua sempre, piano, per far capire che si può toccare (fermo se lo trascini, a chat aperta o con "riduci movimento").
-  useEffect(() => {
-    if (!home) return;
-    let loop: AnimationPlaybackControls | undefined;
-    const settle = animate(float, 0, { duration: 0.35, ease: EASE_OUT });
-    if (reduce || dragging || open) return () => settle.stop();
-    const amp = pose === "lying" ? -4 : -7;
-    let cancelled = false;
-    settle.then(() => {
-      if (!cancelled) loop = animate(float, [0, amp, 0], { duration: pose === "lying" ? 4 : 3.2, repeat: Infinity, ease: "easeInOut" });
-    });
-    return () => {
-      cancelled = true;
-      settle.stop();
-      loop?.stop();
-    };
-  }, [home, reduce, dragging, open, pose, float]);
-
-  // Al primo passaggio del mouse spiega che si può spostare.
+  // Al primo passaggio del mouse dice che si può cliccare. Al passaggio la figura resta ferma.
   const hinted = useRef(false);
   const hint = () => {
-    setHover(true);
     if (hinted.current || speech || open) return;
     hinted.current = true;
-    say({ icon: Hand, text: "Toccami per chiedere, o trascinami dove vuoi." }, 3400);
+    say({ icon: Hand, text: "Toccami per farmi una domanda." }, 3400);
   };
-
-  // ——— Cambi di posa ———
-  const poseTimer = useRef<number | undefined>(undefined);
-  const setPoseLater = (p: Pose, ms: number) => {
-    window.clearTimeout(poseTimer.current);
-    poseTimer.current = window.setTimeout(() => {
-      setPose(p);
-      if (p === "lying") {
-        setDust((n) => n + 1);
-        playSound("tap");
-      }
-    }, ms);
-  };
-  useEffect(() => () => window.clearTimeout(poseTimer.current), []);
 
   // ——— Chat ———
   const openChat = (question?: string) => {
     if (open) return;
     playSound("tap");
     say(null);
-    setHover(false);
     setOpen(true);
     if (!novitaViste) {
       novitaViste = true;
@@ -718,101 +597,13 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Se cambia la tela (finestra ridimensionata), Leo torna al suo posto senza animazione.
-  useEffect(() => {
-    if (!home || dragging) return;
-    x.set(restX(rest));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size.w]);
-
-  // ——— Trascinamento (a mano: la tela usa CSS zoom e i delta vanno divisi per lo zoom) ———
-  const drag = useRef<{ cx: number; cy: number; x: number; y: number; zoom: number; moved: boolean } | null>(null);
-
-  const placeFor = (center: number): Spot =>
-    center > size.w - DOCK_ZONE ? { pose: "standing" } : { pose: "lying", x: clamp(center, LIE_MIN, size.w - DOCK_ZONE - LIE_W / 2) };
-
-  const dropAt = (spot: Spot, velocity = 0) => {
-    setRest(spot);
-    saveSpot(spot);
-    stopMoves();
-    move(restX(spot), velocity);
-    const high = airborne.get() < -40;
-    moves.current.push(animate(y, 0, reduce ? { duration: 0 } : { ...FALL, velocity: y.getVelocity() }), animate(lift, 0, reduce ? { duration: 0 } : FALL));
-    if (spot.pose === "lying") {
-      setPoseLater("lying", reduce ? 0 : high ? 260 : 110);
-      say({ text: "Mi stendo un attimo qui 😌" }, 2600);
-    } else {
-      setPoseLater("standing", 0);
-      say({ text: "Eccomi, si riparte! 💪" }, 2600);
-    }
-  };
-
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!home || open || e.button !== 0) return;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // puntatore già rilasciato: il trascinamento funziona lo stesso
-    }
-    const el = layer.current;
-    const zoom = el ? el.getBoundingClientRect().width / el.offsetWidth || 1 : 1;
-    drag.current = { cx: e.clientX, cy: e.clientY, x: x.get(), y: y.get(), zoom, moved: false };
-  };
-
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d) return;
-    const dx = (e.clientX - d.cx) / d.zoom;
-    const dy = (e.clientY - d.cy) / d.zoom;
-    if (!d.moved) {
-      if (Math.hypot(dx, dy) < 5) return;
-      d.moved = true;
-      stopMoves();
-      window.clearTimeout(poseTimer.current);
-      held.set(1);
-      setDragging(true);
-      playSound("tap");
-      say({ text: "Ehi! Dove mi porti? 😮" }, 0);
-      moves.current.push(animate(lift, reduce ? 0 : -18, POP));
-    }
-    x.set(clamp(d.x + dx, 50, size.w - 50));
-    y.set(clamp(d.y + dy, -(size.h - standH - 60), 0));
-    const dock = x.get() > size.w - DOCK_ZONE;
-    if (dock !== inDock) setInDock(dock);
-  };
-
-  const onPointerUp = () => {
-    const d = drag.current;
-    drag.current = null;
-    if (!d) return;
-    if (!d.moved) {
-      openChat();
-      return;
-    }
-    held.set(0);
-    setDragging(false);
-    setInDock(false);
-    const v = x.getVelocity();
-    const spot = placeFor(x.get() + v * 0.12); // un lancio conta: guarda dove sarebbe arrivato
-    if (spot.pose === "lying") setPose("standing"); // resta in piedi finché non tocca terra
-    dropAt(spot, v);
-  };
-
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       openChat();
-    } else if (e.key === "ArrowLeft" && rest.pose === "standing") {
-      dropAt({ pose: "lying", x: Math.round(size.w / 2) });
-    } else if (e.key === "ArrowRight" && rest.pose === "lying") {
-      dropAt({ pose: "standing" });
     }
   };
 
-  const shown: Pose = dragging ? "standing" : pose;
-
-  // La vignetta: sopra la testa da sdraiato; in piedi a sinistra della testa (a destra se è vicino al bordo sinistro).
-  const bubblePlace = shown === "lying" ? "above" : x.get() < 330 ? "head-right" : "head-left";
 
   return (
     <>
@@ -836,129 +627,49 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
       {!home && <CoachButton hidden={open} count={unseen} onOpen={() => openChat()} />}
 
       <div ref={layer} className="pointer-events-none absolute inset-0 z-[46]">
-        {/* il posto in piedi, mentre lo trascini */}
-        <AnimatePresence>
-          {dragging && (
-            <motion.span
-              key="posto"
-              aria-hidden
-              className="absolute h-[18px] w-[96px] rounded-[50%] border-2 border-dashed"
-              style={{ left: size.w - DOCK_RIGHT - 48, bottom: FLOOR - 9, borderColor: "var(--trainer)" }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: inDock ? 0.9 : 0.35, scale: inDock ? 1.08 : 1 }}
-              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
-              transition={{ type: "spring", duration: 0.35, bounce: 0.2 }}
-            />
-          )}
-        </AnimatePresence>
-
         {home && (
-          <motion.div className="absolute left-0" style={{ x, bottom: FLOOR, opacity: fade }}>
-            {/* a chat aperta la figura si fa da parte: Leo sporge dal pannello */}
+          <motion.div className="absolute left-0" style={{ x: standX, bottom: FLOOR, opacity: fade }}>
+            {/* a chat aperta lascia l'angolo: ricompare aggrappato al bordo della chat */}
             <motion.div
               initial={false}
-              animate={open ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
-              transition={open ? { duration: 0.16, ease: EASE_OUT } : { type: "spring", duration: 0.45, bounce: 0.25, delay: 0.12 }}
+              animate={open ? { opacity: 0, scale: 0.9, x: -24 } : { opacity: 1, scale: 1, x: 0 }}
+              transition={open ? { duration: 0.18, ease: EASE_OUT } : { type: "spring", duration: 0.45, bounce: 0.2, delay: 0.1 }}
               style={{ originY: 1 }}
               className={open ? "pointer-events-none" : ""}
             >
-              {/* ombra sul pavimento: si stringe e sbiadisce quando sale */}
-              <motion.div className="absolute bottom-[-7px] left-[-110px] h-[14px] w-[220px]" style={{ opacity: shadowOpacity, scale: shadowScale }}>
-                <motion.div
-                  className="size-full rounded-[50%] bg-black/25 blur-[6px] dark:bg-black/60"
-                  initial={false}
-                  animate={{ scaleX: shown === "lying" ? 0.95 : 0.36, opacity: shown === "lying" ? 0.8 : 1 }}
-                  transition={{ duration: 0.35, ease: EASE_OUT }}
+              <motion.div style={{ y: rise }}>
+                <img
+                  src="/prototipo/coach/in-piedi.webp"
+                  alt=""
+                  draggable={false}
+                  className="absolute bottom-0 max-w-none select-none"
+                  style={{ width: standW, left: -standW / 2 }}
+                />
+                {/* zona cliccabile: segue la sagoma, così gli angoli vuoti non coprono i messaggi */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${COACH_NAME}, il tuo assistente. Clicca o premi Invio per fargli una domanda.`}
+                  onClick={() => openChat()}
+                  onKeyDown={onKeyDown}
+                  onMouseEnter={hint}
+                  className="pointer-events-auto absolute bottom-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--trainer)]"
+                  style={{
+                    width: standW,
+                    height: standH,
+                    left: -standW / 2,
+                    // sagoma: testa, mano che saluta a sinistra, tablet a destra, gambe
+                    clipPath: "polygon(40% 0%, 76% 0%, 78% 20%, 95% 24%, 100% 46%, 100% 62%, 88% 64%, 90% 100%, 25% 100%, 30% 52%, 22% 42%, 0% 38%, 0% 25%, 15% 24%, 38% 20%)",
+                  }}
                 />
               </motion.div>
 
-              <AnimatePresence>
-                {dust > 0 && (
-                  <motion.div key={dust} className="absolute bottom-0 left-0" exit={{ opacity: 0 }}>
-                    <Dust />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <motion.div style={{ y: airborne, scale: pop, originY: 1 }}>
-                <motion.div style={{ rotate: swing, transformOrigin: `0px ${-standH * 0.82}px` }} className="relative">
-                  <div ref={hopScope} className="relative" style={{ transformOrigin: "50% 100%" }}>
-                    <motion.div className="relative" style={{ y: float }}>
-                      <motion.img
-                        src="/prototipo/coach/in-piedi.webp"
-                        alt=""
-                        draggable={false}
-                        className="absolute bottom-0 max-w-none select-none"
-                        style={{ width: standW, left: -standW / 2, originX: 0.5, originY: 1 }}
-                        initial={false}
-                        animate={shown === "standing" ? { opacity: 1, rotate: hover && !dragging ? -3 : 0 } : { opacity: 0, rotate: -78 }}
-                        transition={
-                          shown === "standing"
-                            ? { rotate: { type: "spring", duration: 0.6, bounce: 0.35 }, opacity: { duration: 0.12 } }
-                            : { rotate: { duration: 0.36, ease: [0.77, 0, 0.175, 1] }, opacity: { duration: 0.16, delay: 0.16 } }
-                        }
-                      />
-                      <motion.img
-                        src="/prototipo/coach/sdraiato.webp"
-                        alt=""
-                        draggable={false}
-                        className="absolute bottom-0 max-w-none select-none"
-                        style={{ width: LIE_W, left: -LIE_W / 2, originX: 0.5, originY: 1 }}
-                        initial={false}
-                        animate={shown === "lying" ? { opacity: 1, scaleY: 1, y: 0 } : { opacity: 0, scaleY: 0.86, y: -10 }}
-                        transition={
-                          shown === "lying"
-                            ? { opacity: { duration: 0.2, delay: 0.18 }, scaleY: { type: "spring", duration: 0.55, bounce: 0.4, delay: 0.18 }, y: { type: "spring", duration: 0.5, bounce: 0.3, delay: 0.18 } }
-                            : { duration: 0.12 }
-                        }
-                      />
-
-                      {/* zona da afferrare: segue la sagoma, così gli angoli vuoti non coprono la pagina */}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${COACH_NAME}, il tuo assistente. Invio per fargli una domanda, frecce per spostarlo.`}
-                        onPointerDown={onPointerDown}
-                        onPointerMove={onPointerMove}
-                        onPointerUp={onPointerUp}
-                        onPointerCancel={onPointerUp}
-                        onKeyDown={onKeyDown}
-                        onMouseEnter={hint}
-                        onMouseLeave={() => setHover(false)}
-                        className={`pointer-events-auto absolute bottom-0 touch-none rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--trainer)] ${
-                          dragging ? "cursor-grabbing" : "cursor-grab"
-                        }`}
-                        style={
-                          shown === "lying"
-                            ? { width: LIE_W, height: LIE_H, left: -LIE_W / 2, clipPath: "polygon(0% 10%, 22% 0%, 30% 25%, 55% 33%, 98% 55%, 100% 100%, 0% 100%)" }
-                            : {
-                                width: standW,
-                                height: standH,
-                                left: -standW / 2,
-                                clipPath: "polygon(26% 0%, 66% 0%, 68% 24%, 100% 24%, 100% 52%, 70% 50%, 74% 100%, 22% 100%, 26% 72%, 0% 72%, 0% 58%, 24% 30%)",
-                              }
-                        }
-                      />
-                    </motion.div>
-                  </div>
-                </motion.div>
-
-                {/* vignetta: in piedi accanto al petto (non copre l'ultimo messaggio), da sdraiato sopra la testa */}
-                <div
-                  className={`absolute w-max ${bubblePlace === "above" ? "" : "translate-y-full"}`}
-                  style={
-                    bubblePlace === "above"
-                      ? { bottom: LIE_H + 10, left: -LIE_W / 2 + 30 }
-                      : bubblePlace === "head-left"
-                        ? { bottom: standH * 0.68, right: standW * 0.16 }
-                        : { bottom: standH * 0.68, left: standW * 0.16 }
-                  }
-                >
-                  <AnimatePresence mode="wait">
-                    {speech && !open && <Bubble key={speech.id} speech={speech} place={bubblePlace} onAsk={(q) => openChat(q)} />}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
+              {/* vignetta: a sinistra della testa, accanto al petto */}
+              <div className="absolute w-max translate-y-full" style={{ bottom: standH * 0.68, right: standW * 0.16 }}>
+                <AnimatePresence mode="wait">
+                  {speech && !open && <Bubble key={speech.id} speech={speech} place="head-left" onAsk={(q) => openChat(q)} />}
+                </AnimatePresence>
+              </div>
             </motion.div>
           </motion.div>
         )}
