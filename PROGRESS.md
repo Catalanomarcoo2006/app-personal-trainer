@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-21
+**Ultimo aggiornamento:** 2026-10-22
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -43,9 +43,11 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Marco: creare il progetto Supabase di sviluppo (UE) prima del Task 3.
 
 ## Contesto tecnico utile
+- Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`, account catalanomarcoo2006). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: `vercel deploy --prod` con `--build-env`/`--env` NEXT_PUBLIC_SUPABASE_URL e ANON_KEY segnaposto finché non ci sono le chiavi vere, meglio da una copia pulita dell'ultimo commit.
 - Build senza chiavi: fallisce su `/tos` (Supabase richiede URL e chiave). Per una verifica: `NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npm run build`.
 - Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git).
 
 ## Changelog
+- 2026-10-22: sito pubblicato su Vercel; foto profilo del trainer modificabile.
 - 2026-10-22: navigazione istantanea, home senza scorrimento, agenda e calendario senza griglia oraria (giorni in lastre di vetro), ricerca (Ctrl+K) e avvisi funzionanti, via i tasti morti e i tasti neri.
 - 2026-10-21: progetto avviato con /start (brainstorming, spec, setup con boilerplate, piano).
