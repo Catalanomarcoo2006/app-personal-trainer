@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { memo, ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -34,7 +34,7 @@ type Section = "Oggi" | "Messaggi" | "Clienti" | "Schede" | "Calendario" | "Inca
 type NavItem = { label: Section; icon: LucideIcon; href: string };
 
 // Molla stile Apple per le "gocce" di vetro che scivolano tra le voci.
-const SPRING = { type: "spring" as const, duration: 0.5, bounce: 0.2 };
+const SPRING = { type: "spring" as const, duration: 0.38, bounce: 0.18 };
 
 const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
 
@@ -105,7 +105,6 @@ export function ThemeButton({ size = 15 }: { size?: number }) {
 
 export function TopBar() {
   const section = useSection();
-  const photo = useTrainerPhoto();
 
   return (
     <div className="grid h-[35px] grid-cols-[1fr_auto_1fr] items-center pr-[18px] pl-[20px]">
@@ -136,17 +135,25 @@ export function TopBar() {
         })}
       </nav>
 
-      <div className="glass glass-3d relative flex h-[35px] w-[147px] items-center justify-between justify-self-end rounded-full pr-[4px] pl-[14px] text-ink">
-        <ThemeButton />
-        <NotificationsButton />
-        <SearchButton />
-        <Link href={ROUTES.impostazioni} onClick={() => playSound("tap")} aria-label="Il tuo profilo" className="relative">
-          <Avatar initials={trainer.initials} src={photo} size={27} />
-        </Link>
-      </div>
+      <TopBarRight />
     </div>
   );
 }
+
+// Tema, avvisi, ricerca e profilo: non dipendono dalla sezione, quindi cambiando pagina non si ridisegnano.
+const TopBarRight = memo(function TopBarRight() {
+  const photo = useTrainerPhoto();
+  return (
+    <div className="glass glass-3d relative flex h-[35px] w-[147px] items-center justify-between justify-self-end rounded-full pr-[4px] pl-[14px] text-ink">
+      <ThemeButton />
+      <NotificationsButton />
+      <SearchButton />
+      <Link href={ROUTES.impostazioni} onClick={() => playSound("tap")} aria-label="Il tuo profilo" className="relative">
+        <Avatar initials={trainer.initials} src={photo} size={27} />
+      </Link>
+    </div>
+  );
+});
 
 // Riga del titolo: freccia indietro (se c'è dove tornare), titolo, contenuti a sinistra e a destra.
 export function TitleRow({ title, back, left, right }: { title: string; back?: string; left?: ReactNode; right?: ReactNode }) {
@@ -300,7 +307,7 @@ export function TrainerShell({
 }) {
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: EASE_OUT }} className="relative z-30">
+      <motion.div initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: EASE_OUT }} className="relative z-30">
         <TitleRow title={title} back={back} left={titleLeft} right={titleRight} />
       </motion.div>
       {children}

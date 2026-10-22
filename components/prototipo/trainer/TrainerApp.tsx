@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, ReactNode, Suspense } from "react";
+import { Fragment, memo, ReactNode, Suspense, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { Appear } from "@/components/ui/motion";
@@ -12,18 +12,47 @@ import { ClientsHeader, MessagesCard, PathCards, ProfileCard } from "./Cards";
 import { RevenueCard } from "./Revenue";
 import { AgendaCard } from "./Agenda";
 import { ClientsButton, UrgentBell } from "./Urgent";
-import { ClientList } from "./ClientList";
+import { ClientList as ClientListView } from "./ClientList";
 import { ClientNotFound, ClientProfile } from "./ClientProfile";
-import { MessagesView } from "./Messages";
-import { PlansView } from "./Plans";
+import { MessagesView as MessagesSection } from "./Messages";
+import { PlansView as PlansSection } from "./Plans";
 import { WeekCalendar } from "./WeekCalendar";
 import { PaymentsView } from "./Payments";
 import { SettingsView } from "./Settings";
 
+// Le sezioni che leggono l'indirizzo ricevono i parametri come testo: con memo si ridisegnano solo se cambiano davvero.
+const ClientList = memo(ClientListView);
+const MessagesView = memo(MessagesSection);
+const PlansView = memo(PlansSection);
+
+// Quante sezioni già aperte restano pronte in memoria (le più recenti).
+const KEEP = 10;
+
 // Sceglie la sezione dall'indirizzo. Gli indirizzi restano quelli di sempre (/prototipo/trainer/clienti, ...),
 // ma il cambio avviene nel browser: niente richiesta al server, niente attesa.
+// Le sezioni già visitate restano montate e nascoste: tornarci è istantaneo e ritrovi tutto come l'avevi lasciato.
 export function TrainerApp() {
   const path = usePathname();
+  const [kept, setKept] = useState<string[]>([path]);
+  const list = kept.includes(path) ? kept : [...kept.slice(-(KEEP - 1)), path];
+
+  useEffect(() => {
+    if (list !== kept) setKept(list);
+  }, [list, kept]);
+
+  return (
+    <>
+      {list.map((p) => (
+        <div key={p} className={p === path ? "section-live" : "hidden"}>
+          <Section path={p} />
+        </div>
+      ))}
+    </>
+  );
+}
+
+// memo: cambiando indirizzo si ridisegna solo la sezione che compare, non quelle nascoste.
+const Section = memo(function Section({ path }: { path: string }) {
   const [section, id] = path.slice(BASE.length).split("/").filter(Boolean);
 
   switch (section) {
@@ -39,9 +68,7 @@ export function TrainerApp() {
       return (
         <TrainerShell title="I tuoi clienti" back={ROUTES.oggi} titleRight={<UrgentBell />}>
           <Suspense>
-            <ByQuery>
-              <ClientList />
-            </ByQuery>
+            <ByQuery>{(q) => <ClientList search={q} />}</ByQuery>
           </Suspense>
         </TrainerShell>
       );
@@ -50,9 +77,7 @@ export function TrainerApp() {
       return (
         <TrainerShell title="Messaggi" back={ROUTES.oggi} titleRight={<UrgentBell />}>
           <Suspense>
-            <ByQuery>
-              <MessagesView />
-            </ByQuery>
+            <ByQuery>{(q) => <MessagesView search={q} />}</ByQuery>
           </Suspense>
         </TrainerShell>
       );
@@ -60,9 +85,7 @@ export function TrainerApp() {
       return (
         <TrainerShell title="Schede di allenamento" back={ROUTES.oggi} titleRight={<UrgentBell />}>
           <Suspense>
-            <ByQuery>
-              <PlansView />
-            </ByQuery>
+            <ByQuery>{(q) => <PlansView search={q} />}</ByQuery>
           </Suspense>
         </TrainerShell>
       );
@@ -87,12 +110,13 @@ export function TrainerApp() {
     default:
       return <Home />;
   }
-}
+});
 
 // Le sezioni leggono i parametri (?cliente=, ?filtro=) all'apertura: se cambiano restando nella stessa
 // sezione (per esempio da un avviso), la sezione riparte con quelli nuovi.
-function ByQuery({ children }: { children: ReactNode }) {
-  return <Fragment key={useSearchParams().toString()}>{children}</Fragment>;
+function ByQuery({ children }: { children: (query: string) => ReactNode }) {
+  const query = useSearchParams().toString();
+  return <Fragment key={query}>{children(query)}</Fragment>;
 }
 
 // Home "Oggi" del trainer.

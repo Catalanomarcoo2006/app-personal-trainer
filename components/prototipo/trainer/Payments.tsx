@@ -19,7 +19,7 @@ const initialMovements: Movement[] = clients.flatMap((c) => c.payments.map((p, i
 function Kpi({ icon: Icon, label, children, note, i }: { icon: LucideIcon; label: string; children: ReactNode; note?: ReactNode; i: number }) {
   return (
     <Appear i={1 + i}>
-      <div className="flex h-[96px] items-center gap-[12px] rounded-[18px] bg-card px-[16px]">
+      <div className="flex h-[96px] items-center gap-[12px] panel rounded-[18px] px-[16px]">
         <span className="grid size-[40px] shrink-0 place-items-center rounded-full bg-soft text-ink/70">
           <Icon size={18} />
         </span>
@@ -72,7 +72,7 @@ export function PaymentsView() {
 
       <div className="grid min-h-0 flex-1 grid-cols-[1.45fr_1fr] gap-[10px]">
         <Appear i={5} className="min-h-0">
-          <section className="flex h-full flex-col rounded-[18px] bg-card px-[16px] pt-[14px] pb-[12px]">
+          <section className="flex h-full flex-col panel rounded-[18px] px-[16px] pt-[14px] pb-[12px]">
             <div className="flex items-center justify-between">
               <h2 className="text-[14px] font-bold">Andamento degli ultimi 6 mesi</h2>
               <span className="rounded-full bg-soft px-[9px] py-[3px] text-[10.5px] font-semibold">mag – ott 2026</span>
@@ -83,7 +83,7 @@ export function PaymentsView() {
           </section>
         </Appear>
         <Appear i={6} className="min-h-0">
-          <section className="flex h-full flex-col rounded-[18px] bg-card px-[16px] pt-[14px] pb-[12px]">
+          <section className="flex h-full flex-col panel rounded-[18px] px-[16px] pt-[14px] pb-[12px]">
             <div className="flex items-center justify-between">
               <h2 className="text-[14px] font-bold">Da incassare</h2>
               <span className="rounded-full bg-soft px-[9px] py-[3px] text-[10.5px] font-semibold">{formatEuro(outstanding)}</span>
@@ -148,7 +148,7 @@ export function PaymentsView() {
       </div>
 
       <Appear i={7}>
-        <section className="flex h-[228px] flex-col rounded-[18px] bg-card px-[16px] pt-[13px] pb-[10px]">
+        <section className="flex h-[228px] flex-col panel rounded-[18px] px-[16px] pt-[13px] pb-[10px]">
           <div className="flex items-center justify-between">
             <h2 className="text-[14px] font-bold">Movimenti</h2>
             <div className="flex gap-[5px]">

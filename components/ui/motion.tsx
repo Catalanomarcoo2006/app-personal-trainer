@@ -10,14 +10,14 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }
 
-// Ingresso a cascata: ogni blocco entra 60 ms dopo il precedente.
+// Ingresso a cascata: ogni blocco entra 35 ms dopo il precedente.
 export function Appear({ i = 0, className, children }: { i?: number; className?: string; children: ReactNode }) {
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08 + i * 0.06, duration: 0.55, ease: EASE_OUT }}
+      transition={{ delay: 0.02 + i * 0.035, duration: 0.38, ease: EASE_OUT }}
     >
       {children}
     </motion.div>

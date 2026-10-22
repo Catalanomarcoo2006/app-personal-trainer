@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
 import { Check, Dumbbell, FileText, FileUp, LoaderCircle, Play, Plus, Search, Send, Smartphone, X } from "lucide-react";
@@ -250,8 +249,9 @@ function SendSheet({
 
 // ——— La pagina ———
 
-export function PlansView() {
-  const params = useSearchParams();
+// search: i parametri dell'indirizzo (?cliente=), passati da TrainerApp.
+export function PlansView({ search }: { search: string }) {
+  const params = new URLSearchParams(search);
   const fromQuery = clients.find((c) => c.id === params.get("cliente"))?.id;
   const [clientId, setClientId] = useState(fromQuery ?? "giulia-bianchi");
   const allPlans = useStato((s) => s.plans);
@@ -342,7 +342,7 @@ export function PlansView() {
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[250px_1fr_300px] gap-x-[12px] pr-[18px] pl-[80px]">
-      <section className="flex min-h-0 flex-col rounded-[18px] bg-card px-[12px] pt-[14px] pb-[12px]">
+      <section className="flex min-h-0 flex-col panel rounded-[18px] px-[12px] pt-[14px] pb-[12px]">
         <h2 className="px-[4px] text-[14px] font-bold">Schede dei clienti</h2>
         <div className="mt-[10px] flex min-h-0 flex-1 flex-col gap-[3px] overflow-y-auto [scrollbar-width:none]">
           {clients.map((c, i) => {
@@ -377,7 +377,7 @@ export function PlansView() {
         </div>
       </section>
 
-      <section className="relative flex min-h-0 flex-col rounded-[18px] bg-card px-[18px] pt-[14px] pb-[14px]">
+      <section className="relative flex min-h-0 flex-col panel rounded-[18px] px-[18px] pt-[14px] pb-[14px]">
         <div className="flex items-center gap-[12px]">
           <ClientAvatar c={client} size={40} />
           <div className="leading-none">
@@ -520,7 +520,7 @@ export function PlansView() {
         </AnimatePresence>
       </section>
 
-      <section className="flex min-h-0 flex-col rounded-[18px] bg-card px-[14px] pt-[14px] pb-[12px]">
+      <section className="flex min-h-0 flex-col panel rounded-[18px] px-[14px] pt-[14px] pb-[12px]">
         <div className="flex items-baseline justify-between">
           <h2 className="text-[14px] font-bold">Esercizi e video</h2>
           <span className="text-[10.5px] text-muted tabular-nums">

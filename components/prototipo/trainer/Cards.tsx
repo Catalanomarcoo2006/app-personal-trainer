@@ -11,7 +11,7 @@ import { useTrainerPhoto } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
-const card = "rounded-[18px] bg-card";
+const card = "panel rounded-[18px]";
 
 // Profilo del trainer, compatto come nel riferimento.
 export function ProfileCard() {
@@ -126,7 +126,7 @@ export function MessagesCard() {
               <Link
                 href={ROUTES.messaggi}
                 onClick={() => playSound("tap")}
-                className={`flex items-center gap-[10px] rounded-[14px] border px-[10px] py-[10px] ${a.urgent ? "border-[rgba(212,59,79,0.22)] bg-[rgba(212,59,79,0.07)]" : "border-line"}`}
+                className={`glass-row flex items-center gap-[10px] rounded-[14px] px-[10px] py-[10px] transition-transform ${a.urgent ? "glass-row-alert" : ""}`}
               >
                 <ClientAvatar c={c} size={32} />
                 <div className="min-w-0 flex-1 leading-snug">

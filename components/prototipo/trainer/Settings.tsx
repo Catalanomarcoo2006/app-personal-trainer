@@ -13,7 +13,7 @@ import { shrinkPhoto, stato, useTrainerPhoto } from "@/libs/prototipo/stato";
 
 function Card({ title, icon, children, className = "" }: { title: string; icon?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`flex flex-col rounded-[18px] bg-card px-[16px] pt-[14px] pb-[14px] ${className}`}>
+    <section className={`flex flex-col panel rounded-[18px] px-[16px] pt-[14px] pb-[14px] ${className}`}>
       <h2 className="flex items-center gap-[7px] text-[14px] font-bold">
         {icon} {title}
       </h2>

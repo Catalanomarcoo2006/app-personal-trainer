@@ -121,7 +121,7 @@
 /* Tema scuro: stessi nomi, valori diversi */
 .dark {
   color-scheme: dark;
-  --color-salvia: #0c0e0f;
+  --color-salvia: #0f1214;
   --color-card: #16181b;
   --color-ink: #ecece9;
   --color-muted: #8a8e94;
@@ -240,6 +240,76 @@
     0 8px 16px -4px rgba(0, 0, 0, 0.55);
 }
 
+/* Riquadri principali in stile vetro: bianco quasi pieno (il testo resta leggibile), bordo bianco luminoso,
+   luce sul bordo alto e ombra morbida. Niente backdrop-filter: dietro si muovono le macchie colorate e
+   sfocare a ogni fotogramma tanti riquadri grandi rallenterebbe l'interfaccia. */
+.panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.98);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -10px 24px -18px rgba(255, 255, 255, 0.9),
+    0 14px 32px -14px rgba(20, 40, 28, 0.2),
+    0 2px 5px rgba(20, 40, 28, 0.05);
+}
+.dark .panel {
+  background:
+    radial-gradient(120% 70% at 0% 0%, rgba(255, 255, 255, 0.075), transparent 60%),
+    linear-gradient(180deg, rgba(50, 54, 61, 0.78), rgba(27, 29, 33, 0.72));
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px -16px rgba(0, 0, 0, 0.65),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Righe in vetro dentro un riquadro (le chat della home): lastra chiara con bordo bianco e riflesso in alto */
+.glass-row {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(242, 247, 243, 0.75));
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -6px 12px -10px rgba(20, 40, 28, 0.12),
+    0 6px 14px -8px rgba(20, 40, 28, 0.22),
+    0 1px 2px rgba(20, 40, 28, 0.06);
+}
+.dark .glass-row {
+  background:
+    radial-gradient(90% 120% at 10% 0%, rgba(255, 255, 255, 0.09), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03));
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 18px -10px rgba(0, 0, 0, 0.7);
+}
+.glass-row-alert {
+  background: linear-gradient(180deg, rgba(255, 244, 245, 0.97), rgba(255, 228, 232, 0.8));
+  border-color: rgba(255, 255, 255, 1);
+}
+.dark .glass-row-alert {
+  background:
+    radial-gradient(90% 120% at 10% 0%, rgba(255, 255, 255, 0.08), transparent 55%),
+    linear-gradient(180deg, rgba(229, 72, 77, 0.2), rgba(229, 72, 77, 0.1));
+  border-color: rgba(255, 140, 150, 0.3);
+}
+
+/* Sezione visibile dell'area trainer: tornandoci compare con una dissolvenza brevissima */
+.section-live {
+  position: absolute;
+  inset: 0;
+  /* sotto la barra in alto (11 px di margine + 35 px di barra): la riga del titolo resta al suo posto */
+  padding-top: 46px;
+  animation: sezione-entra 140ms ease-out;
+}
+@keyframes sezione-entra {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section-live { animation: none; }
+}
+
 /* Niente tasti neri: l'azione principale ha il colore del trainer, con una luce sul bordo alto */
 .btn-trainer {
   background: var(--trainer);
@@ -293,7 +363,7 @@
   animation: deriva 16s cubic-bezier(0.77, 0, 0.175, 1) infinite alternate;
 }
 .dark .ambient-blob {
-  opacity: 0.22;
+  opacity: 0.3;
 }
 @media (prefers-reduced-motion: reduce) {
   .ambient-blob {

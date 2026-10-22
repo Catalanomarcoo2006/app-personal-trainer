@@ -13,7 +13,11 @@ export function useFitDensity(ref: RefObject<HTMLElement | null>, max: number, d
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setHeight(Math.round(entry.contentRect.height)));
+    // altezza 0 = sezione nascosta: si tiene la misura di prima, così tornandoci non cambia nulla
+    const ro = new ResizeObserver(([entry]) => {
+      const h = Math.round(entry.contentRect.height);
+      if (h > 0) setHeight(h);
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [ref]);
@@ -29,7 +33,7 @@ export function useFitDensity(ref: RefObject<HTMLElement | null>, max: number, d
       }
     }
     const el = ref.current;
-    if (!el || level >= max) return;
+    if (!el || level >= max || el.clientHeight === 0) return;
     const boxes = el.hasAttribute("data-fit") ? [el] : Array.from(el.querySelectorAll<HTMLElement>("[data-fit]"));
     if (boxes.some(overflows)) setLevel(level + 1);
   });

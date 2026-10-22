@@ -377,7 +377,7 @@ export function WeekCalendar() {
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] pr-[18px] pl-[80px]">
-      <section className="flex h-full min-h-0 flex-col rounded-[18px] bg-card px-[16px] pt-[14px] pb-[14px]">
+      <section className="flex h-full min-h-0 flex-col panel rounded-[18px] px-[16px] pt-[14px] pb-[14px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[10px]">
             <WeekArrows label={`${week.label} 2026`} onMove={move} size={30} className="text-[15px] font-bold" />

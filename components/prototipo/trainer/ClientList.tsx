@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { EllipsisVertical, Search, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
@@ -24,8 +23,9 @@ const filters = [
 
 type FilterKey = (typeof filters)[number]["key"];
 
-export function ClientList() {
-  const params = useSearchParams();
+// search: i parametri dell'indirizzo (?filtro=), passati da TrainerApp.
+export function ClientList({ search }: { search: string }) {
+  const params = new URLSearchParams(search);
   const initial = (filters.find((f) => f.key === params.get("filtro"))?.key ?? "tutti") as FilterKey;
   const [filter, setFilter] = useState<FilterKey>(initial);
   const [query, setQuery] = useState("");

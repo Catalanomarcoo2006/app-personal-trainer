@@ -272,7 +272,7 @@ export function AgendaCard() {
   };
 
   return (
-    <section id="agenda" className="flex min-h-0 flex-1 flex-col rounded-[18px] bg-card px-[14px] pt-[12px] pb-[12px]">
+    <section id="agenda" className="flex min-h-0 flex-1 flex-col panel rounded-[18px] px-[14px] pt-[12px] pb-[12px]">
       <div className="flex items-center justify-between">
         <Link href={ROUTES.calendario} onClick={() => playSound("tap")} className="group flex items-center gap-[6px] text-[14px] font-bold">
           Agenda <CalendarDays size={13} strokeWidth={2} className="text-ink/60" />

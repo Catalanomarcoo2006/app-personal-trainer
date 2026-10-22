@@ -1,200 +1,215 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useReducedMotion } from "motion/react";
-import { Player } from "@remotion/player";
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { ArrowUpRight, TrendingUp } from "lucide-react";
-import { CountUp, formatEuro } from "@/components/ui/motion";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowUpRight, ChevronRight, TrendingUp } from "lucide-react";
+import { CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { revenue } from "@/libs/prototipo/dati-finti";
+import { clientById, revenue, urgent } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./nav";
+import { ClientAvatar } from "./shared";
 
-type ChartProps = { months: { label: string; value: number }[] };
+type Month = { label: string; value: number };
 
-const FPS = 30;
-const GROW_END = 60; // fine della crescita delle barre; dopo resta solo l'animazione "ambiente"
+const FULL: Record<string, string> = {
+  Gen: "Gennaio",
+  Feb: "Febbraio",
+  Mar: "Marzo",
+  Apr: "Aprile",
+  Mag: "Maggio",
+  Giu: "Giugno",
+  Lug: "Luglio",
+  Ago: "Agosto",
+  Set: "Settembre",
+  Ott: "Ottobre",
+  Nov: "Novembre",
+  Dic: "Dicembre",
+};
 
 const compact = (v: number) => `${(v / 1000).toFixed(1).replace(".", ",")}k`;
 
-// I colori vengono dalle variabili CSS della pagina: il grafico cambia da solo con il tema e col colore del marchio.
-const ink = (opacity: number) => ({ fill: "var(--color-ink)", fillOpacity: opacity });
-
-// Composizione Remotion: barre che crescono a molla, media che si disegna,
-// poi un riflesso che scorre sul mese corrente e piccole scintille che salgono.
-export function RevenueBars({ months }: ChartProps) {
-  const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
-
-  const top = 44;
-  const bottom = 46;
-  const padX = 18;
-  const labelGutter = 92;
-  const chartH = height - top - bottom;
-  const max = Math.max(...months.map((m) => m.value)) * 1.12;
-  const slot = (width - padX * 2 - labelGutter) / months.length;
-  const barW = Math.min(slot * 0.5, 70);
+// Incassi degli ultimi mesi, una serie sola nel colore del trainer: il mese in corso è pieno e ha la cifra
+// scritta, gli altri sono tenui e mostrano la cifra al passaggio del mouse. La linea tratteggiata è la media.
+// Le barre crescono una volta all'apertura, poi il grafico resta fermo: niente animazioni continue.
+export function RevenueChart({ months = revenue.months }: { months?: Month[] }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const max = Math.max(...months.map((m) => m.value)) * 1.18;
   const avg = months.reduce((s, m) => s + m.value, 0) / months.length;
-  const avgY = top + chartH * (1 - avg / max);
   const last = months.length - 1;
-
-  const avgDraw = interpolate(frame, [30, 70], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const ambient = Math.max(0, frame - GROW_END);
-  const sweep = ((ambient % 110) / 110) * 1.6 - 0.3;
+  const pct = (v: number) => `${(v / max) * 100}%`;
 
   return (
-    <AbsoluteFill>
-      <svg width={width} height={height} style={{ fontFamily: "inherit" }}>
-        <defs>
-          <linearGradient id="barra-mese" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" style={{ stopColor: "var(--trainer)", stopOpacity: 0.55 }} />
-            <stop offset="100%" style={{ stopColor: "var(--trainer)", stopOpacity: 1 }} />
-          </linearGradient>
-          <linearGradient id="riflesso" x1="0" x2="1" y1="0" y2="0">
-            <stop offset={Math.max(0, sweep - 0.15)} stopColor="white" stopOpacity={0} />
-            <stop offset={Math.min(1, Math.max(0, sweep))} stopColor="white" stopOpacity={0.5} />
-            <stop offset={Math.min(1, sweep + 0.15)} stopColor="white" stopOpacity={0} />
-          </linearGradient>
-          <filter id="alone" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="12" />
-          </filter>
-        </defs>
-
-        {[0.25, 0.5, 0.75].map((t) => (
-          <line key={t} x1={padX} x2={width - padX} y1={top + chartH * t} y2={top + chartH * t} style={{ stroke: "var(--color-ink)", strokeOpacity: 0.07 }} strokeDasharray="4 6" />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="relative min-h-0 flex-1" onMouseLeave={() => setHover(null)}>
+        {/* griglia leggera */}
+        {[0.33, 0.66].map((t) => (
+          <span key={t} aria-hidden className="absolute inset-x-0 border-t border-dashed border-line" style={{ bottom: `${t * 100}%` }} />
         ))}
+        <span aria-hidden className="absolute inset-x-0 bottom-0 border-t border-line" />
 
-        {months.map((m, i) => {
-          const grow = spring({ frame: frame - 4 - i * 6, fps, config: { damping: 13, stiffness: 120, mass: 0.7 } });
-          const h = Math.max(0, (m.value / max) * chartH * grow);
-          const x = padX + slot * i + (slot - barW) / 2;
-          const y = top + chartH - h;
-          const isLast = i === last;
-          const labelIn = interpolate(frame, [18 + i * 6, 32 + i * 6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-          return (
-            <g key={m.label}>
-              {isLast && h > 0 && (
-                <rect x={x - 4} y={y + 10} width={barW + 8} height={h} rx={14} style={{ fill: "var(--trainer)", fillOpacity: 0.28 + 0.1 * Math.sin(ambient / 9) }} filter="url(#alone)" />
-              )}
-              <rect x={x} y={y} width={barW} height={h} rx={barW / 2.6} style={isLast ? { fill: "url(#barra-mese)" } : ink(0.08)} />
-              {isLast && h > 0 && <rect x={x} y={y} width={barW} height={h} rx={barW / 2.6} fill="url(#riflesso)" opacity={ambient > 0 ? 1 : 0} />}
-              <text x={x + barW / 2} y={height - bottom + 26} textAnchor="middle" fontSize={20} fontWeight={600} style={ink(isLast ? 0.9 : 0.42)}>
-                {m.label}
-              </text>
-              <text x={x + barW / 2} y={y - 12} textAnchor="middle" fontSize={isLast ? 22 : 18} fontWeight={700} style={ink((isLast ? 1 : 0.45) * labelIn)}>
-                {compact(m.value * grow)}
-              </text>
-            </g>
-          );
-        })}
+        {/* media */}
+        <motion.div
+          aria-hidden
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: 0.45, duration: 0.6, ease: EASE_OUT }}
+          className="absolute inset-x-0 z-10 origin-left border-t-[1.5px] border-dashed border-ink/30"
+          style={{ bottom: pct(avg) }}
+        >
+          <span className="absolute left-0 bottom-[3px] rounded-full bg-card/80 px-[5px] text-[9.5px] font-semibold text-muted">media {compact(avg)}</span>
+        </motion.div>
 
-        <line x1={padX} x2={padX + (width - padX * 2) * avgDraw} y1={avgY} y2={avgY} style={{ stroke: "var(--color-ink)", strokeOpacity: 0.3 }} strokeWidth={2} strokeDasharray="6 6" />
-        <text x={width - padX} y={avgY - 8} textAnchor="end" fontSize={17} fontWeight={600} style={ink(0.45 * avgDraw)}>
-          media
-        </text>
-        <text x={width - padX} y={avgY + 22} textAnchor="end" fontSize={19} fontWeight={700} style={ink(0.75 * avgDraw)}>
-          {compact(avg)}
-        </text>
-
-        {ambient > 0 &&
-          Array.from({ length: 7 }, (_, k) => {
-            const x0 = padX + slot * last + slot * 0.25 + ((k * 37) % Math.round(slot * 0.5));
-            const life = ((ambient * 1.1 + k * 23) % 70) / 70;
-            const yTop = top + chartH - (months[last].value / max) * chartH;
-            return <circle key={k} cx={x0} cy={yTop - 4 - life * 46} r={2.6 - life * 1.4} style={{ fill: "var(--trainer)", fillOpacity: (1 - life) * 0.8 }} />;
+        <div className="absolute inset-0 grid gap-[8px]" style={{ gridTemplateColumns: `repeat(${months.length}, minmax(0, 1fr))` }}>
+          {months.map((m, i) => {
+            const isLast = i === last;
+            const lit = isLast || hover === i;
+            return (
+              <div key={m.label} className="relative flex cursor-default items-end justify-center" onMouseEnter={() => setHover(i)}>
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: pct(m.value) }}
+                  transition={{ delay: 0.08 + i * 0.05, duration: 0.6, ease: EASE_OUT }}
+                  className="relative w-[58%] max-w-[34px] rounded-t-[8px] rounded-b-[3px] transition-[background,box-shadow] duration-200"
+                  style={{
+                    background: isLast
+                      ? "linear-gradient(180deg, color-mix(in srgb, var(--trainer) 72%, white), var(--trainer))"
+                      : `color-mix(in srgb, var(--trainer) ${hover === i ? 42 : 20}%, transparent)`,
+                    boxShadow: isLast ? "0 10px 22px -8px color-mix(in srgb, var(--trainer) 70%, transparent), inset 0 1px 0 rgba(255,255,255,0.45)" : undefined,
+                  }}
+                >
+                  {isLast && (
+                    <span className="absolute -top-[19px] left-1/2 -translate-x-1/2 text-[11px] font-extrabold tabular-nums">{compact(m.value)}</span>
+                  )}
+                </motion.div>
+                <AnimatePresence>
+                  {hover === i && !isLast && (
+                    <motion.span
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, transition: { duration: 0.08 } }}
+                      transition={{ duration: 0.14 }}
+                      className="pointer-events-none absolute z-20 rounded-[9px] bg-card px-[8px] py-[5px] text-center whitespace-nowrap shadow-[0_8px_20px_rgba(0,0,0,0.14)]"
+                      style={{ bottom: `calc(${pct(m.value)} + 6px)` }}
+                    >
+                      <span className="block text-[9.5px] text-muted">{FULL[m.label] ?? m.label}</span>
+                      <span className="block text-[12px] font-bold tabular-nums">{formatEuro(m.value)}</span>
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                {lit && <span className="sr-only">{`${FULL[m.label] ?? m.label}: ${formatEuro(m.value)}`}</span>}
+              </div>
+            );
           })}
-      </svg>
-    </AbsoluteFill>
-  );
-}
+        </div>
+      </div>
 
-// Player Remotion che prende le proporzioni dello spazio disponibile.
-export function RevenueChart({ months = revenue.months }: { months?: ChartProps["months"] }) {
-  const reduce = useReducedMotion();
-  const inputProps = useMemo<ChartProps>(() => ({ months }), [months]);
-  const box = useRef<HTMLDivElement>(null);
-  // La composizione è disegnata al doppio delle misure reali: nitida e mai deformata.
-  const [size, setSize] = useState({ w: 680, h: 360 });
-
-  useEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0) setSize({ w: Math.round(width * 2), h: Math.max(240, Math.round(height * 2)) });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  return (
-    <div ref={box} className="relative h-full min-h-0 w-full">
-      <Player
-        component={RevenueBars}
-        inputProps={inputProps}
-        durationInFrames={FPS * 60 * 30}
-        fps={FPS}
-        compositionWidth={size.w}
-        compositionHeight={size.h}
-        autoPlay={!reduce}
-        initialFrame={reduce ? GROW_END : 0}
-        loop
-        controls={false}
-        clickToPlay={false}
-        doubleClickToFullscreen={false}
-        spaceKeyToPlayOrPause={false}
-        // Muto e senza tag audio: niente AudioContext, quindi parte da solo anche prima di un clic.
-        initiallyMuted
-        numberOfSharedAudioTags={0}
-        acknowledgeRemotionLicense
-        style={{ width: "100%", height: "100%" }}
-      />
+      <div className="mt-[6px] grid gap-[8px]" style={{ gridTemplateColumns: `repeat(${months.length}, minmax(0, 1fr))` }}>
+        {months.map((m, i) => (
+          <span key={m.label} className={`text-center text-[10px] font-semibold ${i === last ? "text-ink" : "text-muted"}`}>
+            {m.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
+// Pagamenti ancora da ricevere (dalle urgenze di tipo "pagamento").
+const pending = urgent
+  .filter((u) => u.kind === "pagamento")
+  .map((u) => ({ clientId: u.clientId, amount: Number(u.title.replace(/\D/g, "")), detail: u.detail.split("·")[1]?.trim() ?? "" }));
+
 export function RevenueCard() {
+  const collectedPct = (revenue.collected / revenue.forecast) * 100;
+  const outstandingPct = (revenue.outstanding / revenue.forecast) * 100;
+  const missing = Math.max(0, revenue.forecast - revenue.collected - revenue.outstanding);
+
   return (
-    <section className="flex h-full flex-col rounded-[18px] bg-card px-[16px] pt-[14px] pb-[14px]">
+    <section className="panel flex h-full flex-col rounded-[18px] px-[16px] pt-[13px] pb-[13px]">
       <div className="flex items-center justify-between">
         <p className="text-[12px] font-semibold text-ink/60">Incassi di {revenue.month.toLowerCase()}</p>
-        <Link href={ROUTES.incassi} onClick={() => playSound("tap")} aria-label="Apri incassi" className="grid size-[28px] place-items-center rounded-full border border-line transition-transform hover:-translate-y-[1.5px]">
+        <Link
+          href={ROUTES.incassi}
+          onClick={() => playSound("tap")}
+          aria-label="Apri incassi"
+          className="grid size-[28px] place-items-center rounded-full border border-line transition-transform hover:-translate-y-[1.5px]"
+        >
           <ArrowUpRight size={14} />
         </Link>
       </div>
 
-      <div className="mt-[6px] flex items-end gap-[10px]">
-        <p className="text-[36px] leading-none font-extrabold tracking-[-0.04em]">
-          <CountUp value={revenue.collected} format={formatEuro} delay={0.3} duration={1.2} />
+      <div className="mt-[4px] flex items-end justify-between gap-[8px]">
+        <p className="text-[34px] leading-none font-extrabold tracking-[-0.04em]">
+          <CountUp value={revenue.collected} format={formatEuro} delay={0.15} duration={0.9} />
         </p>
-        <span className="mb-[4px] flex items-center gap-[4px] rounded-full bg-ok-soft px-[8px] py-[3px] text-[10.5px] font-bold text-ok">
+        <span className="mb-[4px] flex shrink-0 items-center gap-[4px] rounded-full bg-ok-soft px-[8px] py-[3px] text-[10.5px] font-bold text-ok">
           <TrendingUp size={11} strokeWidth={2.6} /> +{revenue.delta}% su settembre
         </span>
       </div>
 
-      <div className="mt-[6px] min-h-0 flex-1">
+      {/* verso il previsto del mese: incassato pieno, da incassare tenue, il resto è binario */}
+      <div className="mt-[12px]">
+        <div className="flex h-[10px] gap-[2px] overflow-hidden rounded-full bg-soft">
+          <motion.span
+            initial={{ width: 0 }}
+            animate={{ width: `${collectedPct}%` }}
+            transition={{ delay: 0.2, duration: 0.7, ease: EASE_OUT }}
+            className="h-full rounded-full"
+            style={{ background: "var(--trainer)" }}
+          />
+          <motion.span
+            initial={{ width: 0 }}
+            animate={{ width: `${outstandingPct}%` }}
+            transition={{ delay: 0.75, duration: 0.4, ease: EASE_OUT }}
+            className="h-full rounded-full"
+            style={{
+              background: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--trainer) 55%, transparent) 0 3px, color-mix(in srgb, var(--trainer) 25%, transparent) 3px 6px)",
+            }}
+          />
+        </div>
+        <div className="mt-[7px] flex items-center justify-between text-[10.5px]">
+          <span className="text-muted">
+            <b className="font-bold text-ink">{Math.round(collectedPct)}%</b> del previsto · {formatEuro(revenue.forecast)}
+          </span>
+          <span className="text-muted">mancano {formatEuro(missing)}</span>
+        </div>
+      </div>
+
+      <p className="mt-[14px] text-[11px] font-semibold text-ink/60">Ultimi 6 mesi</p>
+      <div className="mt-[18px] min-h-[90px] flex-1">
         <RevenueChart />
       </div>
 
-      <div className="mt-[8px] grid grid-cols-3 divide-x divide-line rounded-[14px] bg-soft py-[10px]">
-        <div className="px-[12px] leading-none">
-          <p className="flex items-center gap-[5px] text-[10px] text-muted">
-            <span className="size-[6px] rounded-full bg-ok" /> Incassato
-          </p>
-          <p className="mt-[5px] text-[14px] font-bold">{formatEuro(revenue.collected)}</p>
-        </div>
-        <Link href={ROUTES.incassi} onClick={() => playSound("tap")} className="group px-[12px] leading-none">
-          <p className="flex items-center gap-[5px] text-[10px] text-muted">
+      {/* chi deve ancora pagare: un clic e si apre il profilo */}
+      <div className="mt-[12px]">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-[6px] text-[11px] font-semibold text-ink/60">
             <span className="size-[6px] rounded-full bg-[#f5a524]" /> Da incassare
           </p>
-          <p className="mt-[5px] text-[14px] font-bold group-hover:underline">{formatEuro(revenue.outstanding)}</p>
-        </Link>
-        <div className="px-[12px] leading-none">
-          <p className="flex items-center gap-[5px] text-[10px] text-muted">
-            <span className="size-[6px] rounded-full" style={{ background: "var(--trainer)" }} /> Previsto
-          </p>
-          <p className="mt-[5px] text-[14px] font-bold">{formatEuro(revenue.forecast)}</p>
+          <span className="text-[11px] font-bold tabular-nums">{formatEuro(revenue.outstanding)}</span>
+        </div>
+        <div className="mt-[6px] flex flex-col gap-[5px]">
+          {pending.map((p) => {
+            const c = clientById(p.clientId);
+            if (!c) return null;
+            return (
+              <Link
+                key={p.clientId + p.amount}
+                href={ROUTES.cliente(p.clientId)}
+                onClick={() => playSound("tap")}
+                className="glass-row group flex items-center gap-[9px] rounded-[12px] px-[9px] py-[6px]"
+              >
+                <ClientAvatar c={c} size={24} />
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className="block truncate text-[11.5px] font-bold">{c.name}</span>
+                  <span className="block truncate text-[10px] text-muted">{p.detail}</span>
+                </span>
+                <span className="text-[12px] font-bold tabular-nums">{formatEuro(p.amount)}</span>
+                <ChevronRight size={13} className="text-ink/35 transition-transform group-hover:translate-x-[2px]" />
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

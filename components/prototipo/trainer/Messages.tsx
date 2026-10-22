@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { useSearchParams } from "next/navigation";
 import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound } from "lucide-react";
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
@@ -58,8 +57,9 @@ function PdfMessage({ a }: { a: Attachment }) {
   );
 }
 
-export function MessagesView() {
-  const params = useSearchParams();
+// search: i parametri dell'indirizzo (?cliente=), passati da TrainerApp.
+export function MessagesView({ search }: { search: string }) {
+  const params = new URLSearchParams(search);
   const target = params.get("cliente");
   const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : conversations[0].clientId));
   const [threads, setThreads] = useState(initialThreads);
@@ -151,7 +151,7 @@ export function MessagesView() {
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_minmax(0,1fr)] gap-x-[14px] pr-[18px] pl-[80px]">
-      <section className="flex min-h-0 flex-col rounded-[18px] bg-card px-[14px] pt-[14px] pb-[12px]">
+      <section className="flex min-h-0 flex-col panel rounded-[18px] px-[14px] pt-[14px] pb-[12px]">
         <label className="flex h-[34px] items-center gap-[8px] rounded-full bg-soft px-[12px]">
           <Search size={13} className="text-muted" />
           <input placeholder="Cerca nei messaggi" className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-muted" />
@@ -220,7 +220,7 @@ export function MessagesView() {
         </div>
       </section>
 
-      <section className="flex min-h-0 min-w-0 flex-col rounded-[18px] bg-card">
+      <section className="flex min-h-0 min-w-0 flex-col panel rounded-[18px]">
         <div className="flex items-center gap-[12px] border-b border-line px-[18px] py-[12px]">
           <ClientAvatar c={client} size={42} />
           <div className="leading-none">

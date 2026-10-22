@@ -32,7 +32,7 @@ import { agenda, appointmentColors, Client, progressOf, TODAY_INDEX, toneColors,
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
-const card = "rounded-[18px] bg-card";
+const card = "panel rounded-[18px]";
 const kg = (n: number) => n.toFixed(1).replace(".", ",");
 
 function Ring({ percent, color, track, size = 46 }: { percent: number; color: string; track: string; size?: number }) {
@@ -360,7 +360,7 @@ export function ClientProfile({ c }: { c: Client }) {
 export function ClientNotFound() {
   return (
     <main className="absolute inset-x-0 top-[90px] grid place-items-center pl-[80px]">
-      <div className="rounded-[18px] bg-card px-[28px] py-[24px] text-center">
+      <div className="panel rounded-[18px] px-[28px] py-[24px] text-center">
         <p className="text-[15px] font-bold">Cliente non trovato</p>
         <Link href={ROUTES.clienti} className="mt-[10px] inline-block text-[12px] font-semibold underline">
           Torna alla lista dei clienti
