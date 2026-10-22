@@ -16,7 +16,7 @@ Il design approvato è in `docs/specs/2026-10-21-design.md`, il piano in `docs/p
 ## Comandi
 - Installare: `npm install`
 - Avviare in locale: `npm run dev`
-- Test: da definire nel piano (unit + test RLS + Playwright)
+- Test: `npm test` (Vitest, `tests/unit/`); poi test RLS e Playwright come da piano
 - Build: `npm run build` (serve `.env.local` con le chiavi Supabase)
 
 ## Struttura

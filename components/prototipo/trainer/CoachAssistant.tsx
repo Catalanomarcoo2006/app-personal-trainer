@@ -7,6 +7,7 @@ import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet,
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
+import { estraiAzione, ripristinaNomi, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { navigateWithStain, ROUTES } from "./nav";
 
 // L'assistente del trainer si chiama Leo.
@@ -225,47 +226,117 @@ function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; pla
 // ——— La chat (resta mentre si cambia pagina) ———
 
 type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"] };
-type Chat = { messages: Msg[]; typing: boolean; ask: (q: string) => void };
+type Chat = { messages: Msg[]; typing: boolean; thinking: boolean; ask: (q: string) => void };
+type Turn = { role: "user" | "assistant"; content: string };
 
+const sectionLinks: Record<Exclude<Sezione, "cliente">, NonNullable<Answer["action"]>> = {
+  oggi: { label: "Apri Oggi", href: ROUTES.oggi },
+  clienti: { label: "Vedi i clienti", href: ROUTES.clienti },
+  messaggi: { label: "Apri Messaggi", href: ROUTES.messaggi },
+  schede: { label: "Apri Schede", href: ROUTES.schede },
+  calendario: { label: "Apri Calendario", href: ROUTES.calendario },
+  incassi: { label: "Apri Incassi", href: ROUTES.incassi },
+  impostazioni: { label: "Apri Impostazioni", href: ROUTES.impostazioni },
+};
+
+// Il tasto proposto dall'AI ([[vai:…]]) diventa un link alla sezione o al profilo del cliente.
+function actionFor(vai: ReturnType<typeof estraiAzione>["vai"]): Answer["action"] {
+  if (!vai) return undefined;
+  if (vai.sezione !== "cliente") return sectionLinks[vai.sezione];
+  const c = vai.clienteId ? clientById(vai.clienteId) : undefined;
+  return c ? { label: `Apri il profilo di ${c.name.split(" ")[0]}`, href: ROUTES.cliente(c.id) } : undefined;
+}
+
+// Le risposte arrivano dall'AI (app/prototipo/api/leo) e si scrivono man mano che arrivano.
+// Senza chiave o se l'AI non risponde, Leo usa le risposte calcolate dai dati: la demo non si blocca mai.
 function useCoachChat(): Chat {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const nextId = useRef(1);
   const timers = useRef<number[]>([]);
   const busy = useRef(false);
-  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+  const history = useRef<Turn[]>([]);
+  const request = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      timers.current.forEach((t) => window.clearTimeout(t));
+      request.current?.abort();
+    },
+    [],
+  );
 
-  const ask = useCallback((question: string) => {
+  const ask = useCallback(async (question: string) => {
     const text = question.trim();
     if (!text || busy.current) return;
     busy.current = true;
     playSound("tap");
     setMessages((m) => [...m, { id: nextId.current++, from: "trainer", text }]);
+    history.current = [...history.current, { role: "user", content: text }];
     setTyping(true);
-    const a = answer(text);
-    const words = a.text.split(" ");
     const id = nextId.current++;
-    timers.current.push(
-      window.setTimeout(() => {
+    const thinkTimer = window.setTimeout(() => setThinking(true), 1200);
+
+    const finish = (shown: string) => {
+      history.current = [...history.current, { role: "assistant", content: shown }];
+      busy.current = false;
+      playSound("confirm");
+    };
+    const show = (shown: string, action?: Answer["action"]) =>
+      setMessages((m) => (m.some((x) => x.id === id) ? m.map((x) => (x.id === id ? { ...x, text: shown, action } : x)) : [...m, { id, from: "coach", text: shown, action }]));
+
+    const ctrl = new AbortController();
+    request.current = ctrl;
+    let raw = "";
+    try {
+      const res = await fetch("/prototipo/api/leo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history.current.slice(-10) }),
+        signal: ctrl.signal,
+      });
+      if (!res.ok || !res.body) throw new Error(`${res.status} ${((await res.json().catch(() => ({}))) as { errore?: string }).errore ?? ""}`);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        raw += decoder.decode(value, { stream: true });
+        window.clearTimeout(thinkTimer);
         setTyping(false);
-        setMessages((m) => [...m, { id, from: "coach", text: "" }]);
-        words.forEach((_, i) =>
-          timers.current.push(
-            window.setTimeout(() => {
-              const last = i === words.length - 1;
-              setMessages((m) => m.map((x) => (x.id === id ? { ...x, text: words.slice(0, i + 1).join(" "), action: last ? a.action : undefined } : x)));
-              if (last) {
-                busy.current = false;
-                playSound("confirm");
-              }
-            }, i * 28),
-          ),
-        );
-      }, 550),
-    );
+        setThinking(false);
+        show(ripristinaNomi(estraiAzione(raw).text));
+      }
+      if (!raw.trim()) throw new Error("risposta vuota");
+      const { text: final, vai } = estraiAzione(raw);
+      show(ripristinaNomi(final), actionFor(vai));
+      finish(ripristinaNomi(final));
+    } catch (e) {
+      window.clearTimeout(thinkTimer);
+      setThinking(false);
+      if (ctrl.signal.aborted) return;
+      if (raw.trim()) {
+        // interrotta a metà: resta quello che è arrivato
+        finish(ripristinaNomi(estraiAzione(raw).text));
+        return;
+      }
+      console.warn("Leo: AI non raggiungibile, uso le risposte di riserva.", e instanceof Error ? e.message : e);
+      const a = answer(text);
+      const words = a.text.split(" ");
+      setTyping(false);
+      words.forEach((_, i) =>
+        timers.current.push(
+          window.setTimeout(() => {
+            const last = i === words.length - 1;
+            show(words.slice(0, i + 1).join(" "), last ? a.action : undefined);
+            if (last) finish(a.text);
+          }, i * 28),
+        ),
+      );
+    }
   }, []);
 
-  return { messages, typing, ask };
+  return { messages, typing, thinking, ask };
 }
 
 // Leo che si sporge dal bordo destro della chat, aggrappato con le mani: esce da dietro la chat quando si apre.
@@ -287,7 +358,7 @@ function SidePeek() {
 }
 
 function ChatPanel({ left, origin, chat, close }: { left: number; origin: string; chat: Chat; close: () => void }) {
-  const { messages, typing, ask } = chat;
+  const { messages, typing, thinking, ask } = chat;
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -388,10 +459,17 @@ function ChatPanel({ left, origin, chat, close }: { left: number; origin: string
             </motion.div>
           ))}
           {typing && (
-            <div className="flex gap-[4px] self-start rounded-[16px] bg-soft px-[12px] py-[11px]">
-              {[0, 1, 2].map((d) => (
-                <motion.span key={d} className="size-[6px] rounded-full bg-ink/40" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: d * 0.12 }} />
-              ))}
+            <div className="flex items-center gap-[8px] self-start">
+              <div className="flex gap-[4px] rounded-[16px] bg-soft px-[12px] py-[11px]">
+                {[0, 1, 2].map((d) => (
+                  <motion.span key={d} className="size-[6px] rounded-full bg-ink/40" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: d * 0.12 }} />
+                ))}
+              </div>
+              {thinking && (
+                <motion.span initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25, ease: EASE_OUT }} className="text-[11px] text-muted">
+                  {COACH_NAME} sta ragionando…
+                </motion.span>
+              )}
             </div>
           )}
         </div>

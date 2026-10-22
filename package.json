@@ -7,7 +7,8 @@
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
@@ -50,6 +51,7 @@
     "daisyui": "^5.0.5",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.1.10",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.5"
   }
 }

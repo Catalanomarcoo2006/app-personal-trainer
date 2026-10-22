@@ -34,8 +34,6 @@
 ### Task 1: Vitest e stato condiviso allargato
 
 **Files:**
-- Modify: `package.json` (devDependency `vitest`, script `"test": "vitest run"`)
-- Create: `vitest.config.ts` (alias `@` → radice del progetto, ambiente `node`)
 - Modify: `libs/prototipo/dati-finti.ts`, `libs/prototipo/stato.ts`
 - Create: `libs/prototipo/calcoli.ts`, `libs/prototipo/file-url.ts`
 - Modify: `components/prototipo/trainer/Messages.tsx`, `components/prototipo/trainer/Plans.tsx`
@@ -56,7 +54,7 @@
 - Produces in `calcoli.ts`: `unisci<T extends { ora: number }>(locale: T, remoto: T): T`; `nonLetti(msgs: ChatMessage[], visti: number, da: ChatMessage["from"]): number`; `variazione(misure: Misura[], campo: CampoMisura): number | null`; `leggiNumero(testo: string): number | null`; `misuraValida(campo: CampoMisura, n: number): boolean` (peso 30–250 kg, circonferenze 15–200 cm); `controllaFile(f: { name: string; type: string; size: number }): { ok: true; tipo: "pdf" | "foto" } | { ok: false; motivo: string }`; `avanzamento(partenza: number, attuale: number, traguardo: number): number` (percentuale intera tra 0 e 100)
 - Produces in `file-url.ts`: `useFileUrl(file: Blob | string): string` (stringa → uguale; Blob → `URL.createObjectURL`, revocato allo smontaggio)
 
-- [ ] **Step 1:** `npm install -D vitest`; crea `vitest.config.ts`; aggiungi lo script `test`.
+- [ ] **Step 1:** Vitest è già installato (`vitest.config.mts`, `npm test`, 22/10 con Leo AI): niente da fare.
 - [ ] **Step 2: Test** `tests/unit/calcoli.test.ts`:
   - `unisci({ ora: 5 }, { ora: 9 })` → il remoto; `unisci({ ora: 9 }, { ora: 5 })` → il locale; a parità tiene il locale.
   - `nonLetti(msgs, 2, "trainer")` conta solo i messaggi `from: "trainer"` con indice ≥ 2.
@@ -103,7 +101,7 @@
 - Modify: `components/prototipo/trainer/CoachAssistant.tsx`
 
 **Interfaces:**
-- Produces: `COACH_NAME`, `CoachFace({ size }: { size: number })` (spostati così come sono); `type Speech`, `SpeechIcon`, `Bubble({ speech, place, onAsk })` con `Tail` (spostati così come sono); `type LeoAnswer = { text: string; action?: { label: string; href: string } }`, `type LeoMsg = { id: number; from: "user" | "coach"; text: string; action?: LeoAnswer["action"] }`, `type LeoChat = { messages: LeoMsg[]; typing: boolean; ask: (q: string) => void }`, `useLeoChat(answer: (q: string) => LeoAnswer): LeoChat` (l'attuale `useCoachChat`, con la risposta passata da fuori); `LeoThread({ chat, intro, suggestions, onAction, placeholder }: { chat: LeoChat; intro: ReactNode; suggestions: string[]; onAction: (href: string, origin: { x: number; y: number }) => void; placeholder: string })` = elenco messaggi + "sta scrivendo" + domande pronte + campo (testo `text-[16px] md:text-[13px]`), estratto da `ChatPanel`. I link d'azione restano `<a data-macchia>` come oggi; il trainer passa `onAction = (href, origin) => navigateWithStain(href, origin, close)` (macchia d'olio, decisa il 22/10).
+- Produces: `COACH_NAME`, `CoachFace({ size }: { size: number })` (spostati così come sono); `type Speech`, `SpeechIcon`, `Bubble({ speech, place, onAsk })` con `Tail` (spostati così come sono); `type LeoAnswer = { text: string; action?: { label: string; href: string } }`, `type LeoMsg = { id: number; from: "user" | "coach"; text: string; action?: LeoAnswer["action"] }`, `type LeoChat = { messages: LeoMsg[]; typing: boolean; ask: (q: string) => void }`, `useLeoChat(opts: { endpoint: string; fallback: (q: string) => LeoAnswer }): LeoChat` (l'attuale `useCoachChat`: chiede all'AI su `endpoint`, scrive la risposta mentre arriva, ripristina i nomi e legge `[[vai:…]]` con `libs/prototipo/leo-contesto.ts`; senza AI usa `fallback`); `LeoChat` ha anche `thinking: boolean` ("Leo sta ragionando…"); `LeoThread({ chat, intro, suggestions, onAction, placeholder }: { chat: LeoChat; intro: ReactNode; suggestions: string[]; onAction: (href: string, origin: { x: number; y: number }) => void; placeholder: string })` = elenco messaggi + "sta scrivendo" + domande pronte + campo (testo `text-[16px] md:text-[13px]`), estratto da `ChatPanel`. I link d'azione restano `<a data-macchia>` come oggi; il trainer passa `onAction = (href, origin) => navigateWithStain(href, origin, close)` (macchia d'olio, decisa il 22/10).
 
 - [ ] **Step 1:** Sposta i pezzi; `CoachAssistant.tsx` tiene solo risposte, vignette del trainer, `SidePeek`, `ChatPanel` (intestazione + `LeoThread` con `intro` = blocco "novità"), `CoachButton`, `CoachStage`.
 - [ ] **Step 2: Verifica** nel browser `/prototipo/trainer`: vignette, apertura chat, domande pronte, link d'azione, tasto col viso nelle altre pagine: tutto come prima; nessun errore in console.
@@ -206,7 +204,7 @@
 - [ ] **Step 2:** `npm test` → FAIL.
 - [ ] **Step 3:** Implementa `rispostaCliente`: domanda pronta esatta → sua risposta; dolore (`/male|dolor|fastidi|ginocch|schiena|spalla/i`) → risposta del ginocchio se c'è "ginocch", altrimenti "Fermati con l'esercizio che ti dà fastidio e fai solo quelli senza dolore. Se è forte o non passa in qualche giorno, senti un medico. Ho avvisato Marco, che ti scriverà."; alimentazione (`/mangi|dieta|aliment|cena|pranzo|colazion|protein|carboidrat|integrator/i`) → `assistantFallback`; altro → "Posso aiutarti con il tuo allenamento, gli esercizi e le abitudini. Per tutto il resto scrivi a Marco in chat."
 - [ ] **Step 4:** `npm test` → PASS.
-- [ ] **Step 5:** `LeoCliente`: viso in cerchio `glass` da 52 px sopra la barra, a destra; vignetta di benvenuto ("Ciao Giulia! Oggi c'è il Giorno A 💪") una volta per finestra, 1,2 s dopo l'ingresso, per 4,5 s; tocco → foglio alto 80% con Leo affacciato dal bordo alto (testa e spalle di `in-piedi.webp`, come il vecchio `Peek` in `git show c1cc61c:components/prototipo/trainer/CoachAssistant.tsx`), `LeoThread` con `assistantSuggestions`; se `dolore` → `stato.segnalaDolore(domanda)`.
+- [ ] **Step 5:** `LeoCliente` (risposte da `rispostaCliente`, senza AI: l'AI per i clienti si decide dopo, con il fornitore UE): viso in cerchio `glass` da 52 px sopra la barra, a destra; vignetta di benvenuto ("Ciao Giulia! Oggi c'è il Giorno A 💪") una volta per finestra, 1,2 s dopo l'ingresso, per 4,5 s; tocco → foglio alto 80% con Leo affacciato dal bordo alto (testa e spalle di `in-piedi.webp`, come il vecchio `Peek` in `git show c1cc61c:components/prototipo/trainer/CoachAssistant.tsx`), `LeoThread` con `assistantSuggestions`; se `dolore` → `stato.segnalaDolore(domanda)`.
 - [ ] **Step 6: Verifica** a 375 px: il foglio non copre la tacca, il campo non fa zoom, "Mi fa male il ginocchio" mette l'avviso nello stato.
 - [ ] **Step 7:** `npx tsc --noEmit` → ok. Commit `feat: Leo nell'app del cliente`.
 

@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-22
+**Ultimo aggiornamento:** 2026-10-22 (sera)
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -18,7 +18,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Da fare (TODO)
 - Prototipo visivo di 2 schermate (Oggi del trainer, allenamento del cliente) da approvare.
 - Pulizia boilerplate (via Stripe, blog, Crisp, gpt.ts), database con RLS, aree trainer/cliente/admin, assistente, account demo, landing.
-- Marco: chiavi Supabase (progetto UE) e Resend in `.env.local`.
+- Marco: chiave DeepSeek in `.env.local` (`AI_API_KEY=`, righe già pronte); chiavi Supabase (progetto UE) e Resend.
 
 ## Decisioni prese
 - Un'unica web app sul boilerplate, non due app né Lovable: un solo progetto, massimo controllo su animazioni.
@@ -28,6 +28,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Avvisi in app + email; push solo dopo, insieme alla versione telefono completa del trainer.
 - Assistente DeepSeek: costo trascurabile (~0,0007 $ a domanda), limite solo di sicurezza (300/mese).
 - Dati sanitari: consenso esplicito, Supabase UE, Marco responsabile del trattamento (DPA).
+- Leo del trainer risponde con DeepSeek (`deepseek-flash`, ragionamento basso, ~0,1 cent a domanda): servizio `app/prototipo/api/leo`, clienti mandati come codici [C1] (mai nomi), senza chiave o se l'AI non risponde usa le risposte fisse.
 - Area trainer = una pagina sola (`app/prototipo/trainer/[[...sezione]]`, `TrainerApp.tsx`): il cambio sezione usa `history.pushState` (`nav.ts`), niente server, ~100 ms in sviluppo invece di ~1 s. Nessun tasto nero: `btn-trainer` / `sel-trainer` / `glass` in `globals.css`.
 
 ## Problemi noti / blocchi
@@ -48,6 +49,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git).
 
 ## Changelog
+- 2026-10-22: Leo con AI DeepSeek (codici al posto dei nomi, risposte di riserva); macchia d'olio dai link di Leo; animazioni della home a ogni ritorno; spec e piano dell'area cliente; Vitest.
 - 2026-10-22: sito pubblicato su Vercel; foto profilo del trainer modificabile.
 - 2026-10-22: navigazione istantanea, home senza scorrimento, agenda e calendario senza griglia oraria (giorni in lastre di vetro), ricerca (Ctrl+K) e avvisi funzionanti, via i tasti morti e i tasti neri.
 - 2026-10-21: progetto avviato con /start (brainstorming, spec, setup con boilerplate, piano).
