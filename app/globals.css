@@ -329,6 +329,31 @@
   color: #fff;
 }
 
+/* Leo, l'assistente: colori più vivi (la polo blu scura si perdeva sul bianco), un filo di luce sul bordo
+   e un'ombra nel colore del trainer che lo stacca dal fondo */
+.leo-luce {
+  filter: brightness(1.12) contrast(1.06) saturate(1.3) drop-shadow(0 0 1px rgba(255, 255, 255, 0.9))
+    drop-shadow(0 8px 16px color-mix(in srgb, var(--trainer) 34%, transparent));
+}
+.dark .leo-luce {
+  filter: brightness(1.18) contrast(1.05) saturate(1.3) drop-shadow(0 0 1px rgba(255, 255, 255, 0.35))
+    drop-shadow(0 0 20px color-mix(in srgb, var(--trainer) 42%, transparent));
+}
+/* il viso nei tasti: solo colori più vivi, l'ombra la dà già il tasto */
+.leo-luce-viso {
+  filter: brightness(1.1) contrast(1.05) saturate(1.3);
+}
+/* alone morbido dietro Leo in piedi */
+.leo-alone {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--trainer) 40%, transparent),
+    color-mix(in srgb, var(--trainer) 12%, transparent) 62%,
+    transparent
+  );
+  filter: blur(8px);
+}
+
 /* Lastra di vetro per i giorni del calendario: come la barra laterale, ma piccola */
 .glass-tile {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42));

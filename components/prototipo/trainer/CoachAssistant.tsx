@@ -49,7 +49,7 @@ export function CoachFace({ size }: { size: number }) {
           src="/prototipo/coach/viso.webp"
           alt=""
           draggable={false}
-          className="absolute left-1/2 max-w-none -translate-x-1/2 select-none"
+          className="leo-luce-viso absolute left-1/2 max-w-none -translate-x-1/2 select-none"
           style={{ width: size * 1.26, bottom: -size * 0.13 }}
         />
       </span>
@@ -347,7 +347,7 @@ function SidePeek() {
       alt=""
       aria-hidden
       draggable={false}
-      className="pointer-events-none absolute max-w-none select-none"
+      className="leo-luce pointer-events-none absolute max-w-none select-none"
       style={{ width: LEAN_W, height: LEAN_H, left: `calc(100% - ${Math.round(LEAN_W * LEAN_EDGE)}px)`, bottom: LEAN_BOTTOM }}
       initial={{ opacity: 0, x: -26 }}
       animate={{ opacity: 1, x: 0 }}
@@ -720,11 +720,25 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
               className={open ? "pointer-events-none" : ""}
             >
               <motion.div style={{ y: rise }}>
+                {/* alone nel colore del trainer dietro il busto: respira piano per attirare lo sguardo */}
+                <motion.span
+                  aria-hidden
+                  className="leo-alone pointer-events-none absolute rounded-full"
+                  style={{ width: standW * 2, height: standH * 0.95, left: -standW, bottom: standH * 0.12 }}
+                  animate={reduce ? { opacity: 0.8 } : { opacity: [0.6, 1, 0.6], scale: [0.95, 1.04, 0.95] }}
+                  transition={reduce ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+                />
+                {/* ombra a terra */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute rounded-[50%] bg-black/20 blur-[4px] dark:bg-black/50"
+                  style={{ width: standW * 0.95, height: 9, left: (-standW * 0.95) / 2, bottom: -4 }}
+                />
                 <img
                   src="/prototipo/coach/in-piedi.webp"
                   alt=""
                   draggable={false}
-                  className="absolute bottom-0 max-w-none select-none"
+                  className="leo-luce absolute bottom-0 max-w-none select-none"
                   style={{ width: standW, left: -standW / 2 }}
                 />
                 {/* zona cliccabile: segue la sagoma, così gli angoli vuoti non coprono i messaggi */}
