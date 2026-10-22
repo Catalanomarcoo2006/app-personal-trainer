@@ -47,25 +47,37 @@ export async function POST(req: Request) {
 
   const stop = new AbortController();
   const attesa = setTimeout(() => stop.abort(), ATTESA_RISPOSTA);
-  let risposta: Response;
-  try {
-    risposta = await fetch(`${process.env.AI_BASE_URL ?? "https://api.deepseek.com"}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${chiave}` },
-      body: JSON.stringify({
-        model: process.env.AI_MODEL ?? "deepseek-flash",
-        messages: [{ role: "system", content: contestoLeo() }, ...messaggi],
-        stream: true,
-        thinking: { type: "enabled" },
-        reasoning_effort: process.env.AI_REASONING_EFFORT ?? "low",
-        max_tokens: 2000,
-      }),
-      signal: stop.signal,
-    });
-  } catch (e) {
-    clearTimeout(attesa);
-    console.error("Leo: il fornitore AI non risponde", e instanceof Error ? e.message : e);
-    return Response.json({ errore: "il fornitore AI non risponde" }, { status: 504 });
+  const richiesta = {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${chiave}` },
+    body: JSON.stringify({
+      model: process.env.AI_MODEL ?? "deepseek-flash",
+      messages: [{ role: "system", content: contestoLeo() }, ...messaggi],
+      stream: true,
+      thinking: { type: "enabled" },
+      reasoning_effort: process.env.AI_REASONING_EFFORT ?? "low",
+      max_tokens: 2000,
+    }),
+    signal: stop.signal,
+  };
+
+  // Ogni tanto il primo collegamento non parte ("fetch failed" dopo ~10 s): la domanda non è arrivata
+  // al fornitore, quindi si riprova una volta senza pagare due volte. Se scade l'attesa, si smette.
+  let risposta: Response | undefined;
+  for (let tentativo = 1; !risposta; tentativo++) {
+    try {
+      risposta = await fetch(`${process.env.AI_BASE_URL ?? "https://api.deepseek.com"}/chat/completions`, richiesta);
+    } catch (e) {
+      const causa = e instanceof Error && e.cause instanceof Error ? ` (${(e.cause as Error & { code?: string }).code ?? ""} ${e.cause.message})` : "";
+      const motivo = e instanceof Error ? e.message + causa : String(e);
+      if (tentativo < 2 && !stop.signal.aborted) {
+        console.warn("Leo: collegamento al fornitore AI non riuscito, riprovo", motivo);
+        continue;
+      }
+      clearTimeout(attesa);
+      console.error("Leo: il fornitore AI non risponde", motivo);
+      return Response.json({ errore: "il fornitore AI non risponde" }, { status: 504 });
+    }
   }
   clearTimeout(attesa);
 

@@ -76,6 +76,24 @@ describe("POST /prototipo/api/leo", () => {
     expect(res.status).toBe(502);
   });
 
+  it("se la connessione non parte riprova una volta", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fetchFinto.mockRejectedValueOnce(new TypeError("fetch failed")).mockResolvedValueOnce(sse([{ choices: [{ delta: { content: "eccomi" } }] }]));
+    const res = await POST(domanda("ciao"));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("eccomi");
+    expect(fetchFinto).toHaveBeenCalledTimes(2);
+  });
+
+  it("se la connessione fallisce due volte risponde 504", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchFinto.mockRejectedValue(new TypeError("fetch failed"));
+    const res = await POST(domanda("ciao"));
+    expect(res.status).toBe(504);
+    expect(fetchFinto).toHaveBeenCalledTimes(2);
+  });
+
   it("rifiuta una richiesta senza messaggi", async () => {
     const res = await POST(new Request("http://localhost/prototipo/api/leo", { method: "POST", body: "{}" }));
     expect(res.status).toBe(400);
