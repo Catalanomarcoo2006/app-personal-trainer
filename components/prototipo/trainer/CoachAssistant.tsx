@@ -1,14 +1,13 @@
 "use client";
 
 import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./nav";
+import { navigateWithStain, ROUTES } from "./nav";
 
 // L'assistente del trainer si chiama Leo.
 export const COACH_NAME = "Leo";
@@ -367,18 +366,23 @@ function ChatPanel({ left, origin, chat, close }: { left: number; origin: string
               <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
               {m.action && (
                 <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
-                  <Link
+                  {/* la sezione nuova si allarga a macchia d'olio dal punto toccato; la chat si chiude sotto la macchia */}
+                  <a
                     href={m.action.href}
-                    prefetch
-                    onClick={() => {
+                    data-macchia
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                      e.preventDefault();
                       playSound("tap");
-                      close();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const origin = e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                      navigateWithStain(m.action!.href, origin, close);
                     }}
                     className="mt-[6px] flex items-center gap-[5px] rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold text-white"
                     style={{ background: "var(--trainer)" }}
                   >
                     {m.action.label} <ArrowRight size={12} />
-                  </Link>
+                  </a>
                 </motion.div>
               )}
             </motion.div>

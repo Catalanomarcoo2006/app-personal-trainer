@@ -46,7 +46,8 @@ function InstantLinks(): null {
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
-      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+      // data-macchia: il link gestisce da sé la navigazione, con la macchia d'olio (link di Leo)
+      if (!a || a.target === "_blank" || a.hasAttribute("download") || a.hasAttribute("data-macchia")) return;
       const url = new URL(a.href, window.location.href);
       if (url.origin !== window.location.origin || !url.pathname.startsWith(BASE)) return;
       e.preventDefault();

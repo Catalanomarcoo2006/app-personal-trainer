@@ -3,6 +3,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { KEY_ACCENT, KEY_THEME } from "@/libs/ui/appearance-boot";
+import { conMacchia } from "@/libs/ui/macchia";
 
 export type Theme = "light" | "dark";
 
@@ -54,29 +55,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
         write(KEY_THEME, next);
       };
 
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!document.startViewTransition || reduce) {
-        apply();
-        return;
-      }
-
       // Il nuovo tema si allarga come una macchia dal punto del clic fino a coprire lo schermo.
-      const x = origin?.x ?? window.innerWidth / 2;
-      const y = origin?.y ?? window.innerHeight / 2;
-      const reach = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
-      const end = reach * 3.2; // la macchia non è un cerchio: serve margine per coprire gli angoli
-      const transition = document.startViewTransition(apply);
-      transition.ready.then(() => {
-        document.documentElement.animate(
-          {
-            maskSize: ["0px 0px", `${end * 0.18}px ${end * 0.18}px`, `${end}px ${end}px`],
-            maskPosition: [`${x}px ${y}px`, `${x - end * 0.09}px ${y - end * 0.09}px`, `${x - end / 2}px ${y - end / 2}px`],
-          },
-          // "forwards": a fine animazione la maschera resta enorme; senza, per un istante tornava piccola
-          // e ricompariva una macchia sopra lo schermo già scuro.
-          { duration: 900, easing: "cubic-bezier(0.7, 0, 0.3, 1)", fill: "forwards", pseudoElement: "::view-transition-new(root)" },
-        );
-      });
+      conMacchia(apply, origin);
     },
     [theme],
   );

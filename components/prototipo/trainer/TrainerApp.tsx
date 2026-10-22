@@ -31,6 +31,8 @@ const KEEP = 10;
 // Sceglie la sezione dall'indirizzo. Gli indirizzi restano quelli di sempre (/prototipo/trainer/clienti, ...),
 // ma il cambio avviene nel browser: niente richiesta al server, niente attesa.
 // Le sezioni già visitate restano montate e nascoste: tornarci è istantaneo e ritrovi tutto come l'avevi lasciato.
+// Tranne la home: lasciandola si smonta, così tornandoci si ricostruisce e ripartono tutte le animazioni
+// (schede che entrano, numeri che contano, colonne del grafico che crescono).
 export function TrainerApp() {
   const path = usePathname();
   const [kept, setKept] = useState<string[]>([path]);
@@ -42,11 +44,13 @@ export function TrainerApp() {
 
   return (
     <>
-      {list.map((p) => (
-        <div key={p} className={p === path ? "section-live" : "hidden"}>
-          <Section path={p} />
-        </div>
-      ))}
+      {list.map((p) =>
+        p === BASE && p !== path ? null : (
+          <div key={p} data-sezione={p} className={p === path ? "section-live" : "hidden"}>
+            <Section path={p} />
+          </div>
+        ),
+      )}
     </>
   );
 }
