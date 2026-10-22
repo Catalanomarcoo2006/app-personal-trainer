@@ -100,10 +100,15 @@ export function ClientProfile({ c }: { c: Client }) {
             </div>
           </div>
 
-          <div className="mt-[12px] flex gap-[5px]">
+          {/* Contatti: i tasti agiscono, accanto il numero e l'email da leggere */}
+          <div className="mt-[12px] flex items-center gap-[5px]">
             <IconCircle icon={MessageCircle} label={`Scrivi a ${c.name.split(" ")[0]}`} variant="dark" size={32} iconSize={14} onClick={() => navigate(`${ROUTES.messaggi}?cliente=${c.id}`)} />
             <IconCircle icon={Phone} label={`Chiama ${c.phone}`} size={32} iconSize={14} onClick={() => (window.location.href = `tel:${c.phone.replace(/\s/g, "")}`)} />
             <IconCircle icon={Mail} label={`Email a ${c.email}`} size={32} iconSize={14} onClick={() => (window.location.href = `mailto:${c.email}`)} />
+            <div className="ml-[6px] min-w-0 leading-tight">
+              <p className="truncate text-[11.5px] font-semibold tabular-nums">{c.phone}</p>
+              <p className="truncate text-[10.5px] text-muted">{c.email}</p>
+            </div>
           </div>
 
           <div className="mt-[14px] rounded-[14px] px-[12px] py-[11px]" style={{ background: tone.bg }}>
@@ -121,26 +126,25 @@ export function ClientProfile({ c }: { c: Client }) {
             </p>
           </div>
 
-          <div className="mt-[12px] flex flex-col gap-[7px]">
+          <div className="mt-[12px] flex shrink-0 flex-col gap-[7px]">
             <SideRow icon={Package} label="Pacchetto" value={`${c.pkg.label} · ${c.pkg.left}`} />
             <SideRow icon={Dumbbell} label="Scheda attuale" value={c.plan} />
-            <SideRow icon={CalendarClock} label="Ultimo allenamento" value={c.lastWorkout} />
-            <SideRow icon={Phone} label="Telefono" value={c.phone} />
-            <SideRow icon={Mail} label="Email" value={c.email} />
-          </div>
+            <SideRow icon={CalendarClock} label="Ultimo allenamento" value={c.lastWorkout} />          </div>
 
-          <div className="mt-[12px] min-h-0 flex-1 rounded-[14px] bg-soft px-[12px] py-[10px]">
+          {/* Le note prendono solo lo spazio che resta: se sono lunghe sfumano in basso e si leggono intere al passaggio del mouse */}
+          <div title={c.notes} className="relative mt-[12px] min-h-[54px] flex-1 overflow-hidden rounded-[14px] bg-soft px-[12px] py-[10px]">
             <p className="flex items-center gap-[5px] text-[11px] font-semibold text-ink/70">
               <StickyNote size={12} /> Note del trainer
             </p>
             <p className="mt-[6px] text-[12px] leading-relaxed">{c.notes}</p>
+            <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[14px] bg-gradient-to-t from-soft to-transparent" />
           </div>
 
-          <div className="mt-[12px] grid grid-cols-2 gap-[8px]">
+          <div className="mt-[12px] grid shrink-0 grid-cols-2 gap-[8px]">
             <Link
               href={`${ROUTES.schede}?cliente=${c.id}`}
               onClick={() => playSound("tap")}
-              className="flex h-[36px] items-center justify-center gap-[6px] rounded-full border border-line text-[12px] font-semibold transition-colors hover:bg-soft"
+              className="flex h-[36px] items-center justify-center gap-[6px] rounded-full border border-line bg-card text-[12px] font-semibold transition-colors hover:bg-soft"
             >
               <ClipboardList size={14} /> Modifica scheda
             </Link>
@@ -191,7 +195,7 @@ export function ClientProfile({ c }: { c: Client }) {
                 )}
                 <div className="min-w-0 leading-none">
                   <p className="text-[10.5px] text-muted">{k.label}</p>
-                  <p className="mt-[6px] truncate text-[22px] font-bold tracking-[-0.03em]">{k.ring ? <span className="text-[15px]">{goalLeft}</span> : k.node}</p>
+                  <p className="mt-[4px] truncate pb-[3px] text-[22px] font-bold tracking-[-0.03em]">{k.ring ? <span className="text-[15px]">{goalLeft}</span> : k.node}</p>
                 </div>
               </div>
             </Appear>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, CalendarPlus, Check, ChevronLeft, ChevronRight, ClipboardCheck, Dumbbell, Footprints, Video, type LucideIcon } from "lucide-react";
@@ -9,6 +9,7 @@ import { playSound } from "@/libs/ui/sound";
 import { agenda, Appointment, appointmentColors, AppointmentType, clientById, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
+import { useFitDensity } from "./fit";
 
 export const typeIcons: Record<AppointmentType, LucideIcon> = { Workout: Dumbbell, Valutazione: ClipboardCheck, Online: Video, Corsa: Footprints };
 
@@ -176,7 +177,7 @@ export function GlassDays({
 }
 
 // Una riga dell'agenda: orario grande, cliente, tipo e luogo. Il prossimo appuntamento ha un bordo che gira.
-function AppointmentRow({ day, a, i }: { day: WeekDay; a: Appointment; i: number }) {
+function AppointmentRow({ day, a, i, compact }: { day: WeekDay; a: Appointment; i: number; compact: boolean }) {
   const c = clientById(a.clientId);
   const colors = appointmentColors[a.type];
   const Icon = typeIcons[a.type];
@@ -201,18 +202,23 @@ function AppointmentRow({ day, a, i }: { day: WeekDay; a: Appointment; i: number
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           />
         )}
-        <div className={`relative flex h-[40px] items-center gap-[9px] px-[10px] ${imminent ? "rounded-[12px]" : "rounded-[14px]"}`} style={{ background: imminent ? "var(--color-card)" : colors.bg }}>
+        <div
+          className={`relative flex items-center gap-[9px] px-[10px] ${compact ? "h-[30px]" : "h-[40px]"} ${imminent ? "rounded-[12px]" : "rounded-[14px]"}`}
+          style={{ background: imminent ? "var(--color-card)" : colors.bg }}
+        >
           <div className="w-[40px] shrink-0 leading-none">
             <p className="text-[13px] font-extrabold tracking-[-0.02em] tabular-nums">{a.time}</p>
-            <p className="mt-[3px] text-[9.5px] font-medium text-ink/50">{duration(a.minutes)}</p>
+            {!compact && <p className="mt-[3px] text-[9.5px] font-medium text-ink/50">{duration(a.minutes)}</p>}
           </div>
-          <span className="h-[22px] w-[3px] shrink-0 rounded-full" style={{ background: colors.strong }} />
-          {c && <ClientAvatar c={c} size={26} />}
+          <span className={`w-[3px] shrink-0 rounded-full ${compact ? "h-[16px]" : "h-[22px]"}`} style={{ background: colors.strong }} />
+          {c && <ClientAvatar c={c} size={compact ? 20 : 26} />}
           <div className="min-w-0 flex-1 leading-none">
             <p className="truncate text-[12px] font-bold">{c?.name}</p>
-            <p className="mt-[3px] flex items-center gap-[4px] truncate text-[10px] text-ink/55">
-              <Icon size={10} style={{ color: colors.strong }} /> {a.type} · {a.place}
-            </p>
+            {!compact && (
+              <p className="mt-[3px] flex items-center gap-[4px] truncate text-[10px] text-ink/55">
+                <Icon size={10} style={{ color: colors.strong }} /> {a.type} · {a.place}
+              </p>
+            )}
           </div>
           {done && (
             <span className="flex shrink-0 items-center gap-[3px] rounded-full bg-card px-[7px] py-[3px] text-[9.5px] font-semibold">
@@ -254,6 +260,9 @@ export function AgendaCard() {
   const total = day.items.reduce((s, a) => s + a.minutes, 0);
   const now = toMinutes(trainer.now);
   const nowAt = day.isToday ? day.items.findIndex((a) => toMinutes(a.time) + a.minutes > now) : -1;
+  // se gli appuntamenti del giorno non entrano, le righe si fanno più basse (senza tipo e luogo)
+  const list = useRef<HTMLDivElement>(null);
+  const density = useFitDensity(list, 1, [offset, selected]);
 
   const move = (step: number) => {
     const next = offset + step;
@@ -286,7 +295,7 @@ export function AgendaCard() {
         </div>
       </div>
 
-      <div className="relative mt-[6px] flex min-h-0 flex-1 flex-col gap-[5px] overflow-hidden">
+      <div ref={list} data-fit className="relative mt-[6px] flex min-h-0 flex-1 flex-col gap-[5px] overflow-hidden">
         <AnimatePresence mode="popLayout" initial={false}>
           {day.items.length === 0 ? (
             <motion.div
@@ -305,7 +314,7 @@ export function AgendaCard() {
             </motion.div>
           ) : (
             day.items.flatMap((a, i) => {
-              const row = <AppointmentRow key={`${offset}-${selected}-${a.time}-${a.clientId}`} day={day} a={a} i={i} />;
+              const row = <AppointmentRow key={`${offset}-${selected}-${a.time}-${a.clientId}`} day={day} a={a} i={i} compact={density > 0} />;
               return i === nowAt ? [<NowDivider key={`adesso-${offset}-${selected}`} />, row] : [row];
             })
           )}

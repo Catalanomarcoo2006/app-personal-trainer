@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
@@ -10,12 +10,13 @@ import { playSound } from "@/libs/ui/sound";
 import { Appointment, appointmentColors, AppointmentType, clientById, clients, trainer } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
+import { useFitDensity } from "./fit";
 import { duration, endTime, GlassDays, statusOf, toMinutes, typeIcons, WeekArrows, weekOf, WeekDay } from "./Agenda";
 
 const types = Object.keys(appointmentColors) as AppointmentType[];
 
-// Una seduta nella colonna del giorno.
-function SessionCard({ day, a, i, col }: { day: WeekDay; a: Appointment; i: number; col: number }) {
+// Una seduta nella colonna del giorno. density: 0 completa, 1 senza tipo e luogo, 2 una riga sola.
+function SessionCard({ day, a, i, col, density }: { day: WeekDay; a: Appointment; i: number; col: number; density: number }) {
   const c = clientById(a.clientId);
   const colors = appointmentColors[a.type];
   const Icon = typeIcons[a.type];
@@ -33,22 +34,38 @@ function SessionCard({ day, a, i, col }: { day: WeekDay; a: Appointment; i: numb
         href={ROUTES.cliente(a.clientId)}
         onClick={() => playSound("tap")}
         title={`${a.time} – ${endTime(a)} · ${c?.name ?? ""} · ${a.place}`}
-        className="relative block overflow-hidden rounded-[12px] px-[9px] pt-[7px] pb-[8px] transition-shadow hover:shadow-[0_10px_22px_rgba(0,0,0,0.10)]"
+        className={`relative block overflow-hidden rounded-[12px] px-[9px] transition-shadow hover:shadow-[0_10px_22px_rgba(0,0,0,0.10)] ${density === 2 ? "py-[9px]" : "pt-[7px] pb-[8px]"}`}
         style={{ background: colors.bg }}
       >
         <span className="absolute top-0 bottom-0 left-0 w-[3px]" style={{ background: colors.strong }} />
-        <p className="flex items-center gap-[4px] text-[10px] font-bold tabular-nums" style={{ color: colors.strong }}>
-          <Icon size={10} /> {a.time} – {endTime(a)}
-          {done && <Check size={10} strokeWidth={3} className="ml-auto text-ink/50" />}
-          {live && <span className="btn-trainer ml-auto rounded-full px-[5px] py-[1px] text-[8.5px]">ora</span>}
-        </p>
-        <p className="mt-[5px] flex min-w-0 items-center gap-[6px]">
-          {c && <ClientAvatar c={c} size={20} />}
-          <span className="truncate text-[12px] font-bold">{c?.name.split(" ")[0]}</span>
-        </p>
-        <p className="mt-[4px] truncate text-[10px] text-ink/55">
-          {a.type} · {a.place}
-        </p>
+        {density === 2 ? (
+          <p className="flex min-w-0 items-center gap-[5px] leading-none">
+            <span className="shrink-0 text-[10px] font-bold tabular-nums" style={{ color: colors.strong }}>
+              {a.time}
+            </span>
+            {c && <ClientAvatar c={c} size={18} />}
+            <span className="truncate text-[12px] font-bold">{c?.name.split(" ")[0]}</span>
+            {done && <Check size={10} strokeWidth={3} className="ml-auto shrink-0 text-ink/50" />}
+            {live && <span className="btn-trainer ml-auto shrink-0 rounded-full px-[5px] py-[1px] text-[8.5px]">ora</span>}
+          </p>
+        ) : (
+          <>
+            <p className="flex items-center gap-[4px] text-[10px] font-bold tabular-nums" style={{ color: colors.strong }}>
+              <Icon size={10} /> {a.time} – {endTime(a)}
+              {done && <Check size={10} strokeWidth={3} className="ml-auto text-ink/50" />}
+              {live && <span className="btn-trainer ml-auto rounded-full px-[5px] py-[1px] text-[8.5px]">ora</span>}
+            </p>
+            <p className="mt-[5px] flex min-w-0 items-center gap-[6px]">
+              {c && <ClientAvatar c={c} size={20} />}
+              <span className="truncate text-[12px] font-bold">{c?.name.split(" ")[0]}</span>
+            </p>
+            {density === 0 && (
+              <p className="mt-[4px] truncate text-[10px] text-ink/55">
+                {a.type} · {a.place}
+              </p>
+            )}
+          </>
+        )}
       </Link>
     </motion.div>
   );
@@ -194,6 +211,9 @@ export function WeekCalendar() {
   const total = days.reduce((s, d) => s + d.items.length, 0);
   const todayIndex = days.findIndex((d) => d.isToday);
   const now = toMinutes(trainer.now);
+  // se in una colonna le sedute non entrano, tutte le schede diventano più compatte (prima senza luogo, poi su una riga)
+  const board = useRef<HTMLDivElement>(null);
+  const density = useFitDensity(board, 2, [offset, hidden, added]);
 
   const move = (step: number) => {
     setDirection(step);
@@ -259,20 +279,22 @@ export function WeekCalendar() {
           <GlassDays days={days} selected={todayIndex >= 0 ? todayIndex : null} weekKey={offset} direction={direction} height={64} />
         </div>
 
-        <motion.div
-          key={offset}
-          initial={{ opacity: 0, x: direction * 18 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.32, ease: EASE_OUT }}
-          className="mt-[8px] grid min-h-0 flex-1 grid-cols-7 gap-[6px] px-[6px]"
-        >
+        <div ref={board} className="mt-[8px] min-h-0 flex-1">
+          <motion.div
+            key={offset}
+            initial={{ opacity: 0, x: direction * 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.32, ease: EASE_OUT }}
+            className="grid h-full grid-cols-7 gap-[6px] px-[6px]"
+          >
           {days.map((d, di) => {
             const shown = d.items.filter((a) => !hidden.includes(a.type));
             const nowAt = d.isToday ? shown.findIndex((a) => toMinutes(a.time) + a.minutes > now) : -2;
             return (
               <div
                 key={di}
-                className="group/col relative flex min-h-0 flex-col gap-[6px] overflow-hidden rounded-[14px] p-[5px]"
+                data-fit
+                className={`relative flex min-h-0 flex-col overflow-hidden rounded-[14px] p-[5px] ${density ? "gap-[4px]" : "gap-[6px]"}`}
                 style={d.isToday ? { background: "color-mix(in srgb, var(--trainer) 6%, transparent)" } : undefined}
               >
                 <AnimatePresence mode="popLayout" initial={false}>
@@ -280,31 +302,34 @@ export function WeekCalendar() {
                     const prev = shown[i - 1];
                     const gap = prev ? toMinutes(a.time) - (toMinutes(prev.time) + prev.minutes) : 0;
                     const out = [];
-                    if (prev) out.push(<FreeGap key={`gap-${a.time}`} minutes={gap} />);
+                    if (prev && density === 0) out.push(<FreeGap key={`gap-${a.time}`} minutes={gap} />);
                     if (i === nowAt) out.push(<NowMark key="adesso" />);
-                    out.push(<SessionCard key={`${a.time}-${a.clientId}`} day={d} a={a} i={i} col={di} />);
+                    out.push(<SessionCard key={`${a.time}-${a.clientId}`} day={d} a={a} i={i} col={di} density={density} />);
                     return out;
                   })}
                 </AnimatePresence>
                 {d.isToday && nowAt === -1 && shown.length > 0 && <NowMark />}
-                {shown.length === 0 && <p className="mt-[14px] text-center text-[11px] font-medium text-muted">Libero</p>}
-                <button
-                  type="button"
-                  aria-label={`Nuova seduta ${d.long} ${d.n}`}
-                  onClick={() => {
-                    playSound("tap");
-                    setCreating(di);
-                  }}
-                  className={`flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-[4px] rounded-[11px] border border-dashed border-line text-[10.5px] font-semibold text-muted transition-all hover:border-[var(--trainer)] hover:text-ink ${
-                    shown.length === 0 ? "" : "opacity-0 group-hover/col:opacity-100 focus-visible:opacity-100"
-                  }`}
-                >
-                  <Plus size={11} /> Aggiungi
-                </button>
+                {shown.length === 0 && (
+                  <>
+                    <p className="mt-[14px] text-center text-[11px] font-medium text-muted">Libero</p>
+                    <button
+                      type="button"
+                      aria-label={`Nuova seduta ${d.long} ${d.n}`}
+                      onClick={() => {
+                        playSound("tap");
+                        setCreating(di);
+                      }}
+                      className="flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-[4px] rounded-[11px] border border-dashed border-line text-[10.5px] font-semibold text-muted transition-colors hover:border-[var(--trainer)] hover:text-ink"
+                    >
+                      <Plus size={11} /> Aggiungi
+                    </button>
+                  </>
+                )}
               </div>
             );
           })}
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
 
       <AnimatePresence>
