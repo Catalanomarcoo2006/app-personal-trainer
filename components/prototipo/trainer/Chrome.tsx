@@ -23,6 +23,7 @@ import { Appear, EASE_OUT } from "@/components/ui/motion";
 import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
+import { useTrainerPhoto } from "@/libs/prototipo/stato";
 import { CoachAssistant } from "./CoachAssistant";
 import { BASE, navigate, ROUTES } from "./nav";
 import { NotificationsButton, SearchButton, SearchPalette } from "./TopBarTools";
@@ -104,6 +105,7 @@ export function ThemeButton({ size = 15 }: { size?: number }) {
 
 export function TopBar() {
   const section = useSection();
+  const photo = useTrainerPhoto();
 
   return (
     <div className="grid h-[35px] grid-cols-[1fr_auto_1fr] items-center pr-[18px] pl-[20px]">
@@ -139,7 +141,7 @@ export function TopBar() {
         <NotificationsButton />
         <SearchButton />
         <Link href={ROUTES.impostazioni} onClick={() => playSound("tap")} aria-label="Il tuo profilo" className="relative">
-          <Avatar initials={trainer.initials} src={trainer.photo} size={27} />
+          <Avatar initials={trainer.initials} src={photo} size={27} />
         </Link>
       </div>
     </div>

@@ -1,8 +1,8 @@
 // Stato condiviso del prototipo, in memoria: resta mentre si cambia pagina, si azzera ricaricando.
 // Tiene i video degli esercizi, le schede in modifica e quelle inviate ai clienti.
 
-import { useSyncExternalStore } from "react";
-import { clients, defaultPlan, exerciseById, library, plans, type PlanDay } from "./dati-finti";
+import { useEffect, useSyncExternalStore } from "react";
+import { clients, defaultPlan, exerciseById, library, plans, trainer, type PlanDay } from "./dati-finti";
 
 // ——— Tipi della scheda ———
 
@@ -37,6 +37,7 @@ type State = {
   plans: Record<string, Day[]>; // clientId → scheda in modifica
   sent: SentPlan[];
   replied: string[]; // schede a cui il cliente ha già risposto in chat
+  trainerPhoto: string | null; // foto scelta dal trainer (data URL), null = quella della demo
 };
 
 let state: State = {
@@ -44,6 +45,7 @@ let state: State = {
   plans: Object.fromEntries(clients.map((c) => [c.id, fromPlan(plans[c.id] ?? defaultPlan)])),
   sent: [],
   replied: [],
+  trainerPhoto: null,
 };
 
 const listeners = new Set<() => void>();
@@ -84,7 +86,62 @@ export const stato = {
     state = { ...state, replied: [...state.replied, id] };
     emit();
   },
+  setTrainerPhoto(url: string | null) {
+    state = { ...state, trainerPhoto: url };
+    try {
+      if (url) localStorage.setItem(PHOTO_KEY, url);
+      else localStorage.removeItem(PHOTO_KEY);
+    } catch {
+      // senza archivio del browser la foto resta solo fino al prossimo ricaricamento
+    }
+    emit();
+  },
 };
+
+// ——— Foto del trainer ———
+// Scelta dalle Impostazioni, rimpicciolita nel browser e ricordata in questo browser (localStorage).
+
+const PHOTO_KEY = "pt-foto-trainer";
+let photoLoaded = false;
+
+// La foto da mostrare: quella scelta dal trainer, altrimenti quella della demo.
+export function useTrainerPhoto(): string {
+  const chosen = useStato((s) => s.trainerPhoto);
+  useEffect(() => {
+    if (photoLoaded) return;
+    photoLoaded = true;
+    try {
+      const saved = localStorage.getItem(PHOTO_KEY);
+      if (saved) stato.setTrainerPhoto(saved);
+    } catch {
+      // archivio non disponibile: resta la foto della demo
+    }
+  }, []);
+  return chosen ?? trainer.photo;
+}
+
+// Legge l'immagine scelta e la riduce a un quadrato di 256 px (JPEG): pesa pochi KB.
+export function shrinkPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const side = Math.min(img.width, img.height);
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 256;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("canvas"));
+      ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 256, 256);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.86));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("immagine non leggibile"));
+    };
+    img.src = url;
+  });
+}
 
 // ——— Aiuti ———
 

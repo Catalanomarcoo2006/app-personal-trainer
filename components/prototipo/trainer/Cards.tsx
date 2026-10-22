@@ -7,6 +7,7 @@ import { Avatar, Pill } from "@/components/ui/basics";
 import { CountUp, EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, alerts, clientById, pathCards, progressOf, TODAY_INDEX, toneColors, trainer } from "@/libs/prototipo/dati-finti";
+import { useTrainerPhoto } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -14,12 +15,13 @@ const card = "rounded-[18px] bg-card";
 
 // Profilo del trainer, compatto come nel riferimento.
 export function ProfileCard() {
+  const photo = useTrainerPhoto();
   const today = agenda[TODAY_INDEX].length;
   return (
     <section className={`${card} px-[16px] py-[12px]`}>
       <div className="flex items-center">
         <span className="grid size-[50px] shrink-0 place-items-center rounded-full border-[2px] bg-card p-[2px]" style={{ borderColor: "var(--trainer)" }}>
-          <Avatar initials={trainer.initials} src={trainer.photo} size={42} />
+          <Avatar initials={trainer.initials} src={photo} size={42} />
         </span>
         <div className="ml-[10px] leading-none">
           <p className="text-[15px] font-bold tracking-[-0.01em]">{trainer.name}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { MouseEvent as ReactMouseEvent, ReactNode, useEffect, useState } from "react";
+import { MouseEvent as ReactMouseEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
 import { Bot, Check, Globe, Moon, Palette, Sun, Volume2 } from "lucide-react";
@@ -9,6 +9,7 @@ import { Appear, ProgressBar } from "@/components/ui/motion";
 import { ACCENTS, useAppearance } from "@/components/ui/appearance";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
+import { shrinkPhoto, stato, useTrainerPhoto } from "@/libs/prototipo/stato";
 
 function Card({ title, icon, children, className = "" }: { title: string; icon?: ReactNode; children: ReactNode; className?: string }) {
   return (
@@ -70,6 +71,8 @@ function Segmented<T extends string>({ options, value, onChange, id }: { options
 }
 
 export function SettingsView() {
+  const photo = useTrainerPhoto();
+  const photoInput = useRef<HTMLInputElement>(null);
   const { theme, setTheme, accent, setAccent } = useAppearance();
   const [sound, setSound] = useState(true);
   const [tone, setTone] = useState<"amichevole" | "professionale" | "motivante">("amichevole");
@@ -86,14 +89,54 @@ export function SettingsView() {
           <Card title="Il tuo profilo">
             <div className="mt-[12px] flex items-center gap-[14px]">
               <span className="grid size-[74px] place-items-center rounded-full border-[2px] p-[3px]" style={{ borderColor: "var(--trainer)" }}>
-                <Avatar initials={trainer.initials} src={trainer.photo} size={64} />
+                <Avatar initials={trainer.initials} src={photo} size={64} />
               </span>
               <div className="leading-none">
                 <p className="text-[17px] font-bold">{trainer.name}</p>
                 <p className="mt-[5px] text-[12px] text-muted">{trainer.role}</p>
-                <button type="button" onClick={() => playSound("tap")} className="mt-[8px] cursor-pointer text-[11px] font-semibold underline underline-offset-2">
-                  Cambia foto
-                </button>
+                <div className="mt-[8px] flex items-center gap-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound("tap");
+                      photoInput.current?.click();
+                    }}
+                    className="cursor-pointer text-[11px] font-semibold underline underline-offset-2"
+                  >
+                    Cambia foto
+                  </button>
+                  {photo !== trainer.photo && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound("tap");
+                        stato.setTrainerPhoto(null);
+                        toast("Rimessa la foto di prima");
+                      }}
+                      className="cursor-pointer text-[11px] font-semibold text-muted underline underline-offset-2"
+                    >
+                      Ripristina
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={photoInput}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    try {
+                      stato.setTrainerPhoto(await shrinkPhoto(file));
+                      playSound("confirm");
+                      toast.success("Foto aggiornata");
+                    } catch {
+                      toast.error("Non riesco a leggere questa immagine");
+                    }
+                  }}
+                />
               </div>
             </div>
             <div className="mt-[12px] flex flex-col gap-[8px]">
