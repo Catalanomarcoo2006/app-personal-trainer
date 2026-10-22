@@ -21,6 +21,7 @@ export type Payment = { date: string; label: string; amount: number; paid: boole
 export type Client = {
   id: string;
   name: string;
+  gender: "donna" | "uomo"; // solo per accordare l'italiano nelle risposte dell'AI
   initials: string;
   photo?: string;
   tone: Tone;
@@ -57,7 +58,7 @@ const m = (vita: [number, number], fianchi: [number, number], petto: [number, nu
 
 export const clients: Client[] = [
   {
-    id: "antonella-russo", name: "Antonella Russo", initials: "AR", tone: "peach", since: "Dal 07 Set 2026",
+    id: "antonella-russo", name: "Antonella Russo", gender: "donna", initials: "AR", tone: "peach", since: "Dal 07 Set 2026",
     goal: "Dimagrimento −6 kg", unit: "kg", start: 70, current: 66.1, target: 64, weights: series(70, 66.1),
     measures: m([82, 77], [101, 97], [92, 90], [30, 29], [58, 56]),
     pkg: { label: "Pacchetto 10 lezioni", left: "6 lezioni rimaste", expiring: false },
@@ -71,7 +72,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0101", email: "antonella.russo@esempio.it",
   },
   {
-    id: "giulia-bianchi", name: "Giulia Bianchi", initials: "GB", photo: "/prototipo/cliente-giulia.jpg", tone: "rose", since: "Dal 05 Ott 2026",
+    id: "giulia-bianchi", name: "Giulia Bianchi", gender: "donna", initials: "GB", photo: "/prototipo/cliente-giulia.jpg", tone: "rose", since: "Dal 05 Ott 2026",
     goal: "Dimagrimento −8 kg", unit: "kg", start: 72, current: 68.9, target: 64, weights: series(72, 68.9),
     measures: m([86, 82], [104, 101], [95, 93], [31, 30], [60, 58]),
     pkg: { label: "Pacchetto 10 lezioni", left: "2 lezioni rimaste", expiring: true },
@@ -82,7 +83,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0102", email: "giulia.bianchi@esempio.it",
   },
   {
-    id: "luca-ferri", name: "Luca Ferri", initials: "LF", photo: "/prototipo/cliente-luca.jpg", tone: "sky", since: "Dal 08 Set 2026",
+    id: "luca-ferri", name: "Luca Ferri", gender: "uomo", initials: "LF", photo: "/prototipo/cliente-luca.jpg", tone: "sky", since: "Dal 08 Set 2026",
     goal: "Mezza maratona (21 km)", unit: "km", start: 8, current: 14.5, target: 21, weights: series(79, 77.4, 0.2),
     measures: m([88, 85], [98, 97], [100, 99], [33, 33], [57, 56]),
     pkg: { label: "Mensile", left: "Scade il 31 ottobre", expiring: false },
@@ -96,7 +97,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0103", email: "luca.ferri@esempio.it",
   },
   {
-    id: "sara-conti", name: "Sara Conti", initials: "SC", tone: "violet", since: "Dal 12 Ago 2026",
+    id: "sara-conti", name: "Sara Conti", gender: "donna", initials: "SC", tone: "violet", since: "Dal 12 Ago 2026",
     goal: "Tonificazione", unit: "%", start: 0, current: 70, target: 100, weights: series(61, 59.8, 0.15),
     measures: m([72, 69], [96, 93], [88, 88], [27, 27], [55, 53]),
     pkg: { label: "Pacchetto 10 lezioni", left: "1 lezione rimasta", expiring: true },
@@ -107,7 +108,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0104", email: "sara.conti@esempio.it",
   },
   {
-    id: "davide-greco", name: "Davide Greco", initials: "DG", photo: "/prototipo/cliente-davide.jpg", tone: "mint", since: "Dal 01 Lug 2026",
+    id: "davide-greco", name: "Davide Greco", gender: "uomo", initials: "DG", photo: "/prototipo/cliente-davide.jpg", tone: "mint", since: "Dal 01 Lug 2026",
     goal: "Massa muscolare +4 kg", unit: "kg", start: 74, current: 76.2, target: 78, weights: series(74, 76.2, 0.2),
     measures: m([80, 81], [95, 96], [98, 102], [33, 35], [56, 58]),
     pkg: { label: "Trimestrale", left: "Scade il 30 novembre", expiring: false },
@@ -118,7 +119,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0105", email: "davide.greco@esempio.it",
   },
   {
-    id: "elena-marini", name: "Elena Marini", initials: "EM", tone: "sky", since: "Dal 20 Set 2026",
+    id: "elena-marini", name: "Elena Marini", gender: "donna", initials: "EM", tone: "sky", since: "Dal 20 Set 2026",
     goal: "Postura e schiena", unit: "%", start: 0, current: 40, target: 100, weights: series(58, 57.6, 0.1),
     measures: m([70, 69], [93, 92], [86, 86], [26, 26], [52, 52]),
     pkg: { label: "Online · 8 sedute", left: "5 sedute rimaste", expiring: false },
@@ -129,7 +130,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0106", email: "elena.marini@esempio.it",
   },
   {
-    id: "paolo-costa", name: "Paolo Costa", initials: "PC", tone: "peach", since: "Dal 19 Ott 2026",
+    id: "paolo-costa", name: "Paolo Costa", gender: "uomo", initials: "PC", tone: "peach", since: "Dal 19 Ott 2026",
     goal: "Rimettersi in forma", unit: "%", start: 0, current: 5, target: 100, weights: series(88, 87.6, 0.1),
     measures: m([98, 97], [104, 104], [106, 106], [34, 34], [61, 61]),
     pkg: { label: "Pacchetto 10 lezioni", left: "9 lezioni rimaste", expiring: false },
@@ -140,7 +141,7 @@ export const clients: Client[] = [
     phone: "+39 340 000 0107", email: "paolo.costa@esempio.it",
   },
   {
-    id: "chiara-fontana", name: "Chiara Fontana", initials: "CF", tone: "rose", since: "Dal 02 Giu 2026",
+    id: "chiara-fontana", name: "Chiara Fontana", gender: "donna", initials: "CF", tone: "rose", since: "Dal 02 Giu 2026",
     goal: "Dimagrimento −5 kg", unit: "kg", start: 63, current: 59, target: 58, weights: series(63, 59),
     measures: m([76, 70], [99, 94], [90, 88], [28, 27], [56, 53]),
     pkg: { label: "Mensile", left: "Scade il 31 ottobre", expiring: false },

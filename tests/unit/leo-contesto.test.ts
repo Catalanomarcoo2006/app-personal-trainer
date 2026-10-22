@@ -19,6 +19,13 @@ describe("contesto per l'AI", () => {
     }
   });
 
+  it("dice se ogni cliente è donna o uomo, per accordare l'italiano", () => {
+    const testo = contestoLeo();
+    expect(testo).toContain(`${codice("chiara-fontana")} (donna)`);
+    expect(testo).toContain(`${codice("luca-ferri")} (uomo)`);
+    for (const c of clients) expect(testo).toMatch(new RegExp(`\\${codice(c.id).slice(0, -1)}\\] \\((donna|uomo)\\)`));
+  });
+
   it("usa i codici dei clienti e contiene i dati della giornata", () => {
     const testo = contestoLeo();
     expect(testo).toContain(codice("giulia-bianchi"));
