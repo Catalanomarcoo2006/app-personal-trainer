@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
 import { Check, Dumbbell, FileText, FileUp, LoaderCircle, Play, Plus, Search, Send, Smartphone, X } from "lucide-react";
@@ -12,7 +12,7 @@ import { clients, exerciseById, library, Muscle, trainer } from "@/libs/prototip
 import { ParsedDay } from "@/libs/prototipo/pdf-scheda";
 import { buildPlanPdf } from "@/libs/prototipo/pdf-invio";
 import { Day, isLink, linkHost, nextKey, Row, rowName, rowVideo, stato, useStato } from "@/libs/prototipo/stato";
-import { ROUTES } from "./Chrome";
+import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { PdfImport } from "./PdfImport";
 
@@ -146,7 +146,7 @@ function VideoEditor({
             Togli
           </button>
         )}
-        <button type="submit" className="flex h-[30px] cursor-pointer items-center gap-[5px] rounded-full bg-contrast px-[12px] text-[11px] font-semibold text-on-contrast">
+        <button type="submit" className="flex h-[30px] cursor-pointer items-center gap-[5px] rounded-full btn-trainer px-[12px] text-[11px] font-semibold">
           <Check size={12} strokeWidth={2.6} /> Salva
         </button>
         {(canSaveToLibrary || error) && (
@@ -251,7 +251,6 @@ function SendSheet({
 // ——— La pagina ———
 
 export function PlansView() {
-  const router = useRouter();
   const params = useSearchParams();
   const fromQuery = clients.find((c) => c.id === params.get("cliente"))?.id;
   const [clientId, setClientId] = useState(fromQuery ?? "giulia-bianchi");
@@ -334,7 +333,7 @@ export function PlansView() {
       });
       playSound("complete");
       toast.success(`Scheda inviata a ${client.name.split(" ")[0]}`);
-      router.push(`${ROUTES.messaggi}?cliente=${clientId}`);
+      navigate(`${ROUTES.messaggi}?cliente=${clientId}`);
     } catch {
       setSending(false);
       toast.error("Non sono riuscito a preparare il PDF. Riprova.");
@@ -363,7 +362,7 @@ export function PlansView() {
                   setEditing(null);
                   setConfirming(false);
                 }}
-                className={`flex cursor-pointer items-center gap-[10px] rounded-[13px] px-[9px] py-[8px] text-left transition-colors ${active ? "bg-contrast text-on-contrast" : "hover:bg-soft"}`}
+                className={`flex cursor-pointer items-center gap-[10px] rounded-[13px] px-[9px] py-[8px] text-left transition-colors ${active ? "sel-trainer" : "hover:bg-soft"}`}
               >
                 <ClientAvatar c={c} size={32} />
                 <div className="min-w-0 leading-none">
@@ -407,9 +406,9 @@ export function PlansView() {
                   setDayIndex(i);
                   setEditing(null);
                 }}
-                className={`relative cursor-pointer rounded-full px-[14px] py-[6px] text-[12px] font-semibold ${i === current ? "text-on-contrast" : "text-ink/65"}`}
+                className={`relative cursor-pointer rounded-full px-[14px] py-[6px] text-[12px] font-semibold ${i === current ? "text-ink" : "text-ink/65"}`}
               >
-                {i === current && <motion.span layoutId="giorno-scheda" className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                {i === current && <motion.span layoutId="giorno-scheda" className="sel-trainer absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                 <span className="relative">{d.label}</span>
               </button>
             ))}
@@ -499,7 +498,7 @@ export function PlansView() {
               setConfirming((v) => !v);
             }}
             aria-expanded={confirming}
-            className="flex h-[36px] shrink-0 cursor-pointer items-center gap-[7px] rounded-full bg-contrast px-[16px] text-[12px] font-semibold text-on-contrast"
+            className="flex h-[36px] shrink-0 cursor-pointer items-center gap-[7px] rounded-full btn-trainer px-[16px] text-[12px] font-semibold"
           >
             <Send size={13} /> Invia a {client.name.split(" ")[0]}
           </motion.button>
@@ -544,7 +543,7 @@ export function PlansView() {
                 playSound("tap");
                 setMuscle((cur) => (cur === m ? null : m));
               }}
-              className={`cursor-pointer rounded-full px-[9px] py-[4px] text-[10.5px] font-semibold transition-colors ${muscle === m ? "bg-contrast text-on-contrast" : "bg-soft text-ink/70 hover:text-ink"}`}
+              className={`cursor-pointer rounded-full px-[9px] py-[4px] text-[10.5px] font-semibold transition-colors ${muscle === m ? "sel-trainer text-ink" : "bg-soft text-ink/70 hover:text-ink"}`}
             >
               {m === "senza-video" ? "Senza video" : m}
             </button>

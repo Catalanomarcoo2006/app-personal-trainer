@@ -9,7 +9,7 @@ import { ArrowUpRight, TrendingUp } from "lucide-react";
 import { CountUp, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { revenue } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { ROUTES } from "./nav";
 
 type ChartProps = { months: { label: string; value: number }[] };
 

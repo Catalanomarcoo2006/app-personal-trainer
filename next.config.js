@@ -1,8 +1,14 @@
+const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   // il pallino "N" di Next in basso a sinistra finirebbe sotto il tasto del Coach
   devIndicators: false,
+  // finché non c'è la vetrina vera, la pagina principale porta al prototipo (non alla vetrina del boilerplate)
+  async redirects() {
+    return [{ source: "/", destination: "/prototipo/trainer", permanent: false }];
+  },
   images: {
     remotePatterns: [
       {
@@ -37,4 +43,9 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Sviluppo e produzione in cartelle diverse: "next dev" non sovrascrive la versione compilata
+// che gira con "next start", e i due server possono restare accesi insieme.
+module.exports = (phase) => ({
+  ...nextConfig,
+  distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
+});

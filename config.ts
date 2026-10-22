@@ -2,10 +2,10 @@ import { ConfigProps } from "./types/config";
 
 const config = {
   // REQUIRED
-  appName: "ZeroToShip",
+  appName: "APP PERSONAL TRAINER", // nome di lavoro, da sostituire con il nome commerciale
   // REQUIRED: a short description of your app for SEO tags (can be overwritten)
   appDescription:
-    "The NextJS boilerplate with all you need to build your SaaS, AI tool, or any other web app.",
+    "L'app del personal trainer: clienti, schede, calendario e pagamenti, con il marchio del trainer e un assistente virtuale.",
   // REQUIRED (no https://, not trialing slash at the end, just the naked domain)
   domainName: "zerotoship.it",
   crisp: {

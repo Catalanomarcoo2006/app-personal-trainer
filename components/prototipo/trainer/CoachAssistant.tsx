@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, PointerEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,7 +19,7 @@ import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet,
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { ROUTES } from "./nav";
 
 // L'assistente del trainer si chiama Leo.
 export const COACH_NAME = "Leo";
@@ -54,13 +54,17 @@ function readSpot(): Spot {
   try {
     const v = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
     if (v?.pose === "lying" && typeof v.x === "number") return { pose: "lying", x: v.x };
-  } catch {}
+  } catch {
+    // memoria del browser non disponibile: si parte dal posto in piedi
+  }
   return { pose: "standing" };
 }
 function saveSpot(spot: Spot) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(spot));
-  } catch {}
+  } catch {
+    // memoria del browser non disponibile: la posizione vale solo fino a ricarica
+  }
 }
 
 // ——— Il viso, per il tasto delle altre pagine: i capelli escono dal cerchio ———
@@ -416,7 +420,7 @@ function ChatPanel({ left, origin, chat, close }: { left: number; origin: string
               transition={{ duration: 0.3, ease: EASE_OUT }}
               className={`flex max-w-[86%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
             >
-              <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bg-contrast text-on-contrast" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
+              <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
               {m.action && (
                 <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
                   <Link
@@ -453,7 +457,7 @@ function ChatPanel({ left, origin, chat, close }: { left: number; origin: string
         </div>
         <form onSubmit={submit} className="mx-[14px] mb-[14px] flex items-center gap-[8px] rounded-full border border-line py-[5px] pr-[5px] pl-[14px] focus-within:border-[color-mix(in_srgb,var(--trainer)_55%,transparent)]">
           <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
-          <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast">
+          <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full btn-trainer">
             <ArrowUp size={15} />
           </motion.button>
         </form>
@@ -709,7 +713,7 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
   // Esc chiude la chat.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
@@ -743,17 +747,19 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
     }
   };
 
-  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!home || open || e.button !== 0) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    } catch {
+      // puntatore già rilasciato: il trascinamento funziona lo stesso
+    }
     const el = layer.current;
     const zoom = el ? el.getBoundingClientRect().width / el.offsetWidth || 1 : 1;
     drag.current = { cx: e.clientX, cy: e.clientY, x: x.get(), y: y.get(), zoom, moved: false };
   };
 
-  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d) return;
     const dx = (e.clientX - d.cx) / d.zoom;
@@ -792,7 +798,7 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
     dropAt(spot, v);
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       openChat();

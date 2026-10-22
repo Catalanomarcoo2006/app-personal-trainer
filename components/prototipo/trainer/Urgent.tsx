@@ -7,7 +7,7 @@ import { Bell, ChevronRight, Clock, Package, TriangleAlert, Users, Wallet, X, ty
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { clientById, clients, urgent, UrgentKind } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 const kinds: Record<UrgentKind, { icon: LucideIcon; color: string; bg: string; group: string }> = {
@@ -26,10 +26,10 @@ export function ClientsButton() {
       <motion.span
         whileHover={{ y: -1.5 }}
         whileTap={{ scale: 0.95 }}
-        className="flex h-[26px] items-center gap-[7px] rounded-full bg-contrast pr-[4px] pl-[12px] text-[12px] font-semibold text-on-contrast"
+        className="flex h-[26px] items-center gap-[7px] glass rounded-full pr-[4px] pl-[12px] text-[12px] font-semibold text-ink"
       >
         <Users size={13} /> Clienti
-        <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-on-contrast px-[5px] text-[10px] font-bold text-contrast">{clients.length}</span>
+        <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[10px] font-bold text-white" style={{ background: "var(--trainer)" }}>{clients.length}</span>
       </motion.span>
     </Link>
   );

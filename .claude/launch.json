@@ -4,8 +4,14 @@
     {
       "name": "prototipo",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--turbopack", "-p", "3100"],
+      "runtimeArgs": ["run", "start", "--", "-p", "3100"],
       "port": 3100
+    },
+    {
+      "name": "sviluppo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--turbopack", "-p", "3200"],
+      "port": 3200
     }
   ]
 }

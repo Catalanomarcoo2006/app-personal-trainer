@@ -1,45 +1,225 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
-import { CalendarPlus, ChevronLeft, ChevronRight } from "lucide-react";
-import { IconCircle } from "@/components/ui/basics";
+import { CalendarPlus, Check, Plus, X } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { agenda, appointmentColors, AppointmentType, clientById, TODAY_INDEX, trainer, week } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { Appointment, appointmentColors, AppointmentType, clientById, clients, trainer } from "@/libs/prototipo/dati-finti";
+import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
-import { endTime, HourGrid, scrollTargetFor, TIMELINE_HEIGHT, toMinutes, typeIcons } from "./Agenda";
-
-const HOUR_PX = 58; // stessa scala dell'agenda della home
-const FIRST = 7 * 60;
-const GUTTER = 52;
-const yOf = (m: number) => ((m - FIRST) / 60) * HOUR_PX;
+import { duration, endTime, GlassDays, statusOf, toMinutes, typeIcons, WeekArrows, weekOf, WeekDay } from "./Agenda";
 
 const types = Object.keys(appointmentColors) as AppointmentType[];
 
-export function WeekCalendar() {
-  const scroller = useRef<HTMLDivElement>(null);
-  const [hidden, setHidden] = useState<AppointmentType[]>([]);
-  const now = toMinutes(trainer.now);
-  const total = agenda.flat().length;
+// Una seduta nella colonna del giorno.
+function SessionCard({ day, a, i, col }: { day: WeekDay; a: Appointment; i: number; col: number }) {
+  const c = clientById(a.clientId);
+  const colors = appointmentColors[a.type];
+  const Icon = typeIcons[a.type];
+  const { done, live } = statusOf(day, a);
+  return (
+    <motion.div
+      layout="position"
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: done ? 0.55 : 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.12 } }}
+      transition={{ delay: 0.05 + col * 0.03 + i * 0.04, duration: 0.35, ease: EASE_OUT }}
+      whileHover={{ y: -2 }}
+    >
+      <Link
+        href={ROUTES.cliente(a.clientId)}
+        onClick={() => playSound("tap")}
+        title={`${a.time} – ${endTime(a)} · ${c?.name ?? ""} · ${a.place}`}
+        className="relative block overflow-hidden rounded-[12px] px-[9px] pt-[7px] pb-[8px] transition-shadow hover:shadow-[0_10px_22px_rgba(0,0,0,0.10)]"
+        style={{ background: colors.bg }}
+      >
+        <span className="absolute top-0 bottom-0 left-0 w-[3px]" style={{ background: colors.strong }} />
+        <p className="flex items-center gap-[4px] text-[10px] font-bold tabular-nums" style={{ color: colors.strong }}>
+          <Icon size={10} /> {a.time} – {endTime(a)}
+          {done && <Check size={10} strokeWidth={3} className="ml-auto text-ink/50" />}
+          {live && <span className="btn-trainer ml-auto rounded-full px-[5px] py-[1px] text-[8.5px]">ora</span>}
+        </p>
+        <p className="mt-[5px] flex min-w-0 items-center gap-[6px]">
+          {c && <ClientAvatar c={c} size={20} />}
+          <span className="truncate text-[12px] font-bold">{c?.name.split(" ")[0]}</span>
+        </p>
+        <p className="mt-[4px] truncate text-[10px] text-ink/55">
+          {a.type} · {a.place}
+        </p>
+      </Link>
+    </motion.div>
+  );
+}
 
-  useEffect(() => {
-    const t = window.setTimeout(() => scroller.current?.scrollTo({ top: scrollTargetFor(8 * 60), behavior: "smooth" }), 400);
-    return () => window.clearTimeout(t);
-  }, []);
+// Tempo libero fra due sedute, solo se è almeno un'ora e mezza.
+function FreeGap({ minutes }: { minutes: number }) {
+  if (minutes < 90) return null;
+  return (
+    <div className="flex items-center gap-[5px] px-[4px] text-[9.5px] font-medium text-muted">
+      <span className="h-px flex-1 border-t border-dashed border-line" />
+      libero {duration(minutes)}
+      <span className="h-px flex-1 border-t border-dashed border-line" />
+    </div>
+  );
+}
+
+function NowMark() {
+  return (
+    <div className="flex items-center gap-[5px] px-[2px]">
+      <span className="relative grid size-[7px] place-items-center">
+        <motion.span className="absolute inset-0 rounded-full" style={{ background: "var(--trainer)" }} animate={{ scale: [1, 2.4], opacity: [0.6, 0] }} transition={{ duration: 1.5, repeat: Infinity }} />
+        <span className="size-[7px] rounded-full" style={{ background: "var(--trainer)" }} />
+      </span>
+      <span className="text-[9.5px] font-bold tabular-nums" style={{ color: "var(--trainer)" }}>
+        {trainer.now}
+      </span>
+      <span className="h-[1.5px] flex-1 rounded-full" style={{ background: "color-mix(in srgb, var(--trainer) 45%, transparent)" }} />
+    </div>
+  );
+}
+
+// Finestra per fissare una seduta nuova.
+function NewSession({ days, initialDay, onClose, onSave }: { days: WeekDay[]; initialDay: number; onClose: () => void; onSave: (day: number, a: Appointment) => void }) {
+  const [day, setDay] = useState(initialDay);
+  const [clientId, setClientId] = useState(clients[0].id);
+  const [time, setTime] = useState("17:00");
+  const [type, setType] = useState<AppointmentType>("Workout");
+  const [minutes, setMinutes] = useState(60);
+  const field = "h-[36px] w-full rounded-[11px] border border-line bg-card px-[10px] text-[12.5px] outline-none focus:border-[var(--trainer)]";
+
+  return (
+    <motion.div className="absolute inset-0 z-[60]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+      <button type="button" aria-label="Chiudi" onClick={onClose} className="absolute inset-0 cursor-default bg-black/10 backdrop-blur-[5px]" />
+      <motion.form
+        role="dialog"
+        aria-label="Nuova seduta"
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+        transition={{ duration: 0.24, ease: EASE_OUT }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const place = type === "Online" ? "Videochiamata" : type === "Corsa" ? "Parco di Meolo" : "Fit Lab, Meolo";
+          onSave(day, { time, minutes, clientId, type, place });
+        }}
+        className="absolute top-[30px] left-1/2 w-[420px] -translate-x-1/2 rounded-[22px] bg-card p-[18px] shadow-[0_30px_80px_rgba(0,0,0,0.22)]"
+      >
+        <div className="flex items-center justify-between">
+          <p className="text-[15px] font-bold">Nuova seduta</p>
+          <button type="button" aria-label="Chiudi" onClick={onClose} className="grid size-[26px] cursor-pointer place-items-center rounded-full bg-soft">
+            <X size={13} />
+          </button>
+        </div>
+
+        <p className="mt-[14px] mb-[6px] text-[11px] font-semibold text-muted">Giorno</p>
+        <div className="grid grid-cols-7 gap-[5px]">
+          {days.map((d, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setDay(i)}
+              className={`flex cursor-pointer flex-col items-center rounded-[11px] py-[6px] leading-none ${i === day ? "sel-trainer" : "bg-soft"}`}
+            >
+              <span className="text-[9.5px] text-muted">{d.short}</span>
+              <span className="mt-[3px] text-[14px] font-bold">{d.n}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-[12px] grid grid-cols-[1fr_110px] gap-[10px]">
+          <label className="block">
+            <span className="mb-[6px] block text-[11px] font-semibold text-muted">Cliente</span>
+            <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={field}>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-[6px] block text-[11px] font-semibold text-muted">Ora</span>
+            <input type="time" value={time} step={900} required onChange={(e) => setTime(e.target.value)} className={field} />
+          </label>
+        </div>
+
+        <p className="mt-[12px] mb-[6px] text-[11px] font-semibold text-muted">Tipo e durata</p>
+        <div className="flex flex-wrap gap-[6px]">
+          {types.map((t) => {
+            const Icon = typeIcons[t];
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setType(t)}
+                className={`flex cursor-pointer items-center gap-[5px] rounded-full px-[10px] py-[6px] text-[11.5px] font-semibold ${t === type ? "sel-trainer" : "bg-soft text-ink/70"}`}
+              >
+                <Icon size={12} style={{ color: appointmentColors[t].strong }} /> {t}
+              </button>
+            );
+          })}
+          <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="ml-auto h-[30px] rounded-full border border-line bg-card px-[10px] text-[11.5px] font-semibold outline-none">
+            {[30, 40, 45, 50, 60, 90].map((m) => (
+              <option key={m} value={m}>
+                {duration(m)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <motion.button type="submit" whileTap={{ scale: 0.97 }} className="btn-trainer mt-[18px] flex h-[40px] w-full cursor-pointer items-center justify-center gap-[6px] rounded-full text-[13px] font-semibold">
+          <CalendarPlus size={14} /> Fissa la seduta
+        </motion.button>
+      </motion.form>
+    </motion.div>
+  );
+}
+
+// Calendario della settimana: una colonna per giorno, le sedute in fila per orario. Tutto in vista, niente da scorrere.
+export function WeekCalendar() {
+  const [offset, setOffset] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const [hidden, setHidden] = useState<AppointmentType[]>([]);
+  const [added, setAdded] = useState<Record<string, Appointment[]>>({});
+  const [creating, setCreating] = useState<number | null>(null);
+
+  const week = weekOf(offset);
+  const days = week.days.map((d, i) => ({
+    ...d,
+    items: [...d.items, ...(added[`${offset}-${i}`] ?? [])].sort((a, b) => toMinutes(a.time) - toMinutes(b.time)),
+  }));
+  const total = days.reduce((s, d) => s + d.items.length, 0);
+  const todayIndex = days.findIndex((d) => d.isToday);
+  const now = toMinutes(trainer.now);
+
+  const move = (step: number) => {
+    setDirection(step);
+    setOffset((o) => o + step);
+  };
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] pr-[18px] pl-[80px]">
-      <section className="flex h-full min-h-0 flex-col rounded-[18px] bg-card px-[16px] pt-[14px] pb-[12px]">
+      <section className="flex h-full min-h-0 flex-col rounded-[18px] bg-card px-[16px] pt-[14px] pb-[14px]">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[8px]">
-            <IconCircle icon={ChevronLeft} label="Settimana precedente" size={30} variant="soft" />
-            <p className="px-[4px] text-[15px] font-bold">19 – 25 ottobre 2026</p>
-            <IconCircle icon={ChevronRight} label="Settimana successiva" size={30} variant="soft" />
-            <span className="ml-[6px] rounded-full bg-soft px-[10px] py-[5px] text-[11px] font-semibold">{total} appuntamenti</span>
+          <div className="flex items-center gap-[10px]">
+            <WeekArrows label={`${week.label} 2026`} onMove={move} size={30} className="text-[15px] font-bold" />
+            <span className="rounded-full bg-soft px-[10px] py-[5px] text-[11px] font-semibold">{total} sedute</span>
+            {offset !== 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  playSound("tap");
+                  setDirection(-Math.sign(offset));
+                  setOffset(0);
+                }}
+                className="cursor-pointer rounded-full px-[10px] py-[5px] text-[11px] font-semibold underline underline-offset-2"
+              >
+                Torna a oggi
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-[6px]">
             {types.map((t) => {
@@ -49,6 +229,7 @@ export function WeekCalendar() {
                 <button
                   key={t}
                   type="button"
+                  aria-pressed={!off}
                   onClick={() => {
                     playSound("tap");
                     setHidden((h) => (off ? h.filter((x) => x !== t) : [...h, t]));
@@ -65,111 +246,82 @@ export function WeekCalendar() {
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 playSound("tap");
-                toast("Scegli un orario libero nella griglia", { icon: "🗓️" });
+                setCreating(todayIndex >= 0 ? todayIndex : 0);
               }}
-              className="ml-[6px] flex h-[32px] cursor-pointer items-center gap-[6px] rounded-full bg-contrast px-[14px] text-[12px] font-semibold text-on-contrast"
+              className="btn-trainer ml-[6px] flex h-[32px] cursor-pointer items-center gap-[6px] rounded-full px-[14px] text-[12px] font-semibold"
             >
               <CalendarPlus size={13} /> Nuova seduta
             </motion.button>
           </div>
         </div>
 
-        <div className="mt-[14px] grid grid-cols-7 gap-[6px]" style={{ marginLeft: GUTTER }}>
-          {week.map((d, i) => (
-            <div
-              key={d.n}
-              className={`flex items-center justify-center gap-[8px] rounded-[12px] border py-[8px] ${i === TODAY_INDEX ? "" : "border-transparent bg-soft"}`}
-              style={i === TODAY_INDEX ? { background: "color-mix(in srgb, var(--trainer) 13%, var(--color-card))", borderColor: "color-mix(in srgb, var(--trainer) 35%, transparent)" } : undefined}
-            >
-              <span className="text-[11px] text-muted">{d.long.slice(0, 3)}</span>
-              <span className="text-[15px] font-bold">{d.n}</span>
-              {agenda[i].length > 0 && (
-                <span className="grid size-[17px] place-items-center rounded-full text-[9.5px] font-bold text-white" style={{ background: "var(--trainer)" }}>
-                  {agenda[i].length}
-                </span>
-              )}
-            </div>
-          ))}
+        <div className="mt-[12px]">
+          <GlassDays days={days} selected={todayIndex >= 0 ? todayIndex : null} weekKey={offset} direction={direction} height={64} />
         </div>
 
-        <div ref={scroller} className="relative mt-[8px] min-h-0 flex-1 overflow-y-auto [scrollbar-width:none]">
-          <div className="relative" style={{ height: TIMELINE_HEIGHT + 10 }}>
-            <HourGrid gutter={GUTTER} />
-            <div className="absolute inset-y-0 right-0 grid grid-cols-7 gap-[6px]" style={{ left: GUTTER }}>
-              {week.map((d, di) => (
-                <div key={d.n} className={`relative rounded-[12px] ${di === TODAY_INDEX ? "bg-soft/60" : ""}`}>
-                  {agenda[di]
-                    .filter((a) => !hidden.includes(a.type))
-                    .map((a, i) => {
-                      const c = clientById(a.clientId);
-                      const col = appointmentColors[a.type];
-                      const Icon = typeIcons[a.type];
-                      const done = di < TODAY_INDEX || (di === TODAY_INDEX && toMinutes(a.time) + a.minutes <= now);
-                      const h = (a.minutes / 60) * HOUR_PX - 4;
-                      return (
-                        <motion.div
-                          key={a.time + a.clientId}
-                          initial={{ opacity: 0, y: 12, scale: 0.94 }}
-                          animate={{ opacity: done ? 0.55 : 1, y: 0, scale: 1 }}
-                          transition={{ delay: 0.15 + di * 0.05 + i * 0.04, type: "spring", stiffness: 260, damping: 24 }}
-                          whileHover={{ scale: 1.03, zIndex: 5 }}
-                          className="absolute right-[3px] left-[3px]"
-                          style={{ top: yOf(toMinutes(a.time)) + 2, height: h }}
-                        >
-                          <Link
-                            href={ROUTES.cliente(a.clientId)}
-                            onClick={() => playSound("tap")}
-                            title={`${a.time} – ${endTime(a)} · ${c?.name ?? ""}`}
-                            className={`relative flex h-full overflow-hidden rounded-[11px] px-[8px] hover:shadow-[0_10px_24px_rgba(0,0,0,0.12)] ${
-                              a.minutes < 50 ? "items-center gap-[6px]" : "flex-col py-[6px]"
-                            }`}
-                            style={{ background: col.bg }}
-                          >
-                            <span className="absolute top-0 bottom-0 left-0 w-[3px]" style={{ background: col.strong }} />
-                            {a.minutes < 50 ? (
-                              // seduta breve: orario e nome su una riga, così il nome non viene tagliato
-                              <>
-                                <span className="flex shrink-0 items-center gap-[4px] text-[10px] font-semibold tabular-nums" style={{ color: col.strong }}>
-                                  <Icon size={10} /> {a.time}
-                                </span>
-                                <span className="truncate text-[11px] font-bold">{c?.name.split(" ")[0]}</span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="flex items-center gap-[5px] text-[10px] font-semibold tabular-nums" style={{ color: col.strong }}>
-                                  <Icon size={10} /> {a.time} – {endTime(a)}
-                                </span>
-                                <span className="mt-[3px] flex min-w-0 items-center gap-[5px]">
-                                  {c && <ClientAvatar c={c} size={18} />}
-                                  <span className="truncate text-[11px] font-bold">{c?.name.split(" ")[0]}</span>
-                                </span>
-                              </>
-                            )}
-                          </Link>
-                        </motion.div>
-                      );
-                    })}
-                  {di === TODAY_INDEX && (
-                    <motion.div
-                      initial={{ opacity: 0, scaleX: 0 }}
-                      animate={{ opacity: 1, scaleX: 1 }}
-                      transition={{ delay: 0.6, duration: 0.6, ease: EASE_OUT }}
-                      className="pointer-events-none absolute right-0 left-0 z-10 flex origin-left items-center"
-                      style={{ top: yOf(now) - 1 }}
-                    >
-                      <span className="relative grid size-[9px] place-items-center">
-                        <motion.span className="absolute inset-0 rounded-full" style={{ background: "var(--trainer)" }} animate={{ scale: [1, 2.4], opacity: [0.6, 0] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                        <span className="size-[9px] rounded-full" style={{ background: "var(--trainer)" }} />
-                      </span>
-                      <span className="h-[2px] flex-1" style={{ background: "var(--trainer)" }} />
-                    </motion.div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <motion.div
+          key={offset}
+          initial={{ opacity: 0, x: direction * 18 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.32, ease: EASE_OUT }}
+          className="mt-[8px] grid min-h-0 flex-1 grid-cols-7 gap-[6px] px-[6px]"
+        >
+          {days.map((d, di) => {
+            const shown = d.items.filter((a) => !hidden.includes(a.type));
+            const nowAt = d.isToday ? shown.findIndex((a) => toMinutes(a.time) + a.minutes > now) : -2;
+            return (
+              <div
+                key={di}
+                className="group/col relative flex min-h-0 flex-col gap-[6px] overflow-hidden rounded-[14px] p-[5px]"
+                style={d.isToday ? { background: "color-mix(in srgb, var(--trainer) 6%, transparent)" } : undefined}
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {shown.flatMap((a, i) => {
+                    const prev = shown[i - 1];
+                    const gap = prev ? toMinutes(a.time) - (toMinutes(prev.time) + prev.minutes) : 0;
+                    const out = [];
+                    if (prev) out.push(<FreeGap key={`gap-${a.time}`} minutes={gap} />);
+                    if (i === nowAt) out.push(<NowMark key="adesso" />);
+                    out.push(<SessionCard key={`${a.time}-${a.clientId}`} day={d} a={a} i={i} col={di} />);
+                    return out;
+                  })}
+                </AnimatePresence>
+                {d.isToday && nowAt === -1 && shown.length > 0 && <NowMark />}
+                {shown.length === 0 && <p className="mt-[14px] text-center text-[11px] font-medium text-muted">Libero</p>}
+                <button
+                  type="button"
+                  aria-label={`Nuova seduta ${d.long} ${d.n}`}
+                  onClick={() => {
+                    playSound("tap");
+                    setCreating(di);
+                  }}
+                  className={`flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-[4px] rounded-[11px] border border-dashed border-line text-[10.5px] font-semibold text-muted transition-all hover:border-[var(--trainer)] hover:text-ink ${
+                    shown.length === 0 ? "" : "opacity-0 group-hover/col:opacity-100 focus-visible:opacity-100"
+                  }`}
+                >
+                  <Plus size={11} /> Aggiungi
+                </button>
+              </div>
+            );
+          })}
+        </motion.div>
       </section>
+
+      <AnimatePresence>
+        {creating !== null && (
+          <NewSession
+            days={days}
+            initialDay={creating}
+            onClose={() => setCreating(null)}
+            onSave={(day, a) => {
+              setAdded((s) => ({ ...s, [`${offset}-${day}`]: [...(s[`${offset}-${day}`] ?? []), a] }));
+              setCreating(null);
+              playSound("confirm");
+              toast.success(`Seduta fissata: ${days[day].long} ${days[day].n} alle ${a.time}`);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }

@@ -11,7 +11,7 @@ type Variant = "outline" | "soft" | "dark" | "white";
 const variants: Record<Variant, string> = {
   outline: "bg-card border border-line text-ink/70",
   soft: "bg-soft text-ink/70",
-  dark: "bg-contrast text-on-contrast",
+  dark: "btn-trainer",
   white: "bg-card text-ink/70",
 };
 
@@ -124,8 +124,10 @@ export function FitCanvas({ width, minHeight, children }: { width: number; minHe
   }, [width, minHeight]);
 
   if (!box) return null;
+  // La tela riempie esattamente la finestra: niente scorrimento, nemmeno di pochi pixel. "clip" e non "hidden":
+  // un contenitore "hidden" può ancora essere spostato dal focus o da scrollIntoView, "clip" no.
   return (
-    <div className="overflow-x-hidden">
+    <div className="h-screen overflow-clip">
       <div className="relative mx-auto" style={{ zoom: box.zoom, width, height: box.height }}>
         {children}
       </div>

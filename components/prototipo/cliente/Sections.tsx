@@ -139,13 +139,13 @@ export function GoalCard() {
 export function NextSession() {
   const [sent, setSent] = useState(false);
   return (
-    <motion.div whileTap={{ scale: 0.985 }} className="flex h-[58px] items-center gap-[10px] rounded-[16px] bg-contrast px-[10px] text-on-contrast shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
-      <span className="grid size-[36px] place-items-center rounded-full bg-on-contrast/10">
+    <motion.div whileTap={{ scale: 0.985 }} className="flex h-[58px] items-center gap-[10px] rounded-[16px] btn-trainer px-[10px] shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
+      <span className="grid size-[36px] place-items-center rounded-full bg-white/20">
         <CalendarDays size={16} />
       </span>
       <div className="min-w-0 leading-none">
         <p className="text-[12.5px] font-bold">Prossima seduta con {trainer.name.split(" ")[0]}</p>
-        <p className="mt-[4px] truncate text-[10.5px] text-on-contrast/65">
+        <p className="mt-[4px] truncate text-[10.5px]/65">
           {client.nextSession.when} · {client.nextSession.where}
         </p>
       </div>
@@ -158,7 +158,7 @@ export function NextSession() {
           setSent(true);
           toast.success(`Richiesta inviata a ${trainer.name.split(" ")[0]}`);
         }}
-        className="ml-auto flex h-[28px] shrink-0 cursor-pointer items-center gap-[4px] rounded-full bg-on-contrast px-[11px] text-[11px] font-semibold text-contrast disabled:cursor-default"
+        className="ml-auto flex h-[28px] shrink-0 cursor-pointer items-center gap-[4px] rounded-full bg-white px-[11px] text-[11px] font-semibold text-[var(--trainer)] disabled:cursor-default"
       >
         {sent ? (
           <>
@@ -215,7 +215,7 @@ export function WorkoutCard() {
           key={count}
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
-          className={`rounded-full px-[10px] py-[5px] text-[11px] font-bold ${all ? "bg-ok text-white" : "bg-contrast text-on-contrast"}`}
+          className={`rounded-full px-[10px] py-[5px] text-[11px] font-bold ${all ? "bg-ok text-white" : "btn-trainer"}`}
         >
           {count}/{done.length}
         </motion.span>
@@ -244,7 +244,7 @@ export function WorkoutCard() {
               <motion.span
                 animate={{ scale: done[i] ? [1, 1.18, 1] : 1 }}
                 transition={{ duration: 0.3 }}
-                className={`ml-auto grid size-[30px] shrink-0 place-items-center rounded-full border border-line transition-colors duration-300 ${done[i] ? "bg-contrast text-on-contrast" : "bg-card text-ink/35"}`}
+                className={`ml-auto grid size-[30px] shrink-0 place-items-center rounded-full border border-line transition-colors duration-300 ${done[i] ? "btn-trainer" : "bg-card text-ink/35"}`}
               >
                 <Check size={14} strokeWidth={2.6} />
               </motion.span>
@@ -273,7 +273,7 @@ export function WorkoutCard() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ type: "spring", stiffness: 380, damping: 22 }}
-            className="mt-[10px] rounded-[12px] bg-contrast px-[12px] py-[10px] text-center text-[12.5px] font-semibold text-on-contrast"
+            className="mt-[10px] rounded-[12px] btn-trainer px-[12px] py-[10px] text-center text-[12.5px] font-semibold"
           >
             Allenamento completato! {trainer.name.split(" ")[0]} lo vedrà nella tua scheda.
           </motion.p>

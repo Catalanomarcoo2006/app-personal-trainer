@@ -156,7 +156,7 @@ export function PdfImport({ clientName, onClose, onImported }: { clientName: str
                     playSound("confirm");
                     onImported(phase.days);
                   }}
-                  className="cursor-pointer rounded-full bg-contrast py-[9px] text-[12px] font-semibold text-on-contrast"
+                  className="cursor-pointer rounded-full btn-trainer py-[9px] text-[12px] font-semibold"
                 >
                   Usa questa scheda
                 </button>

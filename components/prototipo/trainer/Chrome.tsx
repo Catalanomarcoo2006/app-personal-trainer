@@ -1,23 +1,19 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState, useTransition } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowLeft,
-  Bell,
   CalendarDays,
   Dumbbell,
   FileText,
   House,
   MessageSquare,
   Moon,
-  PanelTop,
-  Search,
   Settings,
   Sun,
-  TextAlignStart,
   Users,
   Wallet,
   type LucideIcon,
@@ -28,19 +24,10 @@ import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { CoachAssistant } from "./CoachAssistant";
+import { BASE, navigate, ROUTES } from "./nav";
+import { NotificationsButton, SearchButton, SearchPalette } from "./TopBarTools";
 
-const BASE = "/prototipo/trainer";
-
-export const ROUTES = {
-  oggi: BASE,
-  clienti: `${BASE}/clienti`,
-  cliente: (id: string) => `${BASE}/clienti/${id}`,
-  messaggi: `${BASE}/messaggi`,
-  schede: `${BASE}/schede`,
-  calendario: `${BASE}/calendario`,
-  incassi: `${BASE}/incassi`,
-  impostazioni: `${BASE}/impostazioni`,
-};
+export { BASE, ROUTES, navigate };
 
 type Section = "Oggi" | "Messaggi" | "Clienti" | "Schede" | "Calendario" | "Incassi" | "Impostazioni";
 type NavItem = { label: Section; icon: LucideIcon; href: string };
@@ -50,122 +37,30 @@ const SPRING = { type: "spring" as const, duration: 0.5, bounce: 0.2 };
 
 const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
 
-// ——— Navigazione: risponde al clic subito, anche mentre la pagina nuova arriva ———
+// ——— Navigazione istantanea (vedi nav.ts) ———
 
-type Nav = { target: string | null; pending: boolean; go: (href: string) => void };
-const NavContext = createContext<Nav>({ target: null, pending: false, go: () => {} });
-const useNav = () => useContext(NavContext);
-
-function NavProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const path = usePathname();
-  const [target, setTarget] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  // Arrivati alla pagina nuova, la richiesta è chiusa.
-  useEffect(() => setTarget(null), [path]);
-
-  const go = useCallback(
-    (href: string) => {
-      if (href === path) return;
-      setTarget(href);
-      startTransition(() => router.push(href));
-    },
-    [path, router],
-  );
-
-  // Anche i link normali (schede, "Vedi tutti", azioni di Leo) accendono subito la barra di avanzamento.
+// Anche i link normali (schede, "Vedi tutti", azioni di Leo, freccia indietro) passano da qui invece che dal server.
+function InstantLinks(): null {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
       const url = new URL(a.href, window.location.href);
-      if (url.origin !== window.location.origin || !url.pathname.startsWith(BASE) || url.pathname === window.location.pathname) return;
-      setTarget(url.pathname);
+      if (url.origin !== window.location.origin || !url.pathname.startsWith(BASE)) return;
+      e.preventDefault();
+      navigate(url.pathname + url.search);
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, []);
-
-  // Se per qualche motivo la pagina non cambia, la richiesta non resta appesa.
-  useEffect(() => {
-    if (!target) return;
-    const t = window.setTimeout(() => setTarget(null), 10000);
-    return () => window.clearTimeout(t);
-  }, [target]);
-
-  return <NavContext.Provider value={{ target, pending: pending || !!target, go }}>{children}</NavContext.Provider>;
-}
-
-// Barra sottile in alto mentre la pagina nuova arriva.
-function NavProgress() {
-  const { pending } = useNav();
-  return (
-    <AnimatePresence>
-      {pending && (
-        <motion.div key="avanzamento" aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[60] h-[2.5px] overflow-hidden" exit={{ opacity: 0, transition: { duration: 0.25, delay: 0.1 } }}>
-          <motion.div
-            className="h-full origin-left rounded-r-full"
-            style={{ background: "var(--trainer)", boxShadow: "0 0 10px var(--trainer)" }}
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 0.85 }}
-            exit={{ scaleX: 1 }}
-            transition={{ duration: 2.4, ease: EASE_OUT }}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-// Prepara in sottofondo le altre pagine, così il primo clic non aspetta.
-// In sviluppo Next compila ogni pagina alla prima visita: la "visitiamo" noi prima del trainer.
-const WARM_ROUTES = [ROUTES.oggi, ROUTES.messaggi, ROUTES.clienti, ROUTES.schede, ROUTES.calendario, ROUTES.incassi, ROUTES.impostazioni, ROUTES.cliente("giulia-bianchi")];
-
-function RouteWarmup(): null {
-  const router = useRouter();
-  useEffect(() => {
-    WARM_ROUTES.forEach((r) => router.prefetch(r));
-    if (process.env.NODE_ENV !== "development") return;
-    let cancelled = false;
-    const t = window.setTimeout(async () => {
-      for (const r of WARM_ROUTES) {
-        if (cancelled) return;
-        if (r === window.location.pathname) continue;
-        try {
-          await fetch(r, { credentials: "same-origin" });
-        } catch {}
-      }
-    }, 1500);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [router]);
   return null;
 }
 
 function useSection(): Section {
-  const path = usePathname();
-  const { target } = useNav();
-  const at = target ?? path;
+  const at = usePathname();
   const found = (["Messaggi", "Clienti", "Schede", "Calendario", "Incassi", "Impostazioni"] as const).find((s) => at.startsWith(ROUTES[s.toLowerCase() as "messaggi"]));
   return found ?? "Oggi";
-}
-
-function SquareButton({ icon: Icon, label, size = 16 }: { icon: LucideIcon; label: string; size?: number }) {
-  return (
-    <motion.button
-      type="button"
-      aria-label={label}
-      {...tap}
-      onClick={() => playSound("tap")}
-      className="glass glass-3d relative grid size-[33px] cursor-pointer place-items-center rounded-[11px] text-ink"
-    >
-      <Icon size={size} strokeWidth={2} />
-    </motion.button>
-  );
 }
 
 const navItems: NavItem[] = [
@@ -209,14 +104,10 @@ export function ThemeButton({ size = 15 }: { size?: number }) {
 
 export function TopBar() {
   const section = useSection();
-  const { go } = useNav();
 
   return (
-    <div className="flex h-[35px] items-center justify-between pr-[18px] pl-[20px]">
-      <div className="flex gap-[10px]">
-        <SquareButton icon={TextAlignStart} label="Menu" />
-        <SquareButton icon={PanelTop} label="Pannelli" size={14} />
-      </div>
+    <div className="grid h-[35px] grid-cols-[1fr_auto_1fr] items-center pr-[18px] pl-[20px]">
+      <span />
 
       <nav className="glass glass-3d relative flex h-[35px] w-[395px] items-center justify-between rounded-full px-[4px]">
         {navItems.map(({ label, icon: Icon, href }) => {
@@ -228,8 +119,8 @@ export function TopBar() {
               whileTap={{ scale: 0.95 }}
               aria-current={isActive ? "page" : undefined}
               onClick={() => {
+                navigate(href);
                 playSound("tap");
-                go(href);
               }}
               className={`relative flex h-[27px] cursor-pointer items-center gap-[6px] rounded-full px-[14px] text-[12.5px] font-medium transition-colors duration-300 ${
                 isActive ? "text-ink" : "text-ink/60 [@media(hover:hover)]:hover:text-ink"
@@ -243,20 +134,11 @@ export function TopBar() {
         })}
       </nav>
 
-      <div className="glass glass-3d relative flex h-[35px] w-[147px] items-center justify-between rounded-full pr-[4px] pl-[14px] text-ink">
+      <div className="glass glass-3d relative flex h-[35px] w-[147px] items-center justify-between justify-self-end rounded-full pr-[4px] pl-[14px] text-ink">
         <ThemeButton />
-        <motion.button type="button" {...tap} onClick={() => playSound("tap")} className="relative cursor-pointer" aria-label="Avvisi">
-          <Bell size={15} strokeWidth={1.9} />
-          <motion.span
-            className="absolute -top-[2px] right-[0px] size-[5px] rounded-full bg-[#e5484d]"
-            animate={{ scale: [1, 1.5, 1] }}
-            transition={{ duration: 1.8, repeat: Infinity }}
-          />
-        </motion.button>
-        <motion.button type="button" {...tap} onClick={() => playSound("tap")} className="cursor-pointer" aria-label="Cerca">
-          <Search size={15} strokeWidth={1.9} />
-        </motion.button>
-        <Link href={ROUTES.impostazioni} onClick={() => playSound("tap")} aria-label="Il tuo profilo">
+        <NotificationsButton />
+        <SearchButton />
+        <Link href={ROUTES.impostazioni} onClick={() => playSound("tap")} aria-label="Il tuo profilo" className="relative">
           <Avatar initials={trainer.initials} src={trainer.photo} size={27} />
         </Link>
       </div>
@@ -295,12 +177,14 @@ const sideItems: NavItem[] = [
 ];
 
 // Macchie di colore molto sfocate dietro l'interfaccia: il vetro della barra laterale le sfoca e le ravviva.
+// Niente ritaglio ai bordi della tela: sugli schermi larghi le macchie sfumano anche nelle fasce laterali,
+// invece di finire con un taglio verticale.
 function AmbientBackdrop() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <span className="ambient-blob" style={{ left: -70, top: "calc(50% - 170px)", width: 210, height: 210, background: "var(--trainer)" }} />
-      <span className="ambient-blob" style={{ left: -40, top: "calc(50% + 40px)", width: 180, height: 180, background: "var(--color-sky-strong)", animationDelay: "-6s" }} />
-      <span className="ambient-blob" style={{ left: 10, top: "calc(50% + 170px)", width: 140, height: 140, background: "var(--color-mint-strong)", animationDelay: "-11s" }} />
+    <div aria-hidden className="pointer-events-none absolute inset-0">
+      <span className="ambient-blob" style={{ left: -120, top: "calc(50% - 190px)", width: 250, height: 230, background: "var(--trainer)" }} />
+      <span className="ambient-blob" style={{ left: -100, top: "calc(50% + 30px)", width: 230, height: 190, background: "var(--color-sky-strong)", animationDelay: "-6s" }} />
+      <span className="ambient-blob" style={{ left: -40, top: "calc(50% + 170px)", width: 170, height: 140, background: "var(--color-mint-strong)", animationDelay: "-11s" }} />
       <span className="ambient-blob" style={{ left: 470, top: -90, width: 220, height: 130, background: "var(--trainer)", animationDelay: "-3s" }} />
       <span className="ambient-blob" style={{ left: 700, top: -80, width: 200, height: 120, background: "var(--color-violet-strong)", animationDelay: "-9s" }} />
       <span className="ambient-blob" style={{ right: 40, top: -80, width: 180, height: 120, background: "var(--color-sky-strong)", animationDelay: "-13s" }} />
@@ -311,7 +195,6 @@ function AmbientBackdrop() {
 
 export function Sidebar() {
   const section = useSection();
-  const { go } = useNav();
   const [hover, setHover] = useState<string | null>(null);
   // Prima etichetta con un piccolo ritardo; spostandosi sulle icone vicine compaiono subito e senza animazione.
   const [warm, setWarm] = useState(false);
@@ -352,8 +235,8 @@ export function Sidebar() {
               whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               onClick={() => {
+                navigate(href);
                 playSound("tap");
-                go(href);
               }}
               className={`relative grid size-[36px] cursor-pointer place-items-center rounded-full transition-colors duration-200 ${
                 isActive ? "text-ink" : "text-ink/50 [@media(hover:hover)]:hover:text-ink"
@@ -385,19 +268,17 @@ export function Sidebar() {
 // barra laterale e Leo restano fermi mentre cambia solo il contenuto.
 export function TrainerFrame({ children }: { children: ReactNode }) {
   return (
-    <NavProvider>
-      <FitCanvas width={1303} minHeight={640}>
-        <AmbientBackdrop />
-        <NavProgress />
-        <Appear i={0} className="relative z-30 pt-[11px]">
-          <TopBar />
-        </Appear>
-        <Sidebar />
-        {children}
-        <CoachAssistant />
-        <RouteWarmup />
-      </FitCanvas>
-    </NavProvider>
+    <FitCanvas width={1303} minHeight={640}>
+      <AmbientBackdrop />
+      <Appear i={0} className="relative z-40 pt-[11px]">
+        <TopBar />
+      </Appear>
+      <Sidebar />
+      {children}
+      <CoachAssistant />
+      <SearchPalette />
+      <InstantLinks />
+    </FitCanvas>
   );
 }
 

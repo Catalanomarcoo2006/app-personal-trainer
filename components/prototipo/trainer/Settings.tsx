@@ -59,9 +59,9 @@ function Segmented<T extends string>({ options, value, onChange, id }: { options
           key={o.value}
           type="button"
           onClick={(e) => onChange(o.value, e)}
-          className={`relative flex flex-1 cursor-pointer items-center justify-center gap-[6px] rounded-full py-[7px] text-[12px] font-semibold ${value === o.value ? "text-on-contrast" : "text-ink/65"}`}
+          className={`relative flex flex-1 cursor-pointer items-center justify-center gap-[6px] rounded-full py-[7px] text-[12px] font-semibold ${value === o.value ? "text-ink" : "text-ink/65"}`}
         >
-          {value === o.value && <motion.span layoutId={id} className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+          {value === o.value && <motion.span layoutId={id} className="sel-trainer absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
           <span className="relative flex items-center gap-[6px]">{o.label}</span>
         </button>
       ))}
@@ -108,7 +108,7 @@ export function SettingsView() {
                 playSound("confirm");
                 toast.success("Profilo salvato");
               }}
-              className="mt-[14px] flex h-[38px] cursor-pointer items-center justify-center gap-[6px] rounded-full bg-contrast text-[12.5px] font-semibold text-on-contrast"
+              className="mt-[14px] flex h-[38px] cursor-pointer items-center justify-center gap-[6px] rounded-full btn-trainer text-[12.5px] font-semibold"
             >
               <Check size={14} /> Salva le modifiche
             </motion.button>

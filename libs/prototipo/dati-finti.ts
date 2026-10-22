@@ -272,6 +272,18 @@ export const alerts: Alert[] = [
   { clientId: "elena-marini", text: "Giovedì non riesco a collegarmi, possiamo fare venerdì?" },
 ];
 
+// ——— Avvisi del campanello in alto: cosa è successo di recente ———
+
+export type NotificationKind = "allenamento" | "messaggio" | "pagamento" | "misure" | "scheda";
+
+export const notifications: { kind: NotificationKind; clientId: string; text: string; when: string; to: "cliente" | "messaggi" | "incassi" }[] = [
+  { kind: "allenamento", clientId: "giulia-bianchi", text: "ha completato Giorno A · Gambe e glutei", when: "8 min fa", to: "cliente" },
+  { kind: "messaggio", clientId: "luca-ferri", text: "ha segnalato un fastidio al ginocchio", when: "25 min fa", to: "messaggi" },
+  { kind: "pagamento", clientId: "davide-greco", text: "ha pagato il mensile di ottobre · € 120", when: "1 h fa", to: "incassi" },
+  { kind: "misure", clientId: "antonella-russo", text: "ha aggiornato peso e misure: −0,4 kg", when: "Ieri", to: "cliente" },
+  { kind: "scheda", clientId: "chiara-fontana", text: "ha aperto la scheda nuova", when: "Ieri", to: "cliente" },
+];
+
 // ——— App del cliente ———
 
 export const client = {

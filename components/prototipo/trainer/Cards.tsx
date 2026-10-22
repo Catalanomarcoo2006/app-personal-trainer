@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { CalendarDays, ChevronDown, ChevronRight, CirclePlus, EllipsisVertical, Funnel, Heart, Mail, MessageCircle, MessageSquare, Phone, Video } from "lucide-react";
-import { Avatar, IconCircle, Pill } from "@/components/ui/basics";
+import { CalendarDays, ChevronDown, ChevronRight, MessageSquare } from "lucide-react";
+import { Avatar, Pill } from "@/components/ui/basics";
 import { CountUp, EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, alerts, clientById, pathCards, progressOf, TODAY_INDEX, toneColors, trainer } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 const card = "rounded-[18px] bg-card";
@@ -16,7 +16,7 @@ const card = "rounded-[18px] bg-card";
 export function ProfileCard() {
   const today = agenda[TODAY_INDEX].length;
   return (
-    <section className={`${card} px-[16px] pt-[10px] pb-[12px]`}>
+    <section className={`${card} px-[16px] py-[12px]`}>
       <div className="flex items-center">
         <span className="grid size-[50px] shrink-0 place-items-center rounded-full border-[2px] bg-card p-[2px]" style={{ borderColor: "var(--trainer)" }}>
           <Avatar initials={trainer.initials} src={trainer.photo} size={42} />
@@ -25,19 +25,10 @@ export function ProfileCard() {
           <p className="text-[15px] font-bold tracking-[-0.01em]">{trainer.name}</p>
           <p className="mt-[5px] text-[12px] text-muted">{trainer.role}</p>
         </div>
-        <IconCircle icon={EllipsisVertical} label="Altro" size={26} iconSize={13} variant="outline" className="ml-auto" />
-      </div>
-      <div className="mt-[10px] flex items-center justify-between">
-        <div className="flex gap-[5px]">
-          <IconCircle icon={Mail} label="Email" variant="dark" />
-          <IconCircle icon={Phone} label="Chiama" />
-          <IconCircle icon={MessageCircle} label="Messaggi" />
-          <IconCircle icon={Video} label="Videochiamata" />
-        </div>
-        <Link href={ROUTES.calendario} onClick={() => playSound("tap")}>
+        <Link href={ROUTES.calendario} onClick={() => playSound("tap")} className="ml-auto">
           <Pill className="h-[28px] border border-line pr-[5px] pl-[11px] text-[11px] font-medium transition-transform hover:-translate-y-[1.5px]">
             <CalendarDays size={12} strokeWidth={2} /> Oggi
-            <span className="grid size-[19px] place-items-center rounded-full bg-contrast text-[10px] font-bold text-on-contrast">{today}</span>
+            <span className="grid size-[19px] place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: "var(--trainer)" }}>{today}</span>
           </Pill>
         </Link>
       </div>
@@ -50,15 +41,10 @@ export function ClientsHeader() {
   return (
     <div className="flex h-[26px] items-center justify-between">
       <Link href={ROUTES.clienti} onClick={() => playSound("tap")}>
-        <motion.span whileHover={{ y: -1.5 }} whileTap={{ scale: 0.95 }} className="flex h-[26px] items-center gap-[6px] rounded-full bg-contrast px-[14px] text-[12px] font-semibold text-on-contrast">
+        <motion.span whileHover={{ y: -1.5 }} whileTap={{ scale: 0.95 }} className="flex h-[26px] items-center gap-[6px] glass relative rounded-full px-[14px] text-[12px] font-semibold text-ink">
           I miei clienti <ChevronDown size={13} />
         </motion.span>
       </Link>
-      <div className="flex gap-[8px]">
-        <IconCircle icon={CirclePlus} label="Nuovo cliente" size={26} iconSize={13} variant="white" />
-        <IconCircle icon={Funnel} label="Filtra" size={26} iconSize={12} variant="white" />
-        <IconCircle icon={Heart} label="Preferiti" size={26} iconSize={12} variant="white" />
-      </div>
     </div>
   );
 }

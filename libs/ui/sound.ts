@@ -46,6 +46,18 @@ function audio(): AudioContext | null {
   return context;
 }
 
+// Creare il motore audio costa circa 90 ms: lo prepariamo quando il dito o il mouse si appoggia
+// (pointerdown), così al clic vero è già pronto e non rallenta il cambio di pagina.
+if (typeof window !== "undefined") {
+  const prepare = () => {
+    window.removeEventListener("pointerdown", prepare, true);
+    window.removeEventListener("keydown", prepare, true);
+    if (isSoundEnabled()) audio();
+  };
+  window.addEventListener("pointerdown", prepare, true);
+  window.addEventListener("keydown", prepare, true);
+}
+
 // Una nota con attacco rapido e coda morbida: è quello che rende il suono "pop" e non un bip.
 function note(ac: AudioContext, at: number, from: number, to: number, duration: number, gain: number, type: OscillatorType = "sine") {
   const osc = ac.createOscillator();

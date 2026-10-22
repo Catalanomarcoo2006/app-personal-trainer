@@ -10,7 +10,7 @@ import { EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { Client, clients, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 const unpaid = (c: Client) => c.payments.some((p) => !p.paid);
@@ -53,12 +53,12 @@ export function ClientList() {
                   setFilter(f.key);
                 }}
                 className={`relative flex h-[30px] cursor-pointer items-center gap-[7px] rounded-full px-[13px] text-[12px] font-semibold transition-colors ${
-                  active ? "text-on-contrast" : "bg-card text-ink/75 hover:text-ink"
+                  active ? "text-ink" : "bg-card text-ink/75 hover:text-ink"
                 }`}
               >
-                {active && <motion.span layoutId="filtro-clienti" className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                {active && <motion.span layoutId="filtro-clienti" className="sel-trainer absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                 <span className="relative">{f.label}</span>
-                <span className={`relative grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[10px] font-bold ${active ? "bg-on-contrast text-contrast" : "bg-soft"}`}>{count}</span>
+                <span className={`relative grid h-[18px] min-w-[18px] place-items-center rounded-full px-[5px] text-[10px] font-bold ${active ? "bg-card text-ink" : "bg-soft"}`}>{count}</span>
               </motion.button>
             );
           })}
@@ -80,7 +80,7 @@ export function ClientList() {
               playSound("tap");
               toast("Nuovo cliente: arriva nella Fase 2", { icon: "🛠️" });
             }}
-            className="flex h-[30px] cursor-pointer items-center gap-[6px] rounded-full bg-contrast px-[13px] text-[12px] font-semibold text-on-contrast"
+            className="flex h-[30px] cursor-pointer items-center gap-[6px] rounded-full btn-trainer px-[13px] text-[12px] font-semibold"
           >
             <UserPlus size={13} /> Nuovo cliente
           </motion.button>

@@ -28,6 +28,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Avvisi in app + email; push solo dopo, insieme alla versione telefono completa del trainer.
 - Assistente DeepSeek: costo trascurabile (~0,0007 $ a domanda), limite solo di sicurezza (300/mese).
 - Dati sanitari: consenso esplicito, Supabase UE, Marco responsabile del trattamento (DPA).
+- Area trainer = una pagina sola (`app/prototipo/trainer/[[...sezione]]`, `TrainerApp.tsx`): il cambio sezione usa `history.pushState` (`nav.ts`), niente server, ~100 ms in sviluppo invece di ~1 s. Nessun tasto nero: `btn-trainer` / `sel-trainer` / `glass` in `globals.css`.
 
 ## Problemi noti / blocchi
 - Licenza ZeroToShip da verificare con Alberto Ravasini prima di vendere.
@@ -46,4 +47,5 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git).
 
 ## Changelog
+- 2026-10-22: navigazione istantanea, home senza scorrimento, agenda e calendario senza griglia oraria (giorni in lastre di vetro), ricerca (Ctrl+K) e avvisi funzionanti, via i tasti morti e i tasti neri.
 - 2026-10-21: progetto avviato con /start (brainstorming, spec, setup con boilerplate, piano).

@@ -8,7 +8,7 @@ import { BellRing, Check, CircleDollarSign, Hourglass, TrendingUp, Users, Wallet
 import { Appear, CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { clientById, clients, revenue } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { RevenueChart } from "./Revenue";
 
@@ -129,7 +129,7 @@ export function PaymentsView() {
                         title="Segna pagato"
                         whileTap={{ scale: 0.9 }}
                         onClick={() => markPaid(m.key)}
-                        className="grid size-[30px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast"
+                        className="grid size-[30px] shrink-0 cursor-pointer place-items-center rounded-full btn-trainer"
                       >
                         <Check size={14} />
                       </motion.button>
@@ -166,9 +166,9 @@ export function PaymentsView() {
                     playSound("tap");
                     setFilter(key);
                   }}
-                  className={`relative cursor-pointer rounded-full px-[11px] py-[5px] text-[11px] font-semibold ${filter === key ? "text-on-contrast" : "bg-soft text-ink/70"}`}
+                  className={`relative cursor-pointer rounded-full px-[11px] py-[5px] text-[11px] font-semibold ${filter === key ? "text-ink" : "bg-soft text-ink/70"}`}
                 >
-                  {filter === key && <motion.span layoutId="filtro-movimenti" className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                  {filter === key && <motion.span layoutId="filtro-movimenti" className="sel-trainer absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                   <span className="relative">{label}</span>
                 </button>
               ))}

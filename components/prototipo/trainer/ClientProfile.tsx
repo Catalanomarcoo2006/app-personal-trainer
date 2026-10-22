@@ -21,7 +21,6 @@ import {
   Target,
   TrendingDown,
   TrendingUp,
-  Video,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -30,7 +29,7 @@ import { Appear, CountUp, EASE_OUT, formatEuro, ProgressBar } from "@/components
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, appointmentColors, Client, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
-import { ROUTES } from "./Chrome";
+import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 const card = "rounded-[18px] bg-card";
@@ -102,10 +101,9 @@ export function ClientProfile({ c }: { c: Client }) {
           </div>
 
           <div className="mt-[12px] flex gap-[5px]">
-            <IconCircle icon={Mail} label="Email" variant="dark" size={32} iconSize={14} />
-            <IconCircle icon={Phone} label="Chiama" size={32} iconSize={14} />
-            <IconCircle icon={MessageCircle} label="Messaggio" size={32} iconSize={14} />
-            <IconCircle icon={Video} label="Videochiamata" size={32} iconSize={14} />
+            <IconCircle icon={MessageCircle} label={`Scrivi a ${c.name.split(" ")[0]}`} variant="dark" size={32} iconSize={14} onClick={() => navigate(`${ROUTES.messaggi}?cliente=${c.id}`)} />
+            <IconCircle icon={Phone} label={`Chiama ${c.phone}`} size={32} iconSize={14} onClick={() => (window.location.href = `tel:${c.phone.replace(/\s/g, "")}`)} />
+            <IconCircle icon={Mail} label={`Email a ${c.email}`} size={32} iconSize={14} onClick={() => (window.location.href = `mailto:${c.email}`)} />
           </div>
 
           <div className="mt-[14px] rounded-[14px] px-[12px] py-[11px]" style={{ background: tone.bg }}>
@@ -153,7 +151,7 @@ export function ClientProfile({ c }: { c: Client }) {
                 playSound("confirm");
                 toast.success(`Seduta proposta a ${c.name.split(" ")[0]}`);
               }}
-              className="flex h-[36px] cursor-pointer items-center justify-center gap-[6px] rounded-full bg-contrast text-[12px] font-semibold text-on-contrast"
+              className="flex h-[36px] cursor-pointer items-center justify-center gap-[6px] rounded-full btn-trainer text-[12px] font-semibold"
             >
               <CalendarPlus size={14} /> Fissa seduta
             </motion.button>
@@ -273,7 +271,7 @@ export function ClientProfile({ c }: { c: Client }) {
                         <b className="mt-[2px] block text-[12px] tabular-nums">{a.time}</b>
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold">{a.type}</span>
-                      {today && <span className="rounded-full bg-contrast px-[7px] py-[2.5px] text-[9px] font-bold text-on-contrast">oggi</span>}
+                      {today && <span className="rounded-full btn-trainer px-[7px] py-[2.5px] text-[9px] font-bold">oggi</span>}
                       {past && <Check size={12} strokeWidth={3} />}
                     </div>
                   );
@@ -316,7 +314,7 @@ export function ClientProfile({ c }: { c: Client }) {
                           setPayments((ps) => ps.map((x, k) => (k === i ? { ...x, paid: true } : x)));
                           toast.success(`${formatEuro(p.amount)} segnati come incassati`);
                         }}
-                        className="cursor-pointer rounded-full bg-contrast px-[9px] py-[4px] text-[9.5px] font-bold text-on-contrast"
+                        className="cursor-pointer rounded-full btn-trainer px-[9px] py-[4px] text-[9.5px] font-bold"
                       >
                         Segna pagato
                       </motion.button>

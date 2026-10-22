@@ -12,9 +12,9 @@ type Input = {
 // I font standard del PDF conoscono solo l'alfabeto latino (WinAnsi): sostituisce i simboli che non hanno.
 const clean = (s: string) =>
   s
-    .replace(/″/g, '"')
-    .replace(/′/g, "'")
-    .replace(/[^\x20-\x7e -ÿ–—‘’“”•…€]/g, "")
+    .replace(/\u2033/g, '"')
+    .replace(/\u2032/g, "'")
+    .replace(/[^\x20-\x7e\u00a0-\u00ff\u2013\u2014\u2018\u2019\u201c\u201d\u2022\u2026\u20ac]/g, "")
     .trim();
 
 const hex = (c: string) => {
@@ -103,5 +103,5 @@ export async function buildPlanPdf(input: Input): Promise<Blob> {
   page.drawText(clean(`Per dubbi sugli esercizi scrivi a ${input.trainerName} dall'app.`), { x: M, y, size: 9.5, font: regular, color: muted });
 
   const bytes = await doc.save();
-  return new Blob([bytes as BlobPart], { type: "application/pdf" });
+  return new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
 }

@@ -4,13 +4,13 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { useSearchParams } from "next/navigation";
-import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound, Video } from "lucide-react";
+import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound } from "lucide-react";
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { Attachment, ChatMessage, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
 import { SentPlan, stato } from "@/libs/prototipo/stato";
-import { ROUTES } from "./Chrome";
+import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 const quickReplies = ["Perfetto, ci vediamo venerdì!", "Ti sposto la seduta, ti confermo a breve", "Riposa oggi e fammi sapere domani", "Bravissimo, continua così 💪"];
@@ -37,7 +37,7 @@ function initialThreads(): Record<string, ChatMessage[]> {
 
 function PdfMessage({ a }: { a: Attachment }) {
   return (
-    <div className="mb-[6px] flex w-[340px] items-center gap-[10px] rounded-[12px] bg-on-contrast/10 p-[8px]">
+    <div className="mb-[6px] flex w-[340px] items-center gap-[10px] rounded-[12px] bg-white/20 p-[8px]">
       <span className="grid size-[38px] shrink-0 place-items-center rounded-[10px] bg-[#e5484d] text-white">
         <FileText size={17} />
       </span>
@@ -50,7 +50,7 @@ function PdfMessage({ a }: { a: Attachment }) {
         target="_blank"
         rel="noreferrer"
         onClick={() => playSound("tap")}
-        className="flex h-[30px] shrink-0 items-center gap-[5px] rounded-full bg-on-contrast px-[11px] text-[11px] font-semibold text-contrast"
+        className="flex h-[30px] shrink-0 items-center gap-[5px] rounded-full bg-white px-[11px] text-[11px] font-semibold text-[var(--trainer)]"
       >
         <ExternalLink size={12} /> Apri PDF
       </a>
@@ -171,9 +171,9 @@ export function MessagesView() {
                 playSound("tap");
                 setFilter(key);
               }}
-              className={`relative cursor-pointer rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold ${filter === key ? "text-on-contrast" : "bg-soft text-ink/70"}`}
+              className={`relative cursor-pointer rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold ${filter === key ? "text-ink" : "bg-soft text-ink/70"}`}
             >
-              {filter === key && <motion.span layoutId="filtro-messaggi" className="absolute inset-0 rounded-full bg-contrast" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+              {filter === key && <motion.span layoutId="filtro-messaggi" className="sel-trainer absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
               <span className="relative">{label}</span>
             </button>
           ))}
@@ -230,9 +230,8 @@ export function MessagesView() {
             </p>
           </div>
           <div className="ml-auto flex items-center gap-[6px]">
-            <IconCircle icon={Phone} label="Chiama" size={34} />
-            <IconCircle icon={Video} label="Videochiamata" size={34} />
-            <Link href={ROUTES.cliente(client.id)} onClick={() => playSound("tap")} className="flex h-[34px] items-center gap-[6px] rounded-full bg-contrast px-[14px] text-[12px] font-semibold text-on-contrast">
+            <IconCircle icon={Phone} label={`Chiama ${client.phone}`} size={34} onClick={() => (window.location.href = `tel:${client.phone.replace(/\s/g, "")}`)} />
+            <Link href={ROUTES.cliente(client.id)} onClick={() => playSound("tap")} className="flex h-[34px] items-center gap-[6px] rounded-full bg-soft px-[14px] text-[12px] font-semibold text-ink transition-colors hover:bg-line">
               <UserRound size={13} /> Apri profilo
             </Link>
           </div>
@@ -261,7 +260,7 @@ export function MessagesView() {
                 >
                   <div
                     className={`rounded-[18px] text-[12.5px] leading-snug ${m.attachment ? "p-[6px] pb-[9px]" : "px-[14px] py-[9px]"} ${
-                      m.from === "trainer" ? "rounded-br-[6px] bg-contrast text-on-contrast" : "rounded-bl-[6px] bg-soft"
+                      m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"
                     }`}
                   >
                     {m.attachment && <PdfMessage a={m.attachment} />}
@@ -290,7 +289,7 @@ export function MessagesView() {
         </div>
         <form onSubmit={submit} className="mx-[16px] mb-[14px] flex items-center gap-[8px] rounded-full border border-line py-[5px] pr-[5px] pl-[16px]">
           <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Scrivi a ${client.name.split(" ")[0]}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
-          <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[34px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast">
+          <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[34px] shrink-0 cursor-pointer place-items-center rounded-full btn-trainer">
             <ArrowUp size={15} />
           </motion.button>
         </form>

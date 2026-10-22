@@ -159,7 +159,7 @@ export function AssistantPanel({
                     key={m.id}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="mx-auto flex items-center gap-[6px] rounded-full bg-contrast px-[12px] py-[6px] text-[11px] font-semibold text-on-contrast"
+                    className="mx-auto flex items-center gap-[6px] rounded-full btn-trainer px-[12px] py-[6px] text-[11px] font-semibold"
                   >
                     <BellRing size={12} /> {m.text}
                   </motion.p>
@@ -171,7 +171,7 @@ export function AssistantPanel({
                     transition={{ duration: 0.3, ease: EASE_OUT }}
                     className={
                       m.role === "user"
-                        ? "max-w-[80%] self-end rounded-[16px] rounded-br-[6px] bg-contrast px-[12px] py-[8px] text-[12.5px] text-on-contrast"
+                        ? "max-w-[80%] self-end rounded-[16px] rounded-br-[6px] bubble-trainer px-[12px] py-[8px] text-[12.5px]"
                         : "max-w-[86%] self-start rounded-[16px] rounded-bl-[6px] bg-soft px-[12px] py-[8px] text-[12.5px] leading-relaxed"
                     }
                   >
@@ -218,7 +218,7 @@ export function AssistantPanel({
                 type="submit"
                 aria-label="Invia"
                 whileTap={{ scale: 0.9 }}
-                className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full bg-contrast text-on-contrast"
+                className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full btn-trainer"
               >
                 <ArrowUp size={15} />
               </motion.button>
