@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { MouseEvent as ReactMouseEvent, ReactNode, useState } from "react";
 import { flushSync } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, ImagePlus, UserRound } from "lucide-react";
@@ -89,7 +89,7 @@ export function Marchio({ avanti }: PropsPasso) {
   };
 
   // Il nuovo colore si allarga a macchia d'olio dal pallino toccato, su tutta la pagina (vetrina e telefono compresi).
-  const scegliColore = (c: string, e: React.MouseEvent) => {
+  const scegliColore = (c: string, e: ReactMouseEvent) => {
     playSound("tap");
     if (c === accent && b.coloreScelto) return;
     conMacchia(
