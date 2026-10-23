@@ -6,10 +6,8 @@ import { ArrowLeft } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { aggiornaBenvenuto, azzeraBenvenuto, completaBenvenuto, passoDiRipartenza, PASSI, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
 import { Vetrina } from "./Vetrina";
-import { PallinaProvider, PallinaVolante, SlotPallina } from "./Pallina";
 import { ScenaProvider, useScena } from "./scena";
 import { EmailFinta } from "./EmailFinta";
-import { LeoInPiedi } from "./LeoEsce";
 import { Accesso } from "./passi/Accesso";
 import { Barra, Tasto, TestaPasso } from "./ui";
 
@@ -38,49 +36,44 @@ export function Benvenuto() {
   if (!pronto) return <div className="min-h-dvh bg-soft" />;
 
   return (
-    <PallinaProvider>
-      <ScenaProvider leoIniziale={b.verificato ? "fermo" : "nessuno"}>
-        <div className="flex min-h-dvh items-center justify-center bg-soft p-[16px] lg:p-[22px]">
-          <div className="relative grid h-[min(820px,calc(100dvh-44px))] min-h-[640px] w-full max-w-[1280px] grid-cols-1 gap-[14px] rounded-[30px] bg-card p-[14px] shadow-[0_30px_70px_-40px_rgba(0,0,0,0.35)] lg:grid-cols-[46fr_54fr]">
-            {/* la pallina vola sopra tutta la scheda, tra vetrina e modulo */}
-            <PallinaVolante />
-            <div className="hidden lg:block">
-              <Vetrina passo={passo}>
-                <ScenaVetrina passo={passo} />
-              </Vetrina>
+    <ScenaProvider>
+      <div className="flex min-h-dvh items-center justify-center bg-soft p-[16px] lg:p-[22px]">
+        <div className="relative grid h-[min(820px,calc(100dvh-44px))] min-h-[640px] w-full max-w-[1280px] grid-cols-1 gap-[14px] rounded-[30px] bg-card p-[14px] shadow-[0_30px_70px_-40px_rgba(0,0,0,0.35)] lg:grid-cols-[46fr_54fr]">
+          <div className="hidden lg:block">
+            <Vetrina passo={passo}>
+              <ScenaVetrina />
+            </Vetrina>
+          </div>
+          <div className="relative flex min-h-0 flex-col">
+            {/* senza vetrina (schermi stretti) l'email finta con il codice compare qui sopra */}
+            <div className="relative z-30 lg:hidden">
+              <EmailInAlto />
             </div>
-            <div className="relative flex min-h-0 flex-col">
-              {/* senza vetrina (schermi stretti) l'email finta con il codice compare qui sopra */}
-              <div className="relative z-30 lg:hidden">
-                <EmailInAlto />
-              </div>
-              <div className="flex h-[44px] items-center justify-between px-[10px]">
-                {passo > 0 && passo < 5 ? (
-                  <button
-                    type="button"
-                    onClick={indietro}
-                    className="flex min-h-[44px] cursor-pointer items-center gap-[6px] text-[13px] font-semibold text-muted transition-colors hover:text-ink"
-                  >
-                    <ArrowLeft size={15} /> Indietro
-                  </button>
-                ) : (
-                  <span />
-                )}
-                {passo < 5 && <Barra passo={passo} />}
-              </div>
-              <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-[20px] pb-[44px]">
-                <div className="relative w-full max-w-[392px]">
-                  <SlotPallina dove="modulo" size={56} className="absolute -top-[92px] left-1/2 -translate-x-1/2" />
-                  <CambioPasso chiave={passo}>
-                    <SchermataPasso passo={passo} avanti={avanti} indietro={indietro} />
-                  </CambioPasso>
-                </div>
+            <div className="flex h-[44px] items-center justify-between px-[10px]">
+              {passo > 0 && passo < 5 ? (
+                <button
+                  type="button"
+                  onClick={indietro}
+                  className="flex min-h-[44px] cursor-pointer items-center gap-[6px] text-[13px] font-semibold text-muted transition-colors hover:text-ink"
+                >
+                  <ArrowLeft size={15} /> Indietro
+                </button>
+              ) : (
+                <span />
+              )}
+              {passo < 5 && <Barra passo={passo} />}
+            </div>
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-[20px] pb-[44px]">
+              <div className="relative w-full max-w-[392px]">
+                <CambioPasso chiave={passo}>
+                  <SchermataPasso passo={passo} avanti={avanti} indietro={indietro} />
+                </CambioPasso>
               </div>
             </div>
           </div>
         </div>
-      </ScenaProvider>
-    </PallinaProvider>
+      </div>
+    </ScenaProvider>
   );
 }
 
@@ -105,22 +98,16 @@ function CambioPasso({ chiave, children }: { chiave: number; children: ReactNode
   );
 }
 
-// Quello che i passi mettono in primo piano nella vetrina.
+// Senza vetrina (schermi stretti) l'email finta compare sopra il modulo.
 function EmailInAlto() {
   const { email } = useScena();
   return <EmailFinta codice={email} />;
 }
 
-function ScenaVetrina({ passo }: { passo: Passo }) {
+// Quello che i passi mettono in primo piano nella vetrina.
+function ScenaVetrina() {
   const { email } = useScena();
-  return (
-    <>
-      {/* dal passo del marchio Leo sta in piedi nella vetrina, accanto al telefono, con la pallina in mano */}
-      {passo >= 1 && <LeoInPiedi largo={210} className="!absolute bottom-[18px] right-[5%]" />}
-      <SlotPallina dove="vetrina" size={72} className="absolute left-[46%] top-[63%]" />
-      <EmailFinta codice={email} />
-    </>
-  );
+  return <EmailFinta codice={email} />;
 }
 
 function SchermataPasso({ passo, avanti, indietro }: { passo: Passo } & PropsPasso) {

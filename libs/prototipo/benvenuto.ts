@@ -41,11 +41,14 @@ export function regolePassword(p: string) {
 
 export const passwordValida = (p: string) => Object.values(regolePassword(p)).every(Boolean);
 
+// Codice via email di 4 cifre, come nel riferimento (docs/riferimenti/animazione-login.mp4).
+export const CIFRE_CODICE = 4;
+
 export function nuovoCodice(rand: () => number = Math.random): string {
-  return String(Math.floor(rand() * 1_000_000)).padStart(6, "0");
+  return String(Math.floor(rand() * 10 ** CIFRE_CODICE)).padStart(CIFRE_CODICE, "0");
 }
 
-export const pulisciCodice = (t: string) => t.replace(/\D/g, "").slice(0, 6);
+export const pulisciCodice = (t: string) => t.replace(/\D/g, "").slice(0, CIFRE_CODICE);
 
 export const codiceGiusto = (inserito: string, atteso: string) => pulisciCodice(inserito) === atteso;
 

@@ -74,7 +74,8 @@ export function Tasto({
       whileTap={fermo ? undefined : { scale: 0.985 }}
       animate={{ scale: verde ? [1, 1.02, 1] : 1 }}
       transition={{ duration: 0.35 }}
-      className={`relative flex h-[48px] w-full items-center justify-center gap-[8px] overflow-hidden rounded-[12px] text-[14.5px] font-semibold transition-[background-color,color,box-shadow] duration-300 ${
+      // il passaggio al verde è a scatto (con un piccolo battito): sfumando dall'arancione verrebbe fuori un marrone
+      className={`relative flex h-[48px] w-full items-center justify-center gap-[8px] overflow-hidden rounded-[12px] text-[14.5px] font-semibold ${verde ? "" : "transition-[background-color,color,box-shadow] duration-300"} ${
         verde
           ? "bg-ok text-white shadow-[0_12px_26px_-10px_rgba(47,158,85,0.7)]"
           : spento

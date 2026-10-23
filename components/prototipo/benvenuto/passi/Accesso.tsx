@@ -1,35 +1,41 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, Eye, EyeOff, Lock } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
-import { aggiornaBenvenuto, benvenutoAttuale, nuovoCodice, passwordValida, regolePassword } from "@/libs/prototipo/benvenuto";
+import { aggiornaBenvenuto, benvenutoAttuale, CIFRE_CODICE, nuovoCodice, passwordValida, regolePassword } from "@/libs/prototipo/benvenuto";
 import type { PropsPasso } from "../Benvenuto";
-import { usePallina } from "../Pallina";
 import { useScena } from "../scena";
 import { CodiceOtp } from "../CodiceOtp";
-import { LeoInPiedi } from "../LeoEsce";
 import { CLASSE_CAMPO, Campo, Entra, Tasto, TestaPasso } from "../ui";
 
 // Passo 1: il trainer arriva dall'email d'invito, sceglie la password e conferma l'email con un codice.
-// Poi Leo esce dalla pallina e lo saluta (fase "saluto").
+// Poi la sveglia: compare la casetta di Leo e parte il video (Leo dorme, si sveglia ed esce), sotto una frase
+// che si scrive lettera per lettera; a fine video la frase lascia il posto al pannello "Iniziamo".
 
 const EMAIL = "marco.rossi@esempio.it";
 const NOME = trainer.name.split(" ")[0];
 const SCADENZA = 60;
 
-type Fase = "password" | "codice" | "saluto";
+const CASA = "/prototipo/coach/casa.webp"; // IMMAGINI APP/VIDEO CASETTA.mp4 senza sfondo, 192 fotogrammi a 20 al secondo
+const CASA_FERMA = "/prototipo/coach/casa-fermo.webp"; // ultimo fotogramma
+const PRONTO_MS = 8700; // Leo sorride in piedi (il video dura 9,6 s): si passa al pannello "Iniziamo"
+const FRASE = "Shhh… l'abbiamo svegliato! 😴";
+
+type Fase = "password" | "codice" | "sveglia";
 
 export function Accesso({ avanti }: PropsPasso) {
-  const [fase, setFase] = useState<Fase>(() => (benvenutoAttuale().verificato ? "saluto" : "password"));
+  const [fase, setFase] = useState<Fase>(() => (benvenutoAttuale().verificato ? "sveglia" : "password"));
+  const [subito] = useState(() => benvenutoAttuale().verificato); // ricaricando dopo la verifica: niente video, Leo è già fuori
   const [codice, setCodice] = useState("");
   const [verificata, setVerificata] = useState(false);
-  const pallina = usePallina();
   const scena = useScena();
   const timer = useRef<number | undefined>(undefined);
+  // indirizzo nuovo a ogni visita: la WebP animata riparte dal primo fotogramma
+  const casa = useMemo(() => `${CASA}?t=${Date.now()}`, []);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
@@ -48,59 +54,55 @@ export function Accesso({ avanti }: PropsPasso) {
   const vaiAlCodice = () => {
     mandaCodice();
     setFase("codice");
-    pallina.mostra({ dove: "modulo", scritta: "Inserisci il codice" });
+    // la casetta si scarica mentre il trainer legge il codice, così dopo la verifica parte senza attese
+    fetch(casa).catch(() => {});
   };
 
   const tornaAllaPassword = () => {
     window.clearTimeout(timer.current);
     scena.setEmail(null);
     setFase("password");
-    pallina.mostra({ dove: "vetrina" });
   };
 
   const giusto = () => {
     playSound("complete");
     setVerificata(true);
-    pallina.mostra({ dove: "modulo", umore: "contento" });
     aggiornaBenvenuto({ verificato: true });
     timer.current = window.setTimeout(() => {
       scena.setEmail(null);
-      // il testo sfuma e al suo posto entra il saluto: la pallina scende lì e ne esce il piccolo Leo
-      setFase("saluto");
-      pallina.mostra({ dove: "centro" });
-      scena.setLeo("esce");
-    }, 1400);
+      setFase("sveglia");
+    }, 1900);
   };
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.div key={fase} exit={{ opacity: 0, filter: "blur(4px)", y: -6 }} transition={{ duration: 0.2, ease: EASE_OUT }}>
+      <motion.div key={fase} exit={{ opacity: 0, filter: "blur(4px)", y: -6 }} transition={{ duration: 0.22, ease: EASE_OUT }}>
         {fase === "password" && <Password onFatto={vaiAlCodice} />}
         {fase === "codice" && (
           <div>
-            {/* verificata: come nel riferimento, titolo e testo sfumano e resta il quadrato verde */}
-            <motion.div animate={verificata ? { opacity: 0.25, filter: "blur(2px)" } : { opacity: 1, filter: "blur(0px)" }} transition={{ duration: 0.5 }}>
+            {/* verificata: come nel riferimento titolo e testo sfumano, e il titolo diventa "Ci sei!" */}
+            <motion.div animate={verificata ? { opacity: 0.28, filter: "blur(1.5px)" } : { opacity: 1, filter: "blur(0px)" }} transition={{ duration: 0.5, delay: verificata ? 0.55 : 0 }}>
               <TestaPasso
-                titolo="Controlla la tua email"
+                titolo={verificata ? "Ci sei!" : "Controlla la tua email"}
                 sotto={
                   <>
-                    Ti abbiamo mandato un codice di 6 cifre a <b className="font-semibold text-ink">{EMAIL}</b>. Scrivilo qui sotto per continuare.
+                    Ti abbiamo mandato un codice di {CIFRE_CODICE} cifre a <b className="font-semibold text-ink">{EMAIL}</b>. Scrivilo qui sotto per continuare.
                   </>
                 }
               />
             </motion.div>
-            <CodiceOtp key={codice} atteso={codice} scadenza={SCADENZA} onGiusto={giusto} onSbagliato={() => pallina.umore("no")} onRimanda={mandaCodice} />
+            <CodiceOtp key={codice} atteso={codice} scadenza={SCADENZA} onGiusto={giusto} onSbagliato={() => {}} onRimanda={mandaCodice} />
             <Entra i={6}>
-              <p className="mt-[18px] text-center text-[12.5px] text-muted">
+              <motion.p className="mt-[18px] text-center text-[12.5px] text-muted" animate={{ opacity: verificata ? 0 : 1 }} transition={{ duration: 0.3 }}>
                 Email sbagliata?{" "}
                 <button type="button" onClick={tornaAllaPassword} className="min-h-[36px] cursor-pointer font-semibold text-[var(--trainer)] hover:underline">
                   Torna indietro
                 </button>
-              </p>
+              </motion.p>
             </Entra>
           </div>
         )}
-        {fase === "saluto" && <Saluto avanti={avanti} />}
+        {fase === "sveglia" && <Sveglia casa={casa} subito={subito} avanti={avanti} />}
       </motion.div>
     </AnimatePresence>
   );
@@ -112,11 +114,6 @@ function Password({ onFatto }: { onFatto: () => void }) {
   const [invio, setInvio] = useState(false);
   const regole = regolePassword(password);
   const valida = passwordValida(password);
-  const pallina = usePallina();
-
-  useEffect(() => {
-    pallina.mostra({ dove: "vetrina" });
-  }, [pallina]);
 
   const continua = () => {
     if (!valida || invio) return;
@@ -199,33 +196,87 @@ function Regola({ ok, children }: { ok: boolean; children: string }) {
   );
 }
 
-function Saluto({ avanti }: { avanti: () => void }) {
-  const { leo } = useScena();
+// La sveglia: la casetta con Leo che dorme, si sveglia ed esce. Sotto, un pannello che scrive la frase lettera
+// per lettera mentre Leo esce; quando Leo sorride il pannello diventa quello di inizio, con "Iniziamo".
+function Sveglia({ casa, subito, avanti }: { casa: string; subito: boolean; avanti: () => void }) {
+  const reduce = useReducedMotion();
+  const fermo = subito || !!reduce;
+  const [partito, setPartito] = useState(false);
+  const [pronto, setPronto] = useState(fermo);
+  const [lettere, setLettere] = useState(0);
+  const caratteri = useMemo(() => Array.from(FRASE), []);
+
+  // il tempo parte quando la casetta è davvero comparsa (immagine caricata)
+  useEffect(() => {
+    if (!partito || fermo) return;
+    const t: number[] = [];
+    caratteri.forEach((_, i) => t.push(window.setTimeout(() => setLettere(i + 1), 500 + i * 85)));
+    t.push(
+      window.setTimeout(() => {
+        setPronto(true);
+        playSound("confirm");
+      }, PRONTO_MS),
+    );
+    return () => t.forEach(window.clearTimeout);
+  }, [partito, fermo, caratteri]);
+
   return (
     <div className="flex flex-col items-center text-center">
-      {/* il piccolo Leo esce dalla pallina proprio qui, sopra il saluto */}
-      <LeoInPiedi largo={170} className="-mb-[6px] -mt-[40px]" />
       <motion.div
-        className="w-full"
-        initial={{ opacity: 0, y: 10 }}
-        animate={leo === "fermo" ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-        transition={{ duration: 0.5, ease: EASE_OUT }}
+        className="relative -mt-[34px]"
+        style={{ width: 380, height: 323 }}
+        initial={{ opacity: 0, scale: 0.94, y: 10 }}
+        animate={{ opacity: partito || fermo ? 1 : 0, scale: partito || fermo ? 1 : 0.94, y: 0 }}
+        transition={{ type: "spring", stiffness: 220, damping: 22 }}
       >
-        <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em]">Benvenuto, {NOME}!</h1>
-        <p className="mx-auto mt-[8px] max-w-[340px] text-[14px] leading-[1.5] text-muted">
-          Sono Leo, il tuo assistente. In 2 minuti prepariamo insieme l&apos;app che riceveranno i tuoi clienti.
-        </p>
-        <div className="mt-[24px]">
-          <Tasto
-            onClick={() => {
-              if (leo !== "fermo") return;
-              playSound("confirm");
-              avanti();
-            }}
-          >
-            Iniziamo
-          </Tasto>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={fermo ? CASA_FERMA : casa}
+          alt="La casetta di Leo"
+          className="absolute inset-0 size-full select-none object-contain"
+          draggable={false}
+          onLoad={() => {
+            if (!partito) playSound("open");
+            setPartito(true);
+          }}
+        />
+      </motion.div>
+
+      <motion.div layout transition={{ layout: { duration: 0.45, ease: EASE_OUT } }} className="mt-[6px] w-full overflow-hidden rounded-[22px] bg-soft px-[24px] py-[20px]">
+        <AnimatePresence mode="wait" initial={false}>
+          {!pronto ? (
+            <motion.p
+              key="sveglia"
+              exit={{ opacity: 0, filter: "blur(4px)", y: -6 }}
+              transition={{ duration: 0.25 }}
+              className="min-h-[34px] text-[22px] font-bold tracking-[-0.015em]"
+              aria-label={FRASE}
+            >
+              {caratteri.slice(0, lettere).join("")}
+              <motion.span
+                aria-hidden
+                className="ml-[2px] inline-block h-[22px] w-[2.5px] translate-y-[3px] rounded-full bg-[var(--trainer)]"
+                animate={{ opacity: [1, 1, 0, 0] }}
+                transition={{ duration: 0.9, repeat: Infinity, times: [0, 0.5, 0.5, 1] }}
+              />
+            </motion.p>
+          ) : (
+            <motion.div key="pronto" initial={{ opacity: 0, y: 10, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ duration: 0.45, ease: EASE_OUT }}>
+              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em]">Benvenuto, {NOME}!</h1>
+              <p className="mx-auto mt-[8px] max-w-[330px] text-[14px] leading-[1.5] text-muted">Sono Leo, il tuo assistente. In 2 minuti prepariamo insieme l&apos;app che riceveranno i tuoi clienti.</p>
+              <div className="mt-[20px]">
+                <Tasto
+                  onClick={() => {
+                    playSound("confirm");
+                    avanti();
+                  }}
+                >
+                  Iniziamo
+                </Tasto>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

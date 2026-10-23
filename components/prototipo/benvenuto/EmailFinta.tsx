@@ -30,7 +30,7 @@ export function EmailFinta({ codice }: { codice: string | null }) {
               <span className="mt-[1px] block text-[12px] text-muted">
                 Ciao {trainer.name.split(" ")[0]}, il tuo codice è{" "}
                 <b className="font-mono text-[13.5px] tracking-[0.08em] text-ink">
-                  {codice.slice(0, 3)} {codice.slice(3)}
+                  {codice.slice(0, 2)} {codice.slice(2)}
                 </b>
               </span>
             </span>

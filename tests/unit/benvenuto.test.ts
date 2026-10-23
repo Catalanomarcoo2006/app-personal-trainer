@@ -26,20 +26,20 @@ describe("password", () => {
 });
 
 describe("codice via email", () => {
-  it("ha sempre 6 cifre, anche quando inizia con 0", () => {
-    expect(nuovoCodice(() => 0)).toBe("000000");
-    expect(nuovoCodice(() => 0.999999)).toBe("999999");
-    for (let i = 0; i < 20; i++) expect(nuovoCodice()).toMatch(/^\d{6}$/);
+  it("ha sempre 4 cifre, anche quando inizia con 0", () => {
+    expect(nuovoCodice(() => 0)).toBe("0000");
+    expect(nuovoCodice(() => 0.99999)).toBe("9999");
+    for (let i = 0; i < 20; i++) expect(nuovoCodice()).toMatch(/^\d{4}$/);
   });
-  it("tiene solo le prime 6 cifre di quello che si incolla", () => {
-    expect(pulisciCodice("482 915")).toBe("482915");
-    expect(pulisciCodice("48a915")).toBe("48915");
-    expect(pulisciCodice("1234567")).toBe("123456");
-    expect(pulisciCodice("482915\n")).toBe("482915");
+  it("tiene solo le prime 4 cifre di quello che si incolla", () => {
+    expect(pulisciCodice("48 29")).toBe("4829");
+    expect(pulisciCodice("4a829")).toBe("4829");
+    expect(pulisciCodice("123456")).toBe("1234");
+    expect(pulisciCodice("4829\n")).toBe("4829");
   });
   it("confronta il codice ignorando gli spazi", () => {
-    expect(codiceGiusto("482 915", "482915")).toBe(true);
-    expect(codiceGiusto("48291", "482915")).toBe(false);
+    expect(codiceGiusto("48 29", "4829")).toBe(true);
+    expect(codiceGiusto("482", "4829")).toBe(false);
   });
 });
 
