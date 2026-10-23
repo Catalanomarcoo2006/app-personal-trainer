@@ -120,6 +120,7 @@ export function PallinaVolante() {
   const lato = useSpring(64, molla);
   const [visibile, setVisibile] = useState(false);
   const primo = useRef(true);
+  const eraNascosta = useRef(false);
 
   // ogni fotogramma legge dove si trova il segnaposto e lo dà come meta alle molle
   useEffect(() => {
@@ -134,7 +135,9 @@ export function PallinaVolante() {
       if (trovato) {
         const nx = r.left - base.left;
         const ny = r.top - base.top;
-        if (primo.current) {
+        // al primo giro, e quando ricompare dopo essere stata nascosta (fine dell'animazione di Leo),
+        // la pallina appare direttamente al suo posto: niente volo dal punto in cui era sparita
+        if (primo.current || eraNascosta.current) {
           x.jump(nx);
           y.jump(ny);
           lato.jump(posto.size);
@@ -145,6 +148,7 @@ export function PallinaVolante() {
           lato.set(posto.size);
         }
       }
+      if (trovato || stato.dove === "nascosta") eraNascosta.current = stato.dove === "nascosta";
       setVisibile((v) => (v === mostra ? v : mostra));
       id = requestAnimationFrame(segui);
     };
@@ -156,7 +160,7 @@ export function PallinaVolante() {
 
   return (
     <div ref={livello} className="pointer-events-none absolute inset-0 z-40">
-      <motion.div className="absolute left-0 top-0" style={{ x, y, width: lato, height: lato }} animate={{ opacity: visibile ? 1 : 0 }} transition={{ duration: 0.25 }}>
+      <motion.div className="absolute left-0 top-0" style={{ x, y, width: lato, height: lato }} animate={{ opacity: visibile ? 1 : 0 }} transition={{ duration: 0.4 }}>
         <AnimatePresence>
           {stato.scritta && (
             <motion.span

@@ -20,6 +20,7 @@ export function LeoInPiedi({ largo, className }: { largo: number; className?: st
   const { leo, setLeo } = useScena();
   const pallina = usePallina();
   const [anim, setAnim] = useState<"attesa" | "gioca" | "fine">(leo === "fermo" ? "fine" : "attesa");
+  const [giocata, setGiocata] = useState(false);
   // indirizzo nuovo a ogni scena: la WebP animata riparte dal primo fotogramma
   const src = useMemo(() => `${ESCE}?t=${Date.now()}`, []);
 
@@ -41,6 +42,7 @@ export function LeoInPiedi({ largo, className }: { largo: number; className?: st
     }
     const t1 = window.setTimeout(() => {
       setAnim("gioca");
+      setGiocata(true);
       pallina.mostra({ dove: "nascosta" });
     }, VOLO_MS);
     const t2 = window.setTimeout(() => setLeo("fermo"), VOLO_MS + DURATA_ESCE_MS);
@@ -69,21 +71,31 @@ export function LeoInPiedi({ largo, className }: { largo: number; className?: st
       />
       {/* dove arriva la pallina prima che esca Leo */}
       <SlotPallina dove="centro" size={latoInizio} className="absolute" style={posInizio} />
-      {anim === "gioca" && (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt="" className="leo-luce absolute inset-0 size-full select-none" draggable={false} />
-          {/* la pallina colorata sfuma mentre parte l'animazione, che inizia con la stessa pallina (bianca) nello stesso punto */}
-          <motion.span className="absolute" style={posInizio} initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-            <PallinaColorata size={latoInizio} />
-          </motion.span>
-        </>
-      )}
       {anim === "fine" && (
         <motion.div initial={{ opacity: leo === "fermo" ? 1 : 0 }} animate={{ opacity: 1 }} className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={FERMO} alt="Leo, il tuo assistente" className="leo-luce absolute inset-0 size-full select-none" draggable={false} />
         </motion.div>
+      )}
+      {giocata && (
+        // l'animazione si ferma sul suo ultimo fotogramma (pallina bianca in mano): resta sopra un attimo e sfuma
+        // mentre compare la pallina colorata, così il cambio di colore è morbido
+        // eslint-disable-next-line @next/next/no-img-element
+        <motion.img
+          src={src}
+          alt=""
+          className="leo-luce absolute inset-0 size-full select-none"
+          draggable={false}
+          initial={false}
+          animate={{ opacity: anim === "fine" ? 0 : 1 }}
+          transition={{ duration: 0.45, delay: anim === "fine" ? 0.1 : 0 }}
+        />
+      )}
+      {anim === "gioca" && (
+        // la pallina colorata sfuma mentre parte l'animazione, che inizia con la stessa pallina (bianca) nello stesso punto
+        <motion.span className="absolute" style={posInizio} initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+          <PallinaColorata size={latoInizio} />
+        </motion.span>
       )}
       <SlotPallina dove="mano" size={Math.round(fine.r * 2 * largo)} className="absolute" style={{ left: (fine.x - fine.r) * largo, top: fine.y * alto - fine.r * largo }} />
     </div>
