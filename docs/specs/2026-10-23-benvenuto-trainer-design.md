@@ -60,7 +60,6 @@ Pagina a tutto schermo, `/prototipo/benvenuto`, fondo neutro con una grande sche
 - `AnteprimaTelefono.tsx`: telefono con una versione ridotta dell'app del cliente (intestazione con logo, saluto, obiettivo, consenso, invito, vignetta di Leo); separato dall'app del cliente vera;
 - `passi/Accesso.tsx` contiene anche la sveglia (casetta, frase che si scrive, pannello di inizio);
 - `CodiceOtp.tsx`: le 4 caselle e l'animazione della verifica;
-- `CodiceOtp.tsx`: le 6 caselle con scadenza, verifica e fusione nel verde;
 - `passi/Accesso.tsx`, `Marchio.tsx`, `Accordi.tsx`, `PrimoCliente.tsx`, `ConosciLeo.tsx`, `Finale.tsx`;
 - `Coriandoli.tsx`.
 

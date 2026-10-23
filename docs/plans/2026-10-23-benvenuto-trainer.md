@@ -10,6 +10,8 @@
 
 **Spec:** `docs/specs/2026-10-23-benvenuto-trainer-design.md` · riferimento di stile `docs/riferimenti/animazione-login.mp4`
 
+> **Aggiornamento 23/10 sera:** Task 2, 4 e 6 (pallina e Leo che ne esce) sono superati: Marco li ha tolti. Al loro posto: codice di 4 cifre fedele al riferimento e "sveglia di Leo" con la casetta (`casa.webp`), già fatti; vedi la spec, sezioni 3 e 4. Dove mettere Leo nei passi 2-6 si decide prima del Task 7.
+
 ## Global Constraints
 
 - Priorità computer: verifiche a 1280 e 1440 px; sotto `lg` una colonna che funziona, senza rifiniture.
