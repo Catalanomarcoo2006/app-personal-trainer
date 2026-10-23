@@ -44,6 +44,10 @@ export function Benvenuto() {
               </Vetrina>
             </div>
             <div className="relative flex min-h-0 flex-col">
+            {/* senza vetrina (schermi stretti) l'email finta con il codice compare qui sopra */}
+            <div className="relative z-30 lg:hidden">
+              <EmailInAlto />
+            </div>
               <div className="flex h-[44px] items-center justify-between px-[10px]">
                 {passo > 0 && passo < 5 ? (
                   <button
@@ -96,6 +100,11 @@ function CambioPasso({ chiave, children }: { chiave: number; children: ReactNode
 }
 
 // Quello che i passi mettono in primo piano nella vetrina.
+function EmailInAlto() {
+  const { email } = useScena();
+  return <EmailFinta codice={email} />;
+}
+
 function ScenaVetrina({ passo }: { passo: Passo }) {
   const { email } = useScena();
   return (
