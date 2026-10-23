@@ -6,7 +6,10 @@ import { ArrowLeft } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { aggiornaBenvenuto, completaBenvenuto, passoDiRipartenza, PASSI, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
 import { Vetrina } from "./Vetrina";
-import { PallinaProvider, SlotPallina, usePallina } from "./Pallina";
+import { PallinaProvider, SlotPallina } from "./Pallina";
+import { ScenaProvider, useScena } from "./scena";
+import { EmailFinta } from "./EmailFinta";
+import { Accesso } from "./passi/Accesso";
 import { Barra, Tasto, TestaPasso } from "./ui";
 
 export const BENVENUTO = "/prototipo/benvenuto";
@@ -31,39 +34,41 @@ export function Benvenuto() {
 
   return (
     <PallinaProvider>
-      <div className="flex min-h-dvh items-center justify-center bg-soft p-[16px] lg:p-[22px]">
-        <div className="grid h-[min(820px,calc(100dvh-44px))] min-h-[640px] w-full max-w-[1280px] grid-cols-1 gap-[14px] rounded-[30px] bg-card p-[14px] shadow-[0_30px_70px_-40px_rgba(0,0,0,0.35)] lg:grid-cols-[46fr_54fr]">
-          <div className="hidden lg:block">
-            <Vetrina passo={passo}>
-              <SlotPallina dove="vetrina" size={72} className="absolute left-[46%] top-[63%]" />
-            </Vetrina>
-          </div>
-          <div className="relative flex min-h-0 flex-col">
-            <div className="flex h-[44px] items-center justify-between px-[10px]">
-              {passo > 0 && passo < 5 ? (
-                <button
-                  type="button"
-                  onClick={indietro}
-                  className="flex min-h-[44px] cursor-pointer items-center gap-[6px] text-[13px] font-semibold text-muted transition-colors hover:text-ink"
-                >
-                  <ArrowLeft size={15} /> Indietro
-                </button>
-              ) : (
-                <span />
-              )}
-              {passo < 5 && <Barra passo={passo} />}
+      <ScenaProvider leoIniziale={b.verificato ? "fermo" : "nessuno"}>
+        <div className="flex min-h-dvh items-center justify-center bg-soft p-[16px] lg:p-[22px]">
+          <div className="grid h-[min(820px,calc(100dvh-44px))] min-h-[640px] w-full max-w-[1280px] grid-cols-1 gap-[14px] rounded-[30px] bg-card p-[14px] shadow-[0_30px_70px_-40px_rgba(0,0,0,0.35)] lg:grid-cols-[46fr_54fr]">
+            <div className="hidden lg:block">
+              <Vetrina passo={passo}>
+                <ScenaVetrina />
+              </Vetrina>
             </div>
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-[20px] pb-[44px]">
-              <div className="relative w-full max-w-[392px]">
-                <SlotPallina dove="modulo" size={56} className="absolute -top-[92px] left-1/2 -translate-x-1/2" />
-                <CambioPasso chiave={passo}>
-                  <SchermataPasso passo={passo} avanti={avanti} indietro={indietro} />
-                </CambioPasso>
+            <div className="relative flex min-h-0 flex-col">
+              <div className="flex h-[44px] items-center justify-between px-[10px]">
+                {passo > 0 && passo < 5 ? (
+                  <button
+                    type="button"
+                    onClick={indietro}
+                    className="flex min-h-[44px] cursor-pointer items-center gap-[6px] text-[13px] font-semibold text-muted transition-colors hover:text-ink"
+                  >
+                    <ArrowLeft size={15} /> Indietro
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {passo < 5 && <Barra passo={passo} />}
+              </div>
+              <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-[20px] pb-[44px]">
+                <div className="relative w-full max-w-[392px]">
+                  <SlotPallina dove="modulo" size={56} className="absolute -top-[92px] left-1/2 -translate-x-1/2" />
+                  <CambioPasso chiave={passo}>
+                    <SchermataPasso passo={passo} avanti={avanti} indietro={indietro} />
+                  </CambioPasso>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </ScenaProvider>
     </PallinaProvider>
   );
 }
@@ -89,25 +94,27 @@ function CambioPasso({ chiave, children }: { chiave: number; children: ReactNode
   );
 }
 
-function SchermataPasso({ passo, avanti }: { passo: Passo } & PropsPasso) {
+// Quello che i passi mettono in primo piano nella vetrina.
+function ScenaVetrina() {
+  const { email } = useScena();
+  return (
+    <>
+      <SlotPallina dove="vetrina" size={72} className="absolute left-[46%] top-[63%]" />
+      <EmailFinta codice={email} />
+    </>
+  );
+}
+
+function SchermataPasso({ passo, avanti, indietro }: { passo: Passo } & PropsPasso) {
+  if (passo === 0) return <Accesso avanti={avanti} indietro={indietro} />;
   // passi provvisori: ognuno viene sostituito dal suo file in passi/
-  const pallina = usePallina();
   return (
     <div>
       <TestaPasso titolo={`Passo: ${PASSI[passo]}`} sotto="In costruzione." />
       <div className="mt-[28px]">
         <Tasto
           onClick={() => {
-            if (passo === 0) aggiornaBenvenuto({ verificato: true });
-            pallina.mostra({
-              dove: passo % 2 === 0 ? "modulo" : "vetrina",
-              scritta: passo % 2 === 0 ? "Inserisci il codice" : undefined,
-              umore: "contento",
-            });
-            if (passo === 2)
-              aggiornaBenvenuto({
-                accordi: { quando: new Date().toISOString() },
-              });
+            if (passo === 2) aggiornaBenvenuto({ accordi: { quando: new Date().toISOString() } });
             if (passo === 5) completaBenvenuto();
             avanti();
           }}
