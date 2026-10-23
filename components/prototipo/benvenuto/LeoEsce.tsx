@@ -63,8 +63,17 @@ export function LeoInPiedi({ largo, className }: { largo: number; className?: st
       {/* alone nel colore del trainer: fa risaltare il lampo e le scintille (bianchi) anche sul fondo bianco del modulo */}
       <motion.span
         aria-hidden
-        className="absolute rounded-full blur-[18px]"
-        style={{ left: "-35%", right: "-35%", top: "8%", bottom: "8%", background: "radial-gradient(closest-side, color-mix(in srgb, var(--trainer) 42%, transparent), transparent)" }}
+        // niente filtro blur: su alcune schede video Chrome lo taglia ai bordi del riquadro (linee verticali);
+        // la sfumatura arriva a zero ben dentro il riquadro, quindi i bordi sono sempre trasparenti
+        className="absolute"
+        style={{
+          left: "-70%",
+          right: "-70%",
+          top: "-12%",
+          bottom: "-12%",
+          background:
+            "radial-gradient(closest-side, color-mix(in srgb, var(--trainer) 40%, transparent) 0%, color-mix(in srgb, var(--trainer) 18%, transparent) 38%, transparent 70%)",
+        }}
         initial={false}
         animate={{ opacity: anim === "gioca" ? 1 : anim === "fine" ? 0.45 : 0, scale: anim === "gioca" ? 1.05 : 0.9 }}
         transition={{ duration: 0.8 }}

@@ -91,8 +91,9 @@ function Macchie() {
         <motion.span
           key={i}
           aria-hidden
-          className="absolute aspect-square rounded-full blur-[60px]"
-          style={{ width: m.w, left: m.l, top: m.t, background: `color-mix(in srgb, var(--trainer) ${m.c}%, transparent)` }}
+          // sfumatura pura, senza filtro blur (su alcune schede video Chrome taglia la sfocatura ai bordi)
+          className="absolute aspect-square"
+          style={{ width: m.w, left: m.l, top: m.t, background: `radial-gradient(closest-side, color-mix(in srgb, var(--trainer) ${m.c}%, transparent) 0%, color-mix(in srgb, var(--trainer) ${Math.round(m.c * 0.45)}%, transparent) 45%, transparent 100%)` }}
           animate={reduce ? undefined : { x: m.x, y: m.y }}
           transition={{ duration: m.d, repeat: Infinity, ease: "easeInOut" }}
         />
