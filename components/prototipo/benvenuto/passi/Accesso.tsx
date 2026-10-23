@@ -20,9 +20,22 @@ const EMAIL = "marco.rossi@esempio.it";
 const NOME = trainer.name.split(" ")[0];
 const SCADENZA = 60;
 
-const CASA = "/prototipo/coach/casa.webp"; // IMMAGINI APP/VIDEO CASETTA.mp4 senza sfondo, 192 fotogrammi a 20 al secondo
-const CASA_FERMA = "/prototipo/coach/casa-fermo.webp"; // ultimo fotogramma
-const PRONTO_MS = 8700; // Leo sorride in piedi (il video dura 9,6 s): si passa al pannello "Iniziamo"
+// IMMAGINI APP/VIDEO CASETTA.mp4 pulito (IMMAGINI APP/pulisci-casa.py): fondo al bianco esatto, ombre e fumo sfumati
+// verso il bianco vicino ai bordi, risoluzione piena (960 × 720). Si vede su fondo bianco senza bordi né ritagli.
+const CASA = "/prototipo/coach/casa.mp4";
+const CASA_FINE = "/prototipo/coach/casa-fine.webp"; // ultimo fotogramma
+const PRONTO_S = 8.7; // Leo sorride in piedi (il video dura 9,6 s): si passa al pannello "Iniziamo"
+// la casa e Leo stanno un po' a sinistra nel fotogramma: il video si sposta per centrarli
+const LARGO = 392;
+const SPOSTA = Math.round(LARGO / 2 - (426 / 960) * LARGO);
+// i bordi del video sfumano nel trasparente: anche il grigio di un livello che la compressione lascia sulle prime
+// colonne non può disegnare una riga sul bianco della pagina
+const BORDI_SFUMATI = {
+  WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%), linear-gradient(180deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
+  WebkitMaskComposite: "source-in",
+  maskImage: "linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%), linear-gradient(180deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
+  maskComposite: "intersect",
+} as const;
 const FRASE = "Shhh… l'abbiamo svegliato! 😴";
 
 type Fase = "password" | "codice" | "sveglia";
@@ -34,8 +47,6 @@ export function Accesso({ avanti }: PropsPasso) {
   const [verificata, setVerificata] = useState(false);
   const scena = useScena();
   const timer = useRef<number | undefined>(undefined);
-  // indirizzo nuovo a ogni visita: la WebP animata riparte dal primo fotogramma
-  const casa = useMemo(() => `${CASA}?t=${Date.now()}`, []);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
@@ -55,7 +66,7 @@ export function Accesso({ avanti }: PropsPasso) {
     mandaCodice();
     setFase("codice");
     // la casetta si scarica mentre il trainer legge il codice, così dopo la verifica parte senza attese
-    fetch(casa).catch(() => {});
+    fetch(CASA).catch(() => {});
   };
 
   const tornaAllaPassword = () => {
@@ -102,7 +113,7 @@ export function Accesso({ avanti }: PropsPasso) {
             </Entra>
           </div>
         )}
-        {fase === "sveglia" && <Sveglia casa={casa} subito={subito} avanti={avanti} />}
+        {fase === "sveglia" && <Sveglia subito={subito} avanti={avanti} />}
       </motion.div>
     </AnimatePresence>
   );
@@ -198,7 +209,8 @@ function Regola({ ok, children }: { ok: boolean; children: string }) {
 
 // La sveglia: la casetta con Leo che dorme, si sveglia ed esce. Sotto, un pannello che scrive la frase lettera
 // per lettera mentre Leo esce; quando Leo sorride il pannello diventa quello di inizio, con "Iniziamo".
-function Sveglia({ casa, subito, avanti }: { casa: string; subito: boolean; avanti: () => void }) {
+// I tempi seguono il video stesso (playing / timeupdate), non dei timer: se il video tarda, tutto aspetta.
+function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
   const reduce = useReducedMotion();
   const fermo = subito || !!reduce;
   const [partito, setPartito] = useState(false);
@@ -206,40 +218,55 @@ function Sveglia({ casa, subito, avanti }: { casa: string; subito: boolean; avan
   const [lettere, setLettere] = useState(0);
   const caratteri = useMemo(() => Array.from(FRASE), []);
 
-  // il tempo parte quando la casetta è davvero comparsa (immagine caricata)
   useEffect(() => {
     if (!partito || fermo) return;
-    const t: number[] = [];
-    caratteri.forEach((_, i) => t.push(window.setTimeout(() => setLettere(i + 1), 500 + i * 85)));
-    t.push(
-      window.setTimeout(() => {
-        setPronto(true);
-        playSound("confirm");
-      }, PRONTO_MS),
-    );
+    const t = caratteri.map((_, i) => window.setTimeout(() => setLettere(i + 1), 500 + i * 85));
     return () => t.forEach(window.clearTimeout);
   }, [partito, fermo, caratteri]);
+
+  const vaiAlPronto = () => {
+    if (pronto) return;
+    setPronto(true);
+    playSound("confirm");
+  };
 
   return (
     <div className="flex flex-col items-center text-center">
       <motion.div
-        className="relative -mt-[34px]"
-        style={{ width: 380, height: 323 }}
-        initial={{ opacity: 0, scale: 0.94, y: 10 }}
-        animate={{ opacity: partito || fermo ? 1 : 0, scale: partito || fermo ? 1 : 0.94, y: 0 }}
-        transition={{ type: "spring", stiffness: 220, damping: 22 }}
+        className="relative -mt-[24px] overflow-hidden rounded-[22px] bg-white"
+        style={{ width: LARGO, height: Math.round((LARGO * 720) / 960) }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: partito || fermo ? 1 : 0, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE_OUT }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={fermo ? CASA_FERMA : casa}
-          alt="La casetta di Leo"
-          className="absolute inset-0 size-full select-none object-contain"
-          draggable={false}
-          onLoad={() => {
-            if (!partito) playSound("open");
-            setPartito(true);
-          }}
-        />
+        {fermo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={CASA_FINE} alt="Leo accanto alla sua casetta" className="absolute top-0 h-full max-w-none select-none" style={{ left: SPOSTA, width: LARGO, ...BORDI_SFUMATI }} draggable={false} />
+        ) : (
+          <video
+            src={CASA}
+            muted
+            playsInline
+            autoPlay
+            preload="auto"
+            disablePictureInPicture
+            aria-label="Leo si sveglia ed esce dalla sua casetta"
+            className="absolute top-0 h-full max-w-none"
+            style={{ left: SPOSTA, width: LARGO, ...BORDI_SFUMATI }}
+            onPlaying={() => {
+              if (!partito) playSound("open");
+              setPartito(true);
+            }}
+            onTimeUpdate={(e) => {
+              if (e.currentTarget.currentTime >= PRONTO_S) vaiAlPronto();
+            }}
+            onEnded={vaiAlPronto}
+            onError={() => {
+              setPartito(true);
+              vaiAlPronto();
+            }}
+          />
+        )}
       </motion.div>
 
       <motion.div layout transition={{ layout: { duration: 0.45, ease: EASE_OUT } }} className="mt-[6px] w-full overflow-hidden rounded-[22px] bg-soft px-[24px] py-[20px]">
