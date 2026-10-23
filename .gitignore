@@ -43,3 +43,6 @@ public/robots.txt
 public/sitemap.xml
 public/sitemap-0.xml
 docs/riferimenti/*.mkv
+
+# Immagini e video generati con Gemini (sorgenti, non versionati)
+/IMMAGINI APP/
