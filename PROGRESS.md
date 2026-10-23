@@ -40,8 +40,8 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Nota nel vault non creata: il brain è stato azzerato il 2026-10-21; aggiungerla quando la nuova struttura è pronta.
 
 ## Prossimi passi immediati
-- Chiedere a Marco il via per il piano dell'area cliente e partire dal Task 1 (stato condiviso).
-- Marco: creare il progetto Supabase di sviluppo (UE) per il Task 3.
+- **Via di Marco dato (23/10):** prima l'area cliente (grafiche, onboarding compreso), poi il backend. Partire dal Task 1 del piano area cliente, in una sessione nuova; circa una settimana, dati finti con la forma delle tabelle future (facilita il collegamento al database).
+- Marco: creare il progetto Supabase di sviluppo (UE) in parallelo, per il Task 3 subito dopo.
 
 ## Contesto tecnico utile
 - Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: `git push` sul ramo `setup-iniziale`, Vercel pubblica da solo. Chiavi: elenco senza valori in `docs/chiavi.md`.
