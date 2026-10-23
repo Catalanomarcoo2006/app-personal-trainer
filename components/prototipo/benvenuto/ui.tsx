@@ -34,7 +34,7 @@ export function Asterisco() {
   );
 }
 
-export function TestaPasso({ titolo, sotto }: { titolo: string; sotto?: ReactNode }) {
+export function TestaPasso({ titolo, sotto }: { titolo: ReactNode; sotto?: ReactNode }) {
   return (
     <div>
       <Entra i={0}>

@@ -84,7 +84,7 @@ export function Accesso({ avanti }: PropsPasso) {
     timer.current = window.setTimeout(() => {
       scena.setEmail(null);
       setFase("sveglia");
-    }, 1900);
+    }, 1800);
   };
 
   return (
@@ -93,17 +93,30 @@ export function Accesso({ avanti }: PropsPasso) {
         {fase === "password" && <Password onFatto={vaiAlCodice} />}
         {fase === "codice" && (
           <div>
-            {/* verificata: come nel riferimento titolo e testo sfumano, e il titolo diventa "Ci sei!" */}
-            <motion.div animate={verificata ? { opacity: 0.28, filter: "blur(1.5px)" } : { opacity: 1, filter: "blur(0px)" }} transition={{ duration: 0.5, delay: verificata ? 0.55 : 0 }}>
-              <TestaPasso
-                titolo={verificata ? "Ci sei!" : "Controlla la tua email"}
-                sotto={
-                  <>
-                    Ti abbiamo mandato un codice di {CIFRE_CODICE} cifre a <b className="font-semibold text-ink">{EMAIL}</b>. Scrivilo qui sotto per continuare.
-                  </>
-                }
-              />
-            </motion.div>
+            {/* verificata: come nel video di riferimento il titolo cambia, con la parola chiave in verde */}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={verificata ? "fatto" : "codice"} exit={{ opacity: 0, filter: "blur(3px)" }} transition={{ duration: 0.2 }}>
+                {verificata ? (
+                  <TestaPasso
+                    titolo={
+                      <>
+                        Email <span className="text-ok">verificata</span>
+                      </>
+                    }
+                    sotto="Il codice è giusto: il tuo account è al sicuro."
+                  />
+                ) : (
+                  <TestaPasso
+                    titolo="Controlla la tua email"
+                    sotto={
+                      <>
+                        Ti abbiamo mandato un codice di {CIFRE_CODICE} cifre a <b className="font-semibold text-ink">{EMAIL}</b>. Scrivilo qui sotto per continuare.
+                      </>
+                    }
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
             <CodiceOtp key={codice} atteso={codice} scadenza={SCADENZA} onGiusto={giusto} onSbagliato={() => {}} onRimanda={mandaCodice} />
             <Entra i={6}>
               <motion.p className="mt-[18px] text-center text-[12.5px] text-muted" animate={{ opacity: verificata ? 0 : 1 }} transition={{ duration: 0.3 }}>

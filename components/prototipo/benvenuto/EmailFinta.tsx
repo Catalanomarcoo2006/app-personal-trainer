@@ -29,8 +29,11 @@ export function EmailFinta({ codice }: { codice: string | null }) {
               <span className="mt-[2px] block text-[12.5px] font-semibold">Il tuo codice per entrare</span>
               <span className="mt-[1px] block text-[12px] text-muted">
                 Ciao {trainer.name.split(" ")[0]}, il tuo codice è{" "}
-                <b className="font-mono text-[13.5px] tracking-[0.08em] text-ink">
-                  {codice.slice(0, 2)} {codice.slice(2)}
+                {/* le 4 cifre alla stessa distanza l'una dall'altra (non due coppie) */}
+                <b className="inline-flex gap-[0.32em] font-mono text-[13.5px] text-ink">
+                  {codice.split("").map((c, i) => (
+                    <span key={i}>{c}</span>
+                  ))}
                 </b>
               </span>
             </span>
