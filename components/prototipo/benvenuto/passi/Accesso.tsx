@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, Eye, EyeOff, Lock } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
@@ -24,7 +24,10 @@ const SCADENZA = 60;
 // verso il bianco vicino ai bordi, risoluzione piena (960 × 720). Si vede su fondo bianco senza bordi né ritagli.
 const CASA = "/prototipo/coach/casa.mp4";
 const CASA_FINE = "/prototipo/coach/casa-fine.webp"; // ultimo fotogramma
-const PRONTO_S = 8.7; // Leo sorride in piedi (il video dura 9,6 s): si passa al pannello "Iniziamo"
+// momenti del video (dura 9,6 s): Leo esce dalla porta, si appoggia alla casa, sorride in piedi
+const ESCE_S = 3.0;
+const APPOGGIATO_S = 5.2;
+const SORRIDE_S = 8.2;
 // la casa e Leo stanno un po' a sinistra nel fotogramma: il video si sposta per centrarli
 const LARGO = 392;
 const SPOSTA = Math.round(LARGO / 2 - (426 / 960) * LARGO);
@@ -36,7 +39,6 @@ const BORDI_SFUMATI = {
   maskImage: "linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%), linear-gradient(180deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
   maskComposite: "intersect",
 } as const;
-const FRASE = "Shhh… l'abbiamo svegliato! 😴";
 
 type Fase = "password" | "codice" | "sveglia";
 
@@ -207,27 +209,21 @@ function Regola({ ok, children }: { ok: boolean; children: string }) {
   );
 }
 
-// La sveglia: la casetta con Leo che dorme, si sveglia ed esce. Sotto, un pannello che scrive la frase lettera
-// per lettera mentre Leo esce; quando Leo sorride il pannello diventa quello di inizio, con "Iniziamo".
-// I tempi seguono il video stesso (playing / timeupdate), non dei timer: se il video tarda, tutto aspetta.
+// La sveglia: la casetta con Leo che dorme, si sveglia ed esce. La casetta resta ferma al suo posto e sotto lo
+// spazio è già riservato: quando Leo esce compare il saluto parola per parola, quando si appoggia alla casa
+// il testo, quando sorride il tasto "Iniziamo". I tempi seguono il video stesso (timeupdate), non dei timer.
 function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
   const reduce = useReducedMotion();
   const fermo = subito || !!reduce;
   const [partito, setPartito] = useState(false);
-  const [pronto, setPronto] = useState(fermo);
-  const [lettere, setLettere] = useState(0);
-  const caratteri = useMemo(() => Array.from(FRASE), []);
-
-  useEffect(() => {
-    if (!partito || fermo) return;
-    const t = caratteri.map((_, i) => window.setTimeout(() => setLettere(i + 1), 500 + i * 85));
-    return () => t.forEach(window.clearTimeout);
-  }, [partito, fermo, caratteri]);
-
-  const vaiAlPronto = () => {
-    if (pronto) return;
-    setPronto(true);
-    playSound("confirm");
+  // 0 = ancora dentro casa, 1 = è uscito (saluto), 2 = appoggiato (testo), 3 = sorride ("Iniziamo")
+  const [momento, setMomento] = useState(fermo ? 3 : 0);
+  const ultimo = useRef(momento);
+  const avanza = (m: number) => {
+    if (m <= ultimo.current) return;
+    ultimo.current = m;
+    if (m === 3) playSound("confirm");
+    setMomento(m);
   };
 
   return (
@@ -258,40 +254,33 @@ function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
               setPartito(true);
             }}
             onTimeUpdate={(e) => {
-              if (e.currentTarget.currentTime >= PRONTO_S) vaiAlPronto();
+              const t = e.currentTarget.currentTime;
+              avanza(t >= SORRIDE_S ? 3 : t >= APPOGGIATO_S ? 2 : t >= ESCE_S ? 1 : 0);
             }}
-            onEnded={vaiAlPronto}
+            onEnded={() => avanza(3)}
             onError={() => {
               setPartito(true);
-              vaiAlPronto();
+              avanza(3);
             }}
           />
         )}
       </motion.div>
 
-      <motion.div layout transition={{ layout: { duration: 0.45, ease: EASE_OUT } }} className="mt-[6px] w-full overflow-hidden rounded-[22px] bg-soft px-[24px] py-[20px]">
-        <AnimatePresence mode="wait" initial={false}>
-          {!pronto ? (
-            <motion.p
-              key="sveglia"
-              exit={{ opacity: 0, filter: "blur(4px)", y: -6 }}
-              transition={{ duration: 0.25 }}
-              className="min-h-[34px] text-[22px] font-bold tracking-[-0.015em]"
-              aria-label={FRASE}
-            >
-              {caratteri.slice(0, lettere).join("")}
-              <motion.span
-                aria-hidden
-                className="ml-[2px] inline-block h-[22px] w-[2.5px] translate-y-[3px] rounded-full bg-[var(--trainer)]"
-                animate={{ opacity: [1, 1, 0, 0] }}
-                transition={{ duration: 0.9, repeat: Infinity, times: [0, 0.5, 0.5, 1] }}
-              />
-            </motion.p>
-          ) : (
-            <motion.div key="pronto" initial={{ opacity: 0, y: 10, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ duration: 0.45, ease: EASE_OUT }}>
-              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em]">Benvenuto, {NOME}!</h1>
-              <p className="mx-auto mt-[8px] max-w-[330px] text-[14px] leading-[1.5] text-muted">Sono Leo, il tuo assistente. In 2 minuti prepariamo insieme l&apos;app che riceveranno i tuoi clienti.</p>
-              <div className="mt-[20px]">
+      {/* spazio riservato: i testi compaiono senza spostare la casetta */}
+      <div className="mt-[14px] flex min-h-[186px] w-full flex-col items-center">
+        <Saluto testo={`Ciao ${NOME}, eccomi!`} visibile={momento >= 1} />
+        <motion.p
+          className="mx-auto mt-[10px] max-w-[340px] text-[14.5px] leading-[1.5] text-muted"
+          initial={false}
+          animate={momento >= 2 ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 8, filter: "blur(4px)" }}
+          transition={{ duration: 0.5, ease: EASE_OUT }}
+        >
+          Sono Leo, il tuo assistente. Ti accompagno nei primi passi: in 2 minuti la tua app è pronta.
+        </motion.p>
+        <div className="mt-[22px] h-[48px] w-full">
+          <AnimatePresence>
+            {momento >= 3 && (
+              <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 320, damping: 24 }}>
                 <Tasto
                   onClick={() => {
                     playSound("confirm");
@@ -300,11 +289,33 @@ function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
                 >
                   Iniziamo
                 </Tasto>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
+  );
+}
+
+// Il saluto compare parola per parola, ognuna che sale e si mette a fuoco.
+function Saluto({ testo, visibile }: { testo: string; visibile: boolean }) {
+  const parole = testo.split(" ");
+  return (
+    <h1 className="text-[30px] font-bold leading-[1.15] tracking-[-0.02em]" aria-label={testo}>
+      {parole.map((p, i) => (
+        <motion.span
+          key={i}
+          aria-hidden
+          className="inline-block whitespace-pre"
+          initial={false}
+          animate={visibile ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 10, filter: "blur(6px)" }}
+          transition={{ duration: 0.45, ease: EASE_OUT, delay: visibile ? i * 0.11 : 0 }}
+        >
+          {p}
+          {i < parole.length - 1 ? " " : ""}
+        </motion.span>
+      ))}
+    </h1>
   );
 }

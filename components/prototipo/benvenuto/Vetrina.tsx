@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { createContext, ReactNode, RefObject, useContext, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, MotionValue, useMotionValue, useMotionValueEvent, useReducedMotion, useSpring } from "motion/react";
 import { Send, Wallet } from "lucide-react";
 import { Avatar } from "@/components/ui/basics";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
@@ -22,48 +22,83 @@ const NOTIFICHE = [
   { id: "sara-conti", titolo: "Nuove misure", valore: "−0,8 kg" },
 ];
 
+// Il cursore sopra la vetrina: le schede vicine si scostano (come acque che si aprono) e tornano al loro posto.
+type Cursore = { x: MotionValue<number>; y: MotionValue<number>; vetrina: RefObject<HTMLDivElement | null> };
+const CursoreCtx = createContext<Cursore | null>(null);
+const SCOSTA_PX = 13; // spostamento massimo di una scheda sotto il cursore
+const RAGGIO_PX = 230; // distanza entro cui il cursore la sposta
+
 export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNode }) {
   // dal passo del marchio in poi le schede si fanno da parte (al loro posto arriverà l'anteprima dell'app)
   const lato = passo >= 1;
+  const vetrina = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(-9999);
+  const y = useMotionValue(-9999);
   return (
-    <div className="relative h-full overflow-hidden rounded-[22px]" style={{ background: `linear-gradient(180deg, ${tinta(10)} 0%, ${tinta(26)} 46%, ${tinta(56)} 100%)` }}>
-      <Macchie />
-
-      <motion.div className="absolute inset-0" animate={{ opacity: lato ? 0 : 1, scale: lato ? 0.96 : 1 }} transition={{ duration: 0.5, ease: EASE_OUT }}>
-        <Galleggia durata={6.5} entra={0} className="absolute left-[6%] top-[10%] w-[47%]">
-          <SchedaIncassi />
-        </Galleggia>
-        <Galleggia durata={5.4} entra={1} ritardo={0.8} className="absolute right-[5%] top-[5%] w-[42%]">
-          <Notifica />
-        </Galleggia>
-        <Galleggia durata={7} entra={2} ritardo={0.3} className="absolute right-[5%] top-[17%] w-[42%]">
-          <SchedaAgenda />
-        </Galleggia>
-        <Galleggia durata={6} entra={3} ritardo={1.2} className="absolute left-[6%] top-[38%] w-[47%]">
-          <SchedaProgressi />
-        </Galleggia>
-        <Galleggia durata={6.8} entra={4} ritardo={0.6} className="absolute right-[5%] top-[49%] w-[42%]">
-          <SchedaSettimana />
-        </Galleggia>
-        <Galleggia durata={5.8} entra={5} ritardo={1.6} className="absolute left-[8%] top-[65%]">
-          <Pillola />
-        </Galleggia>
-      </motion.div>
-
-      <div className="absolute inset-0 z-10">{children}</div>
-
-      <motion.div
-        className="pointer-events-none absolute bottom-[34px] left-[7%] right-[7%] z-20"
-        animate={{ opacity: lato ? 0 : 1, y: lato ? 10 : 0 }}
-        transition={{ duration: 0.4, ease: EASE_OUT }}
+    <CursoreCtx.Provider value={{ x, y, vetrina }}>
+      <div
+        ref={vetrina}
+        className="relative h-full overflow-hidden rounded-[22px]"
+        style={{ background: `linear-gradient(180deg, ${tinta(10)} 0%, ${tinta(26)} 46%, ${tinta(56)} 100%)` }}
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          x.set(e.clientX - r.left);
+          y.set(e.clientY - r.top);
+        }}
+        onPointerLeave={() => {
+          x.set(-9999);
+          y.set(-9999);
+        }}
       >
-        <p className="text-[13px] font-semibold text-ink/55">Tutto il tuo lavoro in un posto</p>
-        <p className="mt-[6px] text-[31px] font-semibold leading-[1.14] tracking-[-0.025em] text-ink">
-          Clienti, schede, agenda
-          <br />e incassi, con il tuo marchio.
-        </p>
-      </motion.div>
-    </div>
+        <Macchie />
+
+        {/* due colonne con spazi fissi tra le schede, centrate nello spazio sopra la frase */}
+        <motion.div
+          className="absolute inset-x-[6%] bottom-[168px] top-[5%] flex items-center"
+          animate={{ opacity: lato ? 0 : 1, scale: lato ? 0.96 : 1 }}
+          transition={{ duration: 0.5, ease: EASE_OUT }}
+        >
+          <div className="grid w-full grid-cols-[1.08fr_1fr] items-start gap-x-[22px]">
+            <div className="flex flex-col gap-[22px] pt-[30px]">
+              <Galleggia durata={6.5} entra={0}>
+                <SchedaIncassi />
+              </Galleggia>
+              <Galleggia durata={6} entra={3} ritardo={1.2}>
+                <SchedaProgressi />
+              </Galleggia>
+              <Galleggia durata={5.8} entra={5} ritardo={1.6} className="self-start">
+                <Pillola />
+              </Galleggia>
+            </div>
+            <div className="flex flex-col gap-[22px]">
+              <Galleggia durata={5.4} entra={1} ritardo={0.8}>
+                <Notifica />
+              </Galleggia>
+              <Galleggia durata={7} entra={2} ritardo={0.3}>
+                <SchedaAgenda />
+              </Galleggia>
+              <Galleggia durata={6.8} entra={4} ritardo={0.6}>
+                <SchedaSettimana />
+              </Galleggia>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="pointer-events-none absolute inset-0 z-10">{children}</div>
+
+        <motion.div
+          className="pointer-events-none absolute bottom-[34px] left-[7%] right-[7%] z-20"
+          animate={{ opacity: lato ? 0 : 1, y: lato ? 10 : 0 }}
+          transition={{ duration: 0.4, ease: EASE_OUT }}
+        >
+          <p className="text-[13px] font-semibold text-ink/55">Tutto il tuo lavoro in un posto</p>
+          <p className="mt-[6px] text-[31px] font-semibold leading-[1.14] tracking-[-0.025em] text-ink">
+            Clienti, schede, agenda
+            <br />e incassi, con il tuo marchio.
+          </p>
+        </motion.div>
+      </div>
+    </CursoreCtx.Provider>
   );
 }
 
@@ -96,18 +131,49 @@ function Macchie() {
   );
 }
 
-// Ogni scheda entra dal basso una dopo l'altra, poi ondeggia piano per conto suo.
+// Ogni scheda entra dal basso una dopo l'altra, poi ondeggia piano per conto suo; quando il cursore passa vicino
+// si scosta da lui (più vicino = più spostata, al massimo SCOSTA_PX) e con una molla torna al suo posto.
 function Galleggia({ durata, entra, ritardo = 0, className, children }: { durata: number; entra: number; ritardo?: number; className?: string; children: ReactNode }) {
   const reduce = useReducedMotion();
+  const cursore = useContext(CursoreCtx);
+  const posto = useRef<HTMLDivElement>(null);
+  const molla = { stiffness: 140, damping: 16, mass: 0.7 };
+  const dx = useSpring(0, molla);
+  const dy = useSpring(0, molla);
+
+  const scosta = () => {
+    if (!cursore || reduce || !posto.current || !cursore.vetrina.current) return;
+    const v = cursore.vetrina.current.getBoundingClientRect();
+    const r = posto.current.getBoundingClientRect(); // il posto non si muove: si sposta solo il contenuto
+    const cx = r.left - v.left + r.width / 2;
+    const cy = r.top - v.top + r.height / 2;
+    const vx = cx - cursore.x.get();
+    const vy = cy - cursore.y.get();
+    const d = Math.hypot(vx, vy);
+    if (d > RAGGIO_PX * 2 || d === 0) {
+      dx.set(0);
+      dy.set(0);
+      return;
+    }
+    const forza = SCOSTA_PX * Math.exp(-((d / RAGGIO_PX) ** 2));
+    dx.set((vx / d) * forza);
+    dy.set((vy / d) * forza);
+  };
+  useMotionValueEvent(cursore?.x ?? dx, "change", scosta);
+  useMotionValueEvent(cursore?.y ?? dy, "change", scosta);
+
   return (
     <motion.div
+      ref={posto}
       className={className}
       initial={{ opacity: 0, y: reduce ? 0 : 22 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.15 + entra * 0.09 }}
     >
-      <motion.div animate={reduce ? undefined : { y: [0, -7, 0] }} transition={{ duration: durata, repeat: Infinity, ease: "easeInOut", delay: ritardo }}>
-        {children}
+      <motion.div style={{ x: dx, y: dy }}>
+        <motion.div animate={reduce ? undefined : { y: [0, -7, 0] }} transition={{ duration: durata, repeat: Infinity, ease: "easeInOut", delay: ritardo }}>
+          {children}
+        </motion.div>
       </motion.div>
     </motion.div>
   );
