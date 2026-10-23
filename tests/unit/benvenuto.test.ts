@@ -4,7 +4,9 @@ import {
   codiceGiusto,
   controllaLogo,
   emailValida,
+  inizialiStudio,
   leggiBenvenuto,
+  misuraLogo,
   nuovoCodice,
   passoDiRipartenza,
   passwordValida,
@@ -95,5 +97,21 @@ describe("salvataggio nel browser", () => {
   it("legge un salvataggio valido e completa i campi mancanti", () => {
     const letto = leggiBenvenuto(archivio(JSON.stringify({ v: 1, verificato: true, passo: 2, studio: "Rossi Fit" })));
     expect(letto).toEqual({ ...BENVENUTO_INIZIALE, verificato: true, passo: 2, studio: "Rossi Fit" });
+  });
+});
+
+describe("marchio", () => {
+  it("prende le iniziali delle prime due parole del nome dello studio", () => {
+    expect(inizialiStudio("MR Fitness", "Marco Rossi")).toBe("MF");
+    expect(inizialiStudio("  studio  forma  libera ", "Marco Rossi")).toBe("SF");
+    expect(inizialiStudio("Kinesis", "Marco Rossi")).toBe("K");
+  });
+  it("senza nome dello studio usa il nome del trainer", () => {
+    expect(inizialiStudio("   ", "Marco Rossi")).toBe("MR");
+  });
+  it("rimpicciolisce il logo a 512 px sul lato lungo, senza ingrandire quelli piccoli", () => {
+    expect(misuraLogo(2048, 1024)).toEqual({ w: 512, h: 256 });
+    expect(misuraLogo(600, 1200)).toEqual({ w: 256, h: 512 });
+    expect(misuraLogo(200, 100)).toEqual({ w: 200, h: 100 });
   });
 });

@@ -16,6 +16,7 @@ export type Benvenuto = {
   verificato: boolean;
   studio: string;
   logo: string | null; // data URL
+  coloreScelto: boolean; // il trainer ha toccato un colore nel passo del marchio (accende il telefono)
   accordi: { quando: string } | null;
   primoCliente: { nome: string; email: string; esempio: boolean } | null;
   tono: Tono;
@@ -28,6 +29,7 @@ export const BENVENUTO_INIZIALE: Benvenuto = {
   verificato: false,
   studio: "",
   logo: null,
+  coloreScelto: false,
   accordi: null,
   primoCliente: null,
   tono: "amichevole",
@@ -61,6 +63,21 @@ export function controllaLogo(f: { name: string; type: string; size: number }): 
   if (!(f.type in TIPI_LOGO)) return { ok: false, motivo: "Carica un logo PNG, JPG, WebP o SVG" };
   if (f.size > MAX_LOGO) return { ok: false, motivo: "Il logo è troppo pesante: al massimo 5 MB" };
   return { ok: true, vettoriale: TIPI_LOGO[f.type] };
+}
+
+// Iniziali del marchio quando manca il logo: prime due parole dello studio, altrimenti del trainer.
+export function inizialiStudio(studio: string, trainer: string): string {
+  const parole = (studio.trim() || trainer).split(/\s+/).filter(Boolean);
+  return parole
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
+}
+
+// Misure del logo rimpicciolito: lato lungo al massimo 512 px, proporzioni intatte, mai ingrandito.
+export function misuraLogo(w: number, h: number, max = 512): { w: number; h: number } {
+  const k = Math.min(1, max / Math.max(w, h));
+  return { w: Math.round(w * k), h: Math.round(h * k) };
 }
 
 // Senza email verificata si riparte dall'accesso; il finale vuole gli accordi accettati.

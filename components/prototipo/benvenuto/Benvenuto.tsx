@@ -10,6 +10,7 @@ import { Vetrina } from "./Vetrina";
 import { ScenaProvider, useScena } from "./scena";
 import { EmailFinta } from "./EmailFinta";
 import { Accesso } from "./passi/Accesso";
+import { Marchio } from "./passi/Marchio";
 import { Barra, Tasto, TestaPasso } from "./ui";
 
 export const BENVENUTO = "/prototipo/benvenuto";
@@ -114,6 +115,7 @@ function ScenaVetrina() {
 
 function SchermataPasso({ passo, avanti, indietro }: { passo: Passo } & PropsPasso) {
   if (passo === 0) return <Accesso avanti={avanti} indietro={indietro} />;
+  if (passo === 1) return <Marchio avanti={avanti} indietro={indietro} />;
   // passi provvisori: ognuno viene sostituito dal suo file in passi/
   return (
     <div>

@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/basics";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { agenda, client, clientById, revenue, TODAY_INDEX, week } from "@/libs/prototipo/dati-finti";
 import type { Passo } from "@/libs/prototipo/benvenuto";
+import { AnteprimaTelefono } from "./AnteprimaTelefono";
 
 // Metà sinistra del benvenuto: la vetrina del trainer. Gradiente caldo nel suo colore con macchie che si muovono
 // piano, e sopra le schede in vetro della sua app che fluttuano, come nel riferimento (docs/riferimenti/
@@ -29,8 +30,9 @@ const SCOSTA_PX = 13; // spostamento massimo di una scheda sotto il cursore
 const RAGGIO_PX = 230; // distanza entro cui il cursore la sposta
 
 export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNode }) {
-  // dal passo del marchio in poi le schede si fanno da parte (al loro posto arriverà l'anteprima dell'app)
+  // dal passo del marchio in poi le schede si fanno da parte e al loro posto entra l'anteprima dell'app
   const lato = passo >= 1;
+  const reduce = useReducedMotion();
   const vetrina = useRef<HTMLDivElement>(null);
   const x = useMotionValue(-9999);
   const y = useMotionValue(-9999);
@@ -55,11 +57,19 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
         {/* due colonne con spazi fissi tra le schede, centrate nello spazio sopra la frase */}
         <motion.div
           className="absolute inset-x-[6%] bottom-[168px] top-[5%] flex items-center"
-          animate={{ opacity: lato ? 0 : 1, scale: lato ? 0.96 : 1 }}
-          transition={{ duration: 0.5, ease: EASE_OUT }}
+          initial={false}
+          animate={{ opacity: lato ? 0 : 1 }}
+          transition={{ duration: 0.45, ease: EASE_OUT, delay: lato ? 0.1 : 0 }}
+          style={{ pointerEvents: lato ? "none" : undefined }}
         >
           <div className="grid w-full grid-cols-[1.08fr_1fr] items-start gap-x-[22px]">
-            <div className="flex flex-col gap-[22px] pt-[30px]">
+            {/* dal passo del marchio le due colonne si aprono verso i lati per far posto al telefono */}
+            <motion.div
+              className="flex flex-col gap-[22px] pt-[30px]"
+              initial={false}
+              animate={{ x: lato && !reduce ? -90 : 0 }}
+              transition={{ duration: 0.55, ease: EASE_OUT }}
+            >
               <Galleggia durata={6.5} entra={0}>
                 <SchedaIncassi />
               </Galleggia>
@@ -69,8 +79,13 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
               <Galleggia durata={5.8} entra={5} ritardo={1.6} className="self-start">
                 <Pillola />
               </Galleggia>
-            </div>
-            <div className="flex flex-col gap-[22px]">
+            </motion.div>
+            <motion.div
+              className="flex flex-col gap-[22px]"
+              initial={false}
+              animate={{ x: lato && !reduce ? 90 : 0 }}
+              transition={{ duration: 0.55, ease: EASE_OUT }}
+            >
               <Galleggia durata={5.4} entra={1} ritardo={0.8}>
                 <Notifica />
               </Galleggia>
@@ -80,14 +95,18 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
               <Galleggia durata={6.8} entra={4} ritardo={0.6}>
                 <SchedaSettimana />
               </Galleggia>
-            </div>
+            </motion.div>
           </div>
         </motion.div>
+
+        {/* al posto delle schede, il telefono con l'app che riceveranno i clienti */}
+        <AnimatePresence>{lato && <AnteprimaTelefono key="telefono" nascita={passo === 1} />}</AnimatePresence>
 
         <div className="pointer-events-none absolute inset-0 z-10">{children}</div>
 
         <motion.div
           className="pointer-events-none absolute bottom-[34px] left-[7%] right-[7%] z-20"
+          initial={false}
           animate={{ opacity: lato ? 0 : 1, y: lato ? 10 : 0 }}
           transition={{ duration: 0.4, ease: EASE_OUT }}
         >
