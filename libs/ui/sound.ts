@@ -130,3 +130,104 @@ function render(kind: SoundKind): void {
     if ("vibrate" in navigator) navigator.vibrate?.([10, 40, 10]);
   }
 }
+
+// ——— Suoni delle animazioni ———
+// Non nascono da un clic ma accompagnano un'animazione (numeri che contano, telefono che sale, notifiche).
+// Il browser li permette solo dopo il primo clic o tasto sulla pagina: prima tacciono (vedi audioSbloccato).
+
+export function audioSbloccato(): boolean {
+  if (typeof window === "undefined" || !isSoundEnabled()) return false;
+  return !navigator.userActivation || navigator.userActivation.hasBeenActive;
+}
+
+// Curva dei numeri che contano (EASE_OUT di components/ui/motion: cubic-bezier(0.22, 1, 0.36, 1)):
+// avanzamento del numero a un certo punto del tempo, entrambi da 0 a 1.
+function easeOut(x: number): number {
+  const [x1, y1, x2, y2] = [0.22, 1, 0.36, 1];
+  const bez = (t: number, a: number, b: number) => 3 * (1 - t) ** 2 * t * a + 3 * (1 - t) * t ** 2 * b + t ** 3;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    if (bez(mid, x1, x2) < x) lo = mid;
+    else hi = mid;
+  }
+  return bez((lo + hi) / 2, y1, y2);
+}
+
+// Numeri che salgono: ticchettio fitto all'inizio che si dirada (segue la curva del conteggio) e sale di tono,
+// poi un "ding" quando il numero si ferma. ritardo e durata in secondi, come le animazioni.
+export function suonoConteggio({ ritardo = 0, durata = 0.9, scatti = 22, volume = 1 }: { ritardo?: number; durata?: number; scatti?: number; volume?: number } = {}): void {
+  if (!audioSbloccato()) return;
+  const ac = audio();
+  if (!ac) return;
+  const t0 = ac.currentTime + ritardo;
+  let ultimo = 0;
+  const passi = 240;
+  for (let i = 1; i <= passi; i++) {
+    const x = i / passi;
+    const scatto = Math.min(scatti, Math.floor(easeOut(x) * scatti));
+    if (scatto > ultimo) {
+      ultimo = scatto;
+      const at = t0 + x * durata;
+      const f = 900 + (scatto / scatti) * 900;
+      note(ac, at, f, f * 0.92, 0.024, 0.022 * volume, "triangle");
+    }
+  }
+  const fine = t0 + durata;
+  note(ac, fine, 1568, 1560, 0.32, 0.03 * volume);
+  note(ac, fine + 0.01, 2349, 2340, 0.22, 0.012 * volume);
+}
+
+let rumore: AudioBuffer | null = null;
+function bufferRumore(ac: AudioContext): AudioBuffer {
+  if (rumore && rumore.sampleRate === ac.sampleRate) return rumore;
+  const b = ac.createBuffer(1, ac.sampleRate * 1.5, ac.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  rumore = b;
+  return b;
+}
+
+// Soffio di vento che sale (rumore filtrato che passa dal grave all'acuto), poi un tocco morbido quando
+// quello che saliva si appoggia. Per il telefono che spunta dal basso nel benvenuto.
+export function suonoVento(ritardo = 0, durata = 0.75): void {
+  if (!audioSbloccato()) return;
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime + ritardo;
+  const src = ac.createBufferSource();
+  src.buffer = bufferRumore(ac);
+  const filtro = ac.createBiquadFilter();
+  filtro.type = "bandpass";
+  filtro.Q.value = 0.9;
+  filtro.frequency.setValueAtTime(260, t);
+  filtro.frequency.exponentialRampToValueAtTime(2200, t + durata * 0.75);
+  filtro.frequency.exponentialRampToValueAtTime(1400, t + durata);
+  const amp = ac.createGain();
+  amp.gain.setValueAtTime(0.0001, t);
+  amp.gain.exponentialRampToValueAtTime(0.11, t + durata * 0.45);
+  amp.gain.exponentialRampToValueAtTime(0.0001, t + durata);
+  src.connect(filtro).connect(amp).connect(ac.destination);
+  src.start(t);
+  src.stop(t + durata + 0.05);
+  pop(ac, t + durata * 0.9, 0.62, 0.05);
+}
+
+// Notifica che arriva: due note brevi e leggere che salgono.
+export function suonoNotifica(volume = 1): void {
+  if (!audioSbloccato()) return;
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  note(ac, t, 1175, 1170, 0.12, 0.022 * volume);
+  note(ac, t + 0.08, 1568, 1560, 0.18, 0.02 * volume);
+}
+
+// Schede che entrano una dopo l'altra: un pop leggero per ciascuna, ogni "passo" secondi dopo "ritardo".
+export function suonoComparse(quante: number, ritardo = 0, passo = 0.09): void {
+  if (!audioSbloccato()) return;
+  const ac = audio();
+  if (!ac) return;
+  for (let i = 0; i < quante; i++) pop(ac, ac.currentTime + ritardo + i * passo, 1.1 + i * 0.06, 0.03);
+}

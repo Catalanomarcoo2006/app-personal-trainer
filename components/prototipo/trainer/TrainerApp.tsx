@@ -1,10 +1,11 @@
 "use client";
 
-import { Fragment, memo, ReactNode, Suspense, useEffect, useState } from "react";
+import { Fragment, memo, ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { Appear } from "@/components/ui/motion";
 import { Pill } from "@/components/ui/basics";
+import { suonoConteggio } from "@/libs/ui/sound";
 import { clientById, trainer } from "@/libs/prototipo/dati-finti";
 import { TrainerShell } from "./Chrome";
 import { BASE, ROUTES } from "./nav";
@@ -125,6 +126,15 @@ function ByQuery({ children }: { children: (query: string) => ReactNode }) {
 
 // Home "Oggi" del trainer.
 function Home() {
+  // Numeri che salgono (incassi, percentuali dei clienti, colonne del grafico): un solo ticchettio che parte
+  // con il primo numero e si ferma con l'ultimo. Muto con "riduci movimento" (i numeri non contano).
+  const suonato = useRef(false); // in sviluppo React esegue gli effetti due volte: il suono parte una volta sola
+  useEffect(() => {
+    if (suonato.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    suonato.current = true;
+    suonoConteggio({ ritardo: 0.27, durata: 1.25, scatti: 26 });
+  }, []);
+
   return (
     <TrainerShell
       title="La tua giornata"

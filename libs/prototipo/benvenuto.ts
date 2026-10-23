@@ -17,6 +17,8 @@ export type Benvenuto = {
   studio: string;
   logo: string | null; // data URL
   coloreScelto: boolean; // il trainer ha toccato un colore nel passo del marchio (accende il telefono)
+  motto: string; // frase dello studio, sotto il saluto nell'app dei clienti
+  specialita: string[]; // al massimo MAX_SPECIALITA, bollini nell'app dei clienti
   accordi: { quando: string } | null;
   primoCliente: { nome: string; email: string; esempio: boolean } | null;
   tono: Tono;
@@ -30,6 +32,8 @@ export const BENVENUTO_INIZIALE: Benvenuto = {
   studio: "",
   logo: null,
   coloreScelto: false,
+  motto: "",
+  specialita: [],
   accordi: null,
   primoCliente: null,
   tono: "amichevole",
@@ -78,6 +82,15 @@ export function inizialiStudio(studio: string, trainer: string): string {
 export function misuraLogo(w: number, h: number, max = 512): { w: number; h: number } {
   const k = Math.min(1, max / Math.max(w, h));
   return { w: Math.round(w * k), h: Math.round(h * k) };
+}
+
+export const SPECIALITA = ["Dimagrimento", "Forza", "Posturale", "Preparazione atletica", "Over 60", "Post-parto", "Riabilitazione"];
+export const MAX_SPECIALITA = 3;
+
+// Tocco su una specialità: se c'è la toglie, altrimenti la aggiunge (se non sono già MAX_SPECIALITA).
+export function scegliSpecialita(scelte: string[], s: string): string[] {
+  if (scelte.includes(s)) return scelte.filter((x) => x !== s);
+  return scelte.length >= MAX_SPECIALITA ? scelte : [...scelte, s];
 }
 
 // Senza email verificata si riparte dall'accesso; il finale vuole gli accordi accettati.

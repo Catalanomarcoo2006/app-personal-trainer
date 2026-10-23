@@ -2,11 +2,12 @@
 
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { BatteryFull, Dumbbell, House, LineChart, MessageCircle, Play, Signal, Wifi } from "lucide-react";
+import { BatteryFull, Dumbbell, Eye, House, LineChart, MessageCircle, Play, Signal, Wifi } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { inizialiStudio, useBenvenuto } from "@/libs/prototipo/benvenuto";
 import { useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
+import { suonoVento } from "@/libs/ui/sound";
 
 // Il telefono nella vetrina del benvenuto: una versione ridotta dell'app che riceveranno i clienti del trainer
 // (separata dall'app del cliente vera). Nel passo del marchio ("nascita") parte spento, a blocchi grigi, e ogni
@@ -29,7 +30,8 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
     colore: !nascita || b.coloreScelto,
     foto: !nascita || fotoScelta,
   };
-  const testo = acceso.nome || acceso.logo || acceso.colore || acceso.foto;
+  // ogni scelta accende solo il suo pezzo: il nome dello studio accende anche i testi dell'app
+  const testo = acceso.nome;
   const tutto = acceso.nome && acceso.logo && acceso.colore && acceso.foto;
   const studio = b.studio.trim() || trainer.name;
 
@@ -39,7 +41,7 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
   useLayoutEffect(() => {
     const el = spazio.current;
     if (!el) return;
-    const misura = () => setScala(Math.min(1, Math.max(0.6, (el.clientHeight - 84) / ALTO)));
+    const misura = () => setScala(Math.min(1, Math.max(0.55, (el.clientHeight - 130) / ALTO)));
     misura();
     const ro = new ResizeObserver(misura);
     ro.observe(el);
@@ -54,10 +56,28 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
     prima.current = tutto;
   }, [tutto, reduce]);
 
+  // Il telefono sale dal basso con un soffio di vento (solo all'ingresso nel passo del marchio).
+  const soffiato = useRef(false); // in sviluppo React esegue gli effetti due volte: il vento suona una volta sola
+  useEffect(() => {
+    if (soffiato.current) return;
+    soffiato.current = true;
+    if (nascita && !reduce) suonoVento(0.18);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const colore = (p = 100) => (acceso.colore ? (p === 100 ? "var(--trainer)" : `color-mix(in srgb, var(--trainer) ${p}%, var(--color-card))`) : "var(--color-line)");
 
   return (
-    <div ref={spazio} className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center gap-[18px]">
+    <div ref={spazio} className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center gap-[16px]">
+      {/* di chi è l'app nel telefono: dei clienti, non del trainer */}
+      <motion.p
+        className="flex items-center gap-[7px] rounded-full border border-white/80 bg-white/70 px-[12px] py-[6px] text-[11.5px] font-semibold text-ink/70 shadow-[0_8px_20px_-12px_rgba(40,20,10,0.35)] dark:border-white/12 dark:bg-[#1d1f23]/80"
+        initial={{ opacity: 0, y: reduce ? 0 : -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.7 }}
+      >
+        <Eye size={13} /> Anteprima · così la vede Giulia, una tua cliente
+      </motion.p>
       <motion.div
         initial={{ opacity: 0, y: reduce ? 0 : 90, scale: reduce ? 1 : 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -72,7 +92,7 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
               {/* isola in alto */}
               <span className="absolute left-1/2 top-[9px] z-20 h-[22px] w-[78px] -translate-x-1/2 rounded-full bg-[#16161a]" />
 
-              <div className="flex h-[40px] items-center justify-between px-[22px] pt-[4px] text-[10.5px] font-semibold">
+              <div className="flex h-[38px] items-center justify-between px-[22px] pt-[4px] text-[10.5px] font-semibold">
                 <span>9:41</span>
                 <span className="flex items-center gap-[4px]">
                   <Signal size={11} strokeWidth={2.5} />
@@ -82,7 +102,7 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
               </div>
 
               {/* intestazione: logo, nome dello studio, foto del trainer */}
-              <div className="flex items-center gap-[10px] px-[16px] pb-[12px] pt-[6px]">
+              <div className="flex items-center gap-[10px] px-[16px] pb-[9px] pt-[4px]">
                 <Accende acceso={acceso.logo} grigio={<span className="block size-[34px] rounded-[10px] bg-line" />}>
                   {b.logo ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -134,10 +154,42 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
                     <span className="mt-[3px] block text-[10.5px] text-muted">Martedì 21 ottobre</span>
                   </span>
                 </Accende>
+                {(nascita || b.motto.trim()) && (
+                  <div className="mt-[7px]">
+                    <Accende acceso={b.motto.trim() !== ""} grigio={<span className="block h-[8px] w-[140px] rounded-full bg-line" />}>
+                      <span className="block truncate text-[11px] font-medium italic text-ink/70">“{b.motto.trim()}”</span>
+                    </Accende>
+                  </div>
+                )}
+                {(nascita || b.specialita.length > 0) && (
+                  <div className="mt-[8px]">
+                    <Accende
+                      acceso={b.specialita.length > 0}
+                      grigio={
+                        <span className="flex gap-[5px]">
+                          <span className="block h-[18px] w-[58px] rounded-full bg-line" />
+                          <span className="block h-[18px] w-[44px] rounded-full bg-line" />
+                        </span>
+                      }
+                    >
+                      <span className="flex gap-[5px] overflow-hidden">
+                        {b.specialita.map((sp) => (
+                          <span
+                            key={sp}
+                            className="shrink-0 whitespace-nowrap rounded-full px-[8px] py-[3px] text-[9.5px] font-semibold transition-colors duration-500"
+                            style={{ background: acceso.colore ? colore(14) : "var(--color-card)", color: acceso.colore ? "var(--trainer)" : "var(--color-muted)" }}
+                          >
+                            {sp}
+                          </span>
+                        ))}
+                      </span>
+                    </Accende>
+                  </div>
+                )}
               </div>
 
               {/* obiettivo */}
-              <div className="mx-[12px] mt-[12px] rounded-[18px] bg-card p-[14px] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.18)]">
+              <div className="mx-[12px] mt-[10px] rounded-[18px] bg-card px-[14px] py-[11px] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.18)]">
                 <Accende
                   acceso={testo}
                   grigio={
@@ -168,7 +220,7 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
               </div>
 
               {/* allenamento di oggi */}
-              <div className="mx-[12px] mt-[10px] rounded-[18px] bg-card p-[14px] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.18)]">
+              <div className="mx-[12px] mt-[8px] rounded-[18px] bg-card px-[14px] py-[11px] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.18)]">
                 <div className="flex items-center gap-[10px]">
                   <span className="grid size-[34px] place-items-center rounded-[11px] transition-colors duration-500" style={{ background: colore(16) }}>
                     <Dumbbell size={16} className="transition-colors duration-500" style={{ color: acceso.colore ? "var(--trainer)" : "var(--color-card)" }} />
@@ -189,7 +241,7 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
                   </Accende>
                 </div>
                 <div
-                  className="mt-[12px] flex h-[36px] items-center justify-center gap-[6px] rounded-[11px] text-[12px] font-semibold transition-colors duration-500"
+                  className="mt-[10px] flex h-[34px] items-center justify-center gap-[6px] rounded-[11px] text-[12px] font-semibold transition-colors duration-500"
                   style={{ background: colore(), color: acceso.colore ? "#fff" : "var(--color-muted)" }}
                 >
                   {testo && (
@@ -201,7 +253,7 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
               </div>
 
               {/* settimana */}
-              <div className="mx-[12px] mt-[10px] flex items-center justify-between rounded-[18px] bg-card px-[14px] py-[11px] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.18)]">
+              <div className="mx-[12px] mt-[8px] flex items-center justify-between rounded-[18px] bg-card px-[14px] py-[8px] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.18)]">
                 {GIORNI.map((g, i) => (
                   <span key={i} className="flex flex-col items-center gap-[4px]">
                     <span className="text-[8.5px] font-semibold text-muted">{testo ? g : " "}</span>
@@ -214,7 +266,7 @@ export function AnteprimaTelefono({ nascita }: { nascita: boolean }) {
               </div>
 
               {/* barra in basso */}
-              <div className="absolute inset-x-0 bottom-0 flex h-[58px] items-start justify-around border-t border-line bg-card px-[10px] pt-[9px]">
+              <div className="absolute inset-x-0 bottom-0 flex h-[54px] items-start justify-around border-t border-line bg-card px-[10px] pt-[9px]">
                 {[House, LineChart, MessageCircle].map((Icona, i) => (
                   <span
                     key={i}

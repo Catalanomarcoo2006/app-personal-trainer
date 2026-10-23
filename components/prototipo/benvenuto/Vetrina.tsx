@@ -4,7 +4,8 @@ import { createContext, ReactNode, RefObject, useContext, useEffect, useRef, use
 import { AnimatePresence, motion, MotionValue, useMotionValue, useMotionValueEvent, useReducedMotion, useSpring } from "motion/react";
 import { Send, Wallet } from "lucide-react";
 import { Avatar } from "@/components/ui/basics";
-import { EASE_OUT, formatEuro } from "@/components/ui/motion";
+import { CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
+import { audioSbloccato, isSoundEnabled, suonoComparse, suonoConteggio, suonoNotifica } from "@/libs/ui/sound";
 import { agenda, client, clientById, revenue, TODAY_INDEX, week } from "@/libs/prototipo/dati-finti";
 import type { Passo } from "@/libs/prototipo/benvenuto";
 import { AnteprimaTelefono } from "./AnteprimaTelefono";
@@ -26,6 +27,15 @@ const NOTIFICHE = [
 // Il cursore sopra la vetrina: le schede vicine si scostano (come acque che si aprono) e tornano al loro posto.
 type Cursore = { x: MotionValue<number>; y: MotionValue<number>; vetrina: RefObject<HTMLDivElement | null> };
 const CursoreCtx = createContext<Cursore | null>(null);
+
+// Giro delle animazioni dei numeri (colonne, conteggi, anello, linea): cambiando giro ripartono da capo.
+// Serve per il suono: il browser lo blocca finché non si clicca sulla pagina, quindi se le schede sono nate
+// mute, al primo clic i numeri rifanno il conteggio, questa volta con il ticchettio (soluzione A, 23/10).
+const VetrinaCtx = createContext<{ giro: number; attiva: boolean }>({ giro: 0, attiva: true });
+
+// Suoni delle schede, allineati alle animazioni: pop d'ingresso (Galleggia) e conteggio (incassi, anello, linea).
+const suonaIngresso = () => suonoComparse(6, 0.2, 0.09);
+const suonaConteggio = () => suonoConteggio({ ritardo: 0.5, durata: 1.35, scatti: 24, volume: 0.85 });
 const SCOSTA_PX = 13; // spostamento massimo di una scheda sotto il cursore
 const RAGGIO_PX = 230; // distanza entro cui il cursore la sposta
 
@@ -36,7 +46,41 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
   const vetrina = useRef<HTMLDivElement>(null);
   const x = useMotionValue(-9999);
   const y = useMotionValue(-9999);
+
+  const [giro, setGiro] = useState(0);
+  const nate = useRef(false);
+  const lati = useRef(lato);
+  lati.current = lato;
+  useEffect(() => {
+    if (reduce || lati.current) return;
+    // arrivati con un clic (audio già sbloccato): il suono accompagna la nascita delle schede
+    if (audioSbloccato()) {
+      if (nate.current) return; // in sviluppo React esegue gli effetti due volte: i suoni partono una volta sola
+      nate.current = true;
+      suonaIngresso();
+      suonaConteggio();
+      return;
+    }
+    const primoTocco = () => {
+      window.removeEventListener("pointerdown", primoTocco, true);
+      window.removeEventListener("keydown", primoTocco, true);
+      if (lati.current || !isSoundEnabled()) return;
+      // a fine evento: il browser considera la pagina "attivata" solo dopo questo tocco
+      window.setTimeout(() => {
+        setGiro((g) => g + 1);
+        suonaConteggio();
+      }, 0);
+    };
+    window.addEventListener("pointerdown", primoTocco, true);
+    window.addEventListener("keydown", primoTocco, true);
+    return () => {
+      window.removeEventListener("pointerdown", primoTocco, true);
+      window.removeEventListener("keydown", primoTocco, true);
+    };
+  }, [reduce]);
+
   return (
+    <VetrinaCtx.Provider value={{ giro, attiva: !lato }}>
     <CursoreCtx.Provider value={{ x, y, vetrina }}>
       <div
         ref={vetrina}
@@ -118,6 +162,7 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
         </motion.div>
       </div>
     </CursoreCtx.Provider>
+    </VetrinaCtx.Provider>
   );
 }
 
@@ -213,6 +258,7 @@ function Titoletto({ children, destra }: { children: ReactNode; destra?: ReactNo
 // Incassi del mese con le colonne degli ultimi 6 mesi che crescono (come nella home del trainer).
 function SchedaIncassi() {
   const reduce = useReducedMotion();
+  const { giro } = useContext(VetrinaCtx);
   const max = Math.max(...revenue.months.map((m) => m.value));
   return (
     <div className={`${vetro} px-[16px] pb-[12px] pt-[14px]`}>
@@ -223,7 +269,9 @@ function SchedaIncassi() {
         <span className="text-[11.5px] font-semibold">Incassi di {revenue.month.toLowerCase()}</span>
       </div>
       <div className="mt-[10px] flex items-center gap-[8px]">
-        <span className="text-[25px] font-bold tracking-[-0.02em]">{formatEuro(revenue.collected)}</span>
+        <span className="text-[25px] font-bold tracking-[-0.02em]">
+          <CountUp key={giro} value={revenue.collected} format={formatEuro} delay={0.5} duration={1.35} />
+        </span>
         <span className="rounded-full bg-ok-soft px-[7px] py-[2px] text-[10px] font-bold text-ok">▲ {revenue.delta}%</span>
       </div>
       <div className="mt-[10px] flex h-[64px] items-end gap-[7px]">
@@ -232,6 +280,7 @@ function SchedaIncassi() {
           return (
             <div key={m.label} className="flex flex-1 flex-col items-center gap-[4px]">
               <motion.span
+                key={giro}
                 className="block w-full origin-bottom rounded-[6px]"
                 style={{ height: `${(m.value / max) * 48}px`, background: ultimo ? "var(--trainer)" : tinta(30) }}
                 initial={{ scaleY: reduce ? 1 : 0 }}
@@ -247,9 +296,19 @@ function SchedaIncassi() {
   );
 }
 
+// Notifiche: ne arriva una nuova ogni 3,5 s, con un suono leggero (solo le prime 3, e solo finché la vetrina
+// mostra le schede: dal passo del marchio continuano mute).
+const DING_MAX = 3;
 function Notifica() {
   const reduce = useReducedMotion();
+  const { attiva } = useContext(VetrinaCtx);
   const [i, setI] = useState(0);
+  const dings = useRef(0);
+  useEffect(() => {
+    if (i === 0 || !attiva || dings.current >= DING_MAX || !audioSbloccato()) return;
+    dings.current += 1;
+    suonoNotifica(0.8);
+  }, [i, attiva]);
   useEffect(() => {
     if (reduce) return;
     const t = window.setInterval(() => setI((n) => (n + 1) % NOTIFICHE.length), 3500);
@@ -319,6 +378,7 @@ function SchedaAgenda() {
 // I progressi di una cliente: grafico del peso e anello dell'obiettivo (come nel profilo cliente).
 function SchedaProgressi() {
   const reduce = useReducedMotion();
+  const { giro: volta } = useContext(VetrinaCtx);
   const pesi = client.weight;
   const min = Math.min(...pesi) - 0.6;
   const max = Math.max(...pesi) + 0.4;
@@ -339,6 +399,7 @@ function SchedaProgressi() {
           <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden className="absolute inset-0 -rotate-90">
             <circle cx="20" cy="20" r={r} fill="none" stroke="var(--color-ok-soft)" strokeWidth="4.5" />
             <motion.circle
+              key={volta}
               cx="20"
               cy="20"
               r={r}
@@ -352,7 +413,9 @@ function SchedaProgressi() {
               transition={{ duration: 1.4, ease: EASE_OUT, delay: 0.7 }}
             />
           </svg>
-          <span className="text-[10px] font-bold">{client.goalPercent}%</span>
+          <span className="text-[10px] font-bold">
+            <CountUp key={volta} value={client.goalPercent} delay={0.7} duration={1.3} />%
+          </span>
         </span>
       </div>
       <div className="mt-[6px] flex items-baseline gap-[6px]">
@@ -368,6 +431,7 @@ function SchedaProgressi() {
         </defs>
         <path d={`${linea} L 200 56 L 0 56 Z`} fill="url(#vetrina-peso)" />
         <motion.path
+          key={volta}
           d={linea}
           fill="none"
           stroke="var(--trainer)"

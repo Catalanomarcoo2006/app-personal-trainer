@@ -7,6 +7,7 @@ import {
   inizialiStudio,
   leggiBenvenuto,
   misuraLogo,
+  scegliSpecialita,
   nuovoCodice,
   passoDiRipartenza,
   passwordValida,
@@ -113,5 +114,15 @@ describe("marchio", () => {
     expect(misuraLogo(2048, 1024)).toEqual({ w: 512, h: 256 });
     expect(misuraLogo(600, 1200)).toEqual({ w: 256, h: 512 });
     expect(misuraLogo(200, 100)).toEqual({ w: 200, h: 100 });
+  });
+});
+
+describe("specialità", () => {
+  it("aggiunge e toglie una specialità", () => {
+    expect(scegliSpecialita([], "Forza")).toEqual(["Forza"]);
+    expect(scegliSpecialita(["Forza", "Posturale"], "Forza")).toEqual(["Posturale"]);
+  });
+  it("ne tiene al massimo 3: oltre, la nuova non entra", () => {
+    expect(scegliSpecialita(["Forza", "Posturale", "Over 60"], "Dimagrimento")).toEqual(["Forza", "Posturale", "Over 60"]);
   });
 });

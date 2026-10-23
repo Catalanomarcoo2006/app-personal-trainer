@@ -9,7 +9,7 @@ import { EASE_OUT } from "@/components/ui/motion";
 import { conMacchia } from "@/libs/ui/macchia";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
-import { aggiornaBenvenuto, controllaLogo, inizialiStudio, misuraLogo, useBenvenuto } from "@/libs/prototipo/benvenuto";
+import { aggiornaBenvenuto, controllaLogo, inizialiStudio, MAX_SPECIALITA, misuraLogo, scegliSpecialita, SPECIALITA, useBenvenuto } from "@/libs/prototipo/benvenuto";
 import { shrinkPhoto, stato, useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
 import type { PropsPasso } from "../Benvenuto";
 import { CLASSE_CAMPO, Campo, Entra, Tasto, TastoTesto, TestaPasso } from "../ui";
@@ -105,21 +105,32 @@ export function Marchio({ avanti }: PropsPasso) {
   return (
     <div>
       <TestaPasso titolo="Il tuo marchio" sotto="L'app dei tuoi clienti avrà il tuo nome, il tuo logo e il tuo colore. Guardala nascere qui a fianco." />
-      <div className="mt-[24px] flex flex-col gap-[18px]">
+      <div className="mt-[20px] flex flex-col gap-[14px]">
         <Entra i={3}>
-          <Campo etichetta="Nome dello studio">
-            <input
-              value={b.studio}
-              onChange={(e) => aggiornaBenvenuto({ studio: e.target.value })}
-              placeholder={trainer.name}
-              maxLength={40}
-              autoComplete="organization"
-              className={CLASSE_CAMPO}
-            />
-          </Campo>
+          <div className="grid grid-cols-2 gap-[10px]">
+            <Campo etichetta="Nome dello studio">
+              <input
+                value={b.studio}
+                onChange={(e) => aggiornaBenvenuto({ studio: e.target.value })}
+                placeholder={trainer.name}
+                maxLength={40}
+                autoComplete="organization"
+                className={CLASSE_CAMPO}
+              />
+            </Campo>
+            <Campo etichetta="Motto" destra={<span className="text-[11px] font-normal text-muted">facoltativo</span>}>
+              <input
+                value={b.motto}
+                onChange={(e) => aggiornaBenvenuto({ motto: e.target.value })}
+                placeholder="Allenati con metodo"
+                maxLength={60}
+                className={CLASSE_CAMPO}
+              />
+            </Campo>
+          </div>
         </Entra>
 
-        <Entra i={4}>
+        <Entra i={5}>
           <div className="grid grid-cols-2 gap-[12px]">
             <Carica
               etichetta="Logo"
@@ -177,7 +188,40 @@ export function Marchio({ avanti }: PropsPasso) {
           </AnimatePresence>
         </Entra>
 
-        <Entra i={5}>
+        <Entra i={6}>
+          <p className="flex items-center justify-between text-[12.5px] font-semibold">
+            Le tue specialità
+            <span className="text-[11.5px] font-normal text-muted">fino a {MAX_SPECIALITA}</span>
+          </p>
+          <div className="mt-[7px] flex flex-wrap gap-[5px]">
+            {SPECIALITA.map((sp) => {
+              const scelta = b.specialita.includes(sp);
+              const piena = !scelta && b.specialita.length >= MAX_SPECIALITA;
+              return (
+                <motion.button
+                  key={sp}
+                  type="button"
+                  aria-pressed={scelta}
+                  disabled={piena}
+                  whileTap={piena ? undefined : { scale: 0.94 }}
+                  onClick={() => {
+                    playSound("tap");
+                    aggiornaBenvenuto({ specialita: scegliSpecialita(b.specialita, sp) });
+                  }}
+                  className={`flex h-[30px] items-center gap-[5px] rounded-full border px-[10px] text-[11.5px] font-semibold transition-[background-color,border-color,color,opacity] duration-200 ${
+                    scelta ? "cursor-pointer border-transparent" : piena ? "cursor-not-allowed border-line opacity-45" : "cursor-pointer border-line hover:border-ink/25"
+                  }`}
+                  style={scelta ? { background: "color-mix(in srgb, var(--trainer) 14%, var(--color-card))", color: "var(--trainer)" } : undefined}
+                >
+                  {scelta && <Check size={12} strokeWidth={3} />}
+                  {sp}
+                </motion.button>
+              );
+            })}
+          </div>
+        </Entra>
+
+        <Entra i={7}>
           <p className="text-[12.5px] font-semibold">Il tuo colore</p>
           <div className="mt-[8px] flex flex-wrap gap-[10px]" role="radiogroup" aria-label="Il tuo colore">
             {ACCENTS.map((c) => {
@@ -203,8 +247,8 @@ export function Marchio({ avanti }: PropsPasso) {
           </div>
         </Entra>
 
-        <Entra i={6}>
-          <div className="mt-[6px] flex flex-col items-center gap-[6px]">
+        <Entra i={8}>
+          <div className="mt-[4px] flex flex-col items-center gap-[4px]">
             <Tasto
               onClick={() => {
                 playSound("confirm");
