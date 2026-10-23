@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
 import { EASE_OUT } from "@/components/ui/motion";
 import { aggiornaBenvenuto, azzeraBenvenuto, completaBenvenuto, passoDiRipartenza, PASSI, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
+import { stato } from "@/libs/prototipo/stato";
 import { Vetrina } from "./Vetrina";
 import { ScenaProvider, useScena } from "./scena";
 import { EmailFinta } from "./EmailFinta";
@@ -25,7 +26,11 @@ export function Benvenuto() {
   const [pronto, setPronto] = useState(false);
   useEffect(() => {
     // ?da-capo: per le demo, ogni volta che si apre o si aggiorna la pagina il percorso riparte dall'inizio
-    if (new URLSearchParams(window.location.search).has("da-capo")) azzeraBenvenuto();
+    // (anche la foto del trainer: nel passo del marchio il telefono deve ripartire tutto spento)
+    if (new URLSearchParams(window.location.search).has("da-capo")) {
+      azzeraBenvenuto();
+      stato.setTrainerPhoto(null);
+    }
     setPronto(true);
   }, []);
   const passo = passoDiRipartenza(b);
