@@ -68,8 +68,8 @@ export default function SoftAreaChart({
       <motion.span
         className="absolute size-[10px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[2.2px] bg-card"
         style={{ left: `${(lx / w) * 100}%`, top: `${(ly / h) * 100}%`, borderColor: color }}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
+        initial={{ scale: 0.4, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 1.45, type: "spring", stiffness: 400, damping: 18 }}
       />
     </div>

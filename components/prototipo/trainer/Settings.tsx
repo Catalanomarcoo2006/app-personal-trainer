@@ -3,13 +3,21 @@
 import { MouseEvent as ReactMouseEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
-import { Bot, Check, Globe, Moon, Palette, Sun, Volume2 } from "lucide-react";
+import { ArrowRightLeft, Bot, Check, CheckCheck, Globe, Moon, MousePointerClick, Palette, PanelTopOpen, Sun, Volume2, type LucideIcon } from "lucide-react";
 import { Avatar, Toggle } from "@/components/ui/basics";
 import { Appear, ProgressBar } from "@/components/ui/motion";
 import { ACCENTS, useAppearance } from "@/components/ui/appearance";
-import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled } from "@/libs/ui/sound";
+import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled, type SoundKind } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { shrinkPhoto, stato, useTrainerPhoto } from "@/libs/prototipo/stato";
+
+// I suoni dell'app, da ascoltare: nascono tutti dallo stesso "pop" con tonalità diverse.
+const soundSamples: { kind: SoundKind; label: string; hint: string; icon: LucideIcon }[] = [
+  { kind: "tap", label: "Tocco", hint: "ogni clic", icon: MousePointerClick },
+  { kind: "nav", label: "Cambio sezione", hint: "due pop che salgono", icon: ArrowRightLeft },
+  { kind: "open", label: "Apertura", hint: "menu e pannelli", icon: PanelTopOpen },
+  { kind: "confirm", label: "Conferma", hint: "salvato, inviato", icon: CheckCheck },
+];
 
 function Card({ title, icon, children, className = "" }: { title: string; icon?: ReactNode; children: ReactNode; className?: string }) {
   return (
@@ -251,6 +259,27 @@ export function SettingsView() {
                   if (next) playSound("confirm");
                 }}
               />
+            </div>
+            <p className="mt-[14px] text-[11px] font-semibold text-muted">Ascolta i suoni</p>
+            <div className="mt-[6px] grid grid-cols-2 gap-[6px]">
+              {soundSamples.map((s) => (
+                <motion.button
+                  key={s.kind}
+                  type="button"
+                  disabled={!sound}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => playSound(s.kind)}
+                  className="flex cursor-pointer items-center gap-[8px] rounded-[12px] border border-line px-[10px] py-[8px] text-left transition-colors hover:bg-soft disabled:cursor-default disabled:opacity-45"
+                >
+                  <span className="grid size-[26px] shrink-0 place-items-center rounded-full" style={{ background: "color-mix(in srgb, var(--trainer) 14%, transparent)", color: "var(--trainer)" }}>
+                    <s.icon size={13} strokeWidth={2.2} />
+                  </span>
+                  <span className="min-w-0 leading-tight">
+                    <span className="block text-[11.5px] font-semibold">{s.label}</span>
+                    <span className="block truncate text-[10px] text-muted">{s.hint}</span>
+                  </span>
+                </motion.button>
+              ))}
             </div>
           </Card>
         </Appear>

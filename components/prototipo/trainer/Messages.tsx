@@ -209,7 +209,7 @@ export function MessagesView({ search }: { search: string }) {
                 <div className="flex shrink-0 flex-col items-end gap-[4px]">
                   <span className="text-[10px] text-muted">{last.time}</span>
                   {(unread[conv.clientId] ?? 0) > 0 && (
-                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="grid size-[18px] place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: "var(--trainer)" }}>
+                    <motion.span initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", duration: 0.35, bounce: 0.3 }} className="grid size-[18px] place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: "var(--trainer)" }}>
                       {unread[conv.clientId]}
                     </motion.span>
                   )}
@@ -280,7 +280,7 @@ export function MessagesView({ search }: { search: string }) {
           )}
         </div>
 
-        <div className="flex gap-[6px] overflow-x-auto px-[18px] pb-[8px] [scrollbar-width:none]">
+        <div className="flex gap-[6px] overflow-x-auto px-[18px] pb-[8px] [scrollbar-width:none] [mask-image:linear-gradient(to_right,transparent,#000_18px,#000_calc(100%-36px),transparent)]">
           {quickReplies.map((q) => (
             <motion.button key={q} type="button" whileTap={{ scale: 0.95 }} onClick={() => send(q)} className="shrink-0 cursor-pointer rounded-full border border-line px-[12px] py-[6px] text-[11.5px] font-medium whitespace-nowrap hover:bg-soft">
               {q}

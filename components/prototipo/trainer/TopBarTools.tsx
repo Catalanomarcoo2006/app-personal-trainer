@@ -72,9 +72,9 @@ export function NotificationsButton() {
           {unread > 0 && (
             <motion.span
               key="pallino"
-              initial={{ scale: 0 }}
-              animate={{ scale: [1, 1.5, 1] }}
-              exit={{ scale: 0, transition: { duration: 0.15 } }}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: [1, 1.5, 1], opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.15 } }}
               transition={{ duration: 1.8, repeat: Infinity }}
               className="absolute -top-[2px] right-[0px] size-[5px] rounded-full bg-[#e5484d]"
             />

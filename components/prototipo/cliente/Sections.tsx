@@ -145,7 +145,7 @@ export function NextSession() {
       </span>
       <div className="min-w-0 leading-none">
         <p className="text-[12.5px] font-bold">Prossima seduta con {trainer.name.split(" ")[0]}</p>
-        <p className="mt-[4px] truncate text-[10.5px]/65">
+        <p className="mt-[4px] truncate text-[10.5px] opacity-75">
           {client.nextSession.when} · {client.nextSession.where}
         </p>
       </div>
