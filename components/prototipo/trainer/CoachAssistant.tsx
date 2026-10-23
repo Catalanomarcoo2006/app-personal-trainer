@@ -357,7 +357,8 @@ function SidePeek() {
   );
 }
 
-function ChatPanel({ left, origin, chat, close }: { left: number; origin: string; chat: Chat; close: () => void }) {
+// close: chiude con il suono (X, velo, Esc); dismiss: chiude in silenzio, sotto la macchia di un link di Leo.
+function ChatPanel({ left, origin, chat, close, dismiss }: { left: number; origin: string; chat: Chat; close: () => void; dismiss: () => void }) {
   const { messages, typing, thinking, ask } = chat;
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
@@ -444,10 +445,9 @@ function ChatPanel({ left, origin, chat, close }: { left: number; origin: string
                     onClick={(e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                       e.preventDefault();
-                      playSound("tap");
                       const r = e.currentTarget.getBoundingClientRect();
                       const origin = e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-                      navigateWithStain(m.action!.href, origin, close);
+                      navigateWithStain(m.action!.href, origin, dismiss);
                     }}
                     className="mt-[6px] flex items-center gap-[5px] rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold text-white"
                     style={{ background: "var(--trainer)" }}
@@ -492,21 +492,44 @@ function ChatPanel({ left, origin, chat, close }: { left: number; origin: string
   );
 }
 
-// ——— Il tasto delle altre pagine, sotto la barra laterale: si illumina quando ci sono novità ———
+// ——— Il tasto delle altre pagine, sotto la barra laterale: alone che respira, si illumina quando ci sono novità ———
+
+// La prima volta che si apre una sezione diversa dalla home, Leo saluta per farsi notare (una volta per visita).
+let coachHintShown = false;
 
 function CoachButton({ hidden, count, onOpen }: { hidden: boolean; count: number; onOpen: () => void }) {
   const [hover, setHover] = useState(false);
+  const [hint, setHint] = useState(false);
   const glowing = count > 0 && !hidden;
+
+  useEffect(() => {
+    if (coachHintShown || hidden) return;
+    const timers = [
+      window.setTimeout(() => {
+        coachHintShown = true;
+        setHint(true);
+      }, 1400),
+      window.setTimeout(() => setHint(false), 4800),
+    ];
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [hidden]);
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.85 }}
       animate={hidden ? { opacity: 0, scale: 0.85 } : { opacity: 1, scale: 1 }}
       transition={{ type: "spring", duration: 0.45, bounce: 0.25, delay: hidden ? 0 : 0.2 }}
-      className={`absolute bottom-[12px] left-[22px] z-40 ${hidden ? "pointer-events-none" : ""}`}
+      className={`absolute bottom-[12px] left-[19px] z-40 ${hidden ? "pointer-events-none" : ""}`}
       onHoverStart={() => setHover(true)}
       onHoverEnd={() => setHover(false)}
     >
+      {/* alone nel colore del trainer, sempre acceso: Leo si vede anche fuori dalla home */}
+      <motion.span
+        aria-hidden
+        className="leo-alone pointer-events-none absolute inset-[-16px] rounded-full"
+        animate={{ opacity: [0.55, 0.95, 0.55], scale: [0.94, 1.04, 0.94] }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+      />
       {glowing && (
         <>
           {/* bagliore che respira */}
@@ -532,16 +555,20 @@ function CoachButton({ hidden, count, onOpen }: { hidden: boolean; count: number
         aria-label={count ? `Chiedi a ${COACH_NAME}: ${count} novità` : `Chiedi a ${COACH_NAME}, il tuo assistente`}
         onClick={onOpen}
         whileTap={{ scale: 0.92 }}
-        className="glass glass-3d relative grid size-[44px] cursor-pointer place-items-center rounded-full"
-        style={glowing ? { boxShadow: "0 0 0 2px var(--trainer), 0 10px 24px -6px color-mix(in srgb, var(--trainer) 70%, transparent)" } : undefined}
+        className="glass glass-3d relative grid size-[56px] cursor-pointer place-items-center rounded-full"
+        style={{
+          boxShadow: glowing
+            ? "0 0 0 2px var(--trainer), 0 10px 24px -6px color-mix(in srgb, var(--trainer) 70%, transparent)"
+            : "0 0 0 1.5px color-mix(in srgb, var(--trainer) 45%, transparent), 0 10px 22px -8px color-mix(in srgb, var(--trainer) 55%, transparent)",
+        }}
       >
         <motion.span animate={{ y: [0, -1.5, 0] }} transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}>
-          <CoachFace size={34} />
+          <CoachFace size={44} />
         </motion.span>
         {count > 0 && (
           <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", duration: 0.4, bounce: 0.4, delay: 0.5 }}
             className="absolute -top-[3px] -right-[3px] grid size-[17px] place-items-center rounded-full bg-[#e5484d] text-[9.5px] font-bold text-white ring-2 ring-[var(--color-card)] tabular-nums"
           >
@@ -550,7 +577,7 @@ function CoachButton({ hidden, count, onOpen }: { hidden: boolean; count: number
         )}
       </motion.button>
       <AnimatePresence>
-        {hover && !hidden && (
+        {(hover || hint) && !hidden && (
           <motion.button
             type="button"
             onClick={onOpen}
@@ -558,12 +585,14 @@ function CoachButton({ hidden, count, onOpen }: { hidden: boolean; count: number
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, transition: { duration: 0.12 } }}
             transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-            className="glass absolute top-1/2 left-[54px] origin-left -translate-y-1/2 cursor-pointer rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold whitespace-nowrap text-ink"
+            className="glass absolute top-1/2 left-[66px] origin-left -translate-y-1/2 cursor-pointer rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold whitespace-nowrap text-ink"
           >
             {count ? (
               <>
                 {COACH_NAME} ha {count} novità per te <ArrowRight size={11} strokeWidth={2.4} className="ml-[3px] inline" style={{ color: "var(--trainer)" }} />
               </>
+            ) : hint && !hover ? (
+              "Sono qui se ti serve 👋"
             ) : (
               `Chiedi a ${COACH_NAME}`
             )}
@@ -660,7 +689,7 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
   // ——— Chat ———
   const openChat = (question?: string) => {
     if (open) return;
-    playSound("tap");
+    playSound("open");
     say(null);
     setOpen(true);
     if (!novitaViste) {
@@ -669,7 +698,10 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
     }
     if (question) window.setTimeout(() => chat.ask(question), 380);
   };
-  const closeChat = () => setOpen(false);
+  const closeChat = () => {
+    playSound("close");
+    setOpen(false);
+  };
 
   // Esc chiude la chat.
   useEffect(() => {
@@ -704,7 +736,7 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
           />
         )}
       </AnimatePresence>
-      <AnimatePresence>{open && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} chat={chat} close={closeChat} />}</AnimatePresence>
+      <AnimatePresence>{open && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} chat={chat} close={closeChat} dismiss={() => setOpen(false)} />}</AnimatePresence>
 
       {!home && <CoachButton hidden={open} count={unseen} onOpen={() => openChat()} />}
 

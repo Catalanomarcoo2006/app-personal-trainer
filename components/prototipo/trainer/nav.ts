@@ -3,6 +3,7 @@
 // collega a usePathname e useSearchParams), senza richieste al server.
 
 import { conMacchia } from "@/libs/ui/macchia";
+import { playSound } from "@/libs/ui/sound";
 
 export const BASE = "/prototipo/trainer";
 
@@ -17,9 +18,11 @@ export const ROUTES = {
   impostazioni: `${BASE}/impostazioni`,
 };
 
-export function navigate(href: string) {
+export function navigate(href: string, { quiet = false } = {}) {
   const url = new URL(href, window.location.href);
   if (url.pathname + url.search === window.location.pathname + window.location.search) return;
+  // cambio di sezione: il doppio pop che sale (solo filtri o parametri diversi: il pop normale del clic)
+  if (!quiet && url.pathname !== window.location.pathname) playSound("nav");
   window.history.pushState(null, "", url.pathname + url.search);
 }
 
@@ -27,10 +30,12 @@ export function navigate(href: string) {
 // before: quello che va fatto nella pagina nuova prima di mostrarla (per esempio chiudere la chat).
 export function navigateWithStain(href: string, origin: { x: number; y: number }, before?: () => void) {
   const path = new URL(href, window.location.href).pathname;
+  // il suono parte subito, nello stesso clic (vince sul pop generico); la sezione cambia un fotogramma dopo
+  if (path !== window.location.pathname) playSound("nav");
   conMacchia(
     () => {
       before?.();
-      navigate(href);
+      navigate(href, { quiet: true });
       return sectionShown(path);
     },
     origin,

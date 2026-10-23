@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { MotionProvider } from "@/components/ui/motion";
 import { AppearanceProvider } from "@/components/ui/appearance";
+import { ClickSound } from "@/components/ui/ClickSound";
 import { appearanceBootScript } from "@/libs/ui/appearance-boot";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
@@ -20,6 +21,7 @@ export default function PrototipoLayout({ children }: { children: ReactNode }) {
       <AppearanceProvider>
         <MotionProvider>{children}</MotionProvider>
       </AppearanceProvider>
+      <ClickSound />
     </div>
   );
 }

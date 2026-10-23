@@ -1,7 +1,15 @@
 // Suoni brevi sintetizzati con Web Audio: nessun file audio da scaricare o licenziare.
 // La preferenza (on/off) resta nel browser con la chiave "suoni".
+//
+// Tutti nascono dal "pop" del tocco (tap), con tonalità diverse per azione:
+// nav = cambio sezione (due pop che salgono), open = si apre qualcosa (più acuto),
+// close = si chiude (più grave), confirm e complete = conferme.
 
-export type SoundKind = "tap" | "confirm" | "complete";
+export type SoundKind = "tap" | "open" | "close" | "nav" | "confirm" | "complete";
+
+// Un solo suono per gesto: se nello stesso clic partono più suoni (quello generico del clic e quello
+// dell'azione), vince il più importante.
+const PRIORITY: Record<SoundKind, number> = { tap: 0, open: 1, close: 1, nav: 2, confirm: 3, complete: 4 };
 
 const STORAGE_KEY = "suoni";
 
@@ -73,17 +81,45 @@ function note(ac: AudioContext, at: number, from: number, to: number, duration: 
   osc.stop(at + duration + 0.02);
 }
 
+// Il "pop": nota che scende di tono con una punta brillante sopra. pitch lo alza o lo abbassa.
+function pop(ac: AudioContext, at: number, pitch: number, gain = 0.07) {
+  note(ac, at, 720 * pitch, 420 * pitch, 0.07, gain);
+  note(ac, at, 1440 * pitch, 840 * pitch, 0.04, gain * 0.17, "triangle");
+}
+
+let pending: SoundKind | null = null;
+
 export function playSound(kind: SoundKind): void {
   if (typeof window === "undefined" || !isSoundEnabled()) return;
   // Prima di un clic il browser blocca l'audio: non ci proviamo nemmeno.
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+  // Si suona a fine evento (setTimeout 0), così tutti i suoni chiesti dallo stesso clic si contendono il posto.
+  if (pending === null) window.setTimeout(flush, 0);
+  if (pending === null || PRIORITY[kind] > PRIORITY[pending]) pending = kind;
+}
+
+function flush() {
+  const kind = pending;
+  pending = null;
+  if (kind) render(kind);
+}
+
+function render(kind: SoundKind): void {
   const ac = audio();
   if (!ac) return;
   const t = ac.currentTime;
 
   if (kind === "tap") {
-    note(ac, t, 720, 420, 0.07, 0.07);
-    note(ac, t, 1440, 840, 0.04, 0.012, "triangle");
+    pop(ac, t, 1);
+    if ("vibrate" in navigator) navigator.vibrate?.(8);
+  } else if (kind === "open") {
+    pop(ac, t, 1.19); // una terza minore sopra
+    if ("vibrate" in navigator) navigator.vibrate?.(8);
+  } else if (kind === "close") {
+    pop(ac, t, 0.84, 0.06); // una terza minore sotto, appena più piano
+  } else if (kind === "nav") {
+    pop(ac, t, 0.94, 0.055);
+    pop(ac, t + 0.055, 1.26, 0.065); // secondo pop una quarta sopra: "si va avanti"
     if ("vibrate" in navigator) navigator.vibrate?.(8);
   } else if (kind === "confirm") {
     note(ac, t, 880, 860, 0.09, 0.06);

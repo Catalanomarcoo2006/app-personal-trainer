@@ -56,7 +56,7 @@ export function UrgentBell() {
         whileHover={{ y: -1.5 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => {
-          playSound("tap");
+          playSound(open ? "close" : "open");
           setOpen((o) => !o);
         }}
         className="flex h-[26px] cursor-pointer items-center gap-[7px] rounded-full bg-card pr-[4px] pl-[11px] text-[11.5px] font-semibold"
@@ -90,7 +90,10 @@ export function UrgentBell() {
           >
             <div className="flex items-center justify-between">
               <p className="text-[14px] font-bold">Da fare subito</p>
-              <button type="button" aria-label="Chiudi" onClick={() => setOpen(false)} className="grid size-[24px] cursor-pointer place-items-center rounded-full bg-soft">
+              <button type="button" aria-label="Chiudi" onClick={() => {
+                playSound("close");
+                setOpen(false);
+              }} className="grid size-[24px] cursor-pointer place-items-center rounded-full bg-soft">
                 <X size={12} />
               </button>
             </div>

@@ -62,7 +62,7 @@ export function NotificationsButton() {
         aria-expanded={open}
         title="Avvisi"
         onClick={() => {
-          playSound("tap");
+          playSound(open ? "close" : "open");
           setOpen((o) => !o);
         }}
         className="relative cursor-pointer"
@@ -164,7 +164,7 @@ export function SearchButton() {
       aria-label="Cerca"
       title="Cerca (Ctrl+K)"
       onClick={() => {
-        playSound("tap");
+        playSound("open");
         window.dispatchEvent(new Event(OPEN_SEARCH));
       }}
       className="relative grid cursor-pointer"
@@ -259,7 +259,10 @@ export function SearchPalette() {
     <AnimatePresence>
       {open && (
         <motion.div key="ricerca" className="absolute inset-0 z-[70]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.15 } }} transition={{ duration: 0.18 }}>
-          <button type="button" aria-label="Chiudi la ricerca" onClick={() => setOpen(false)} className="absolute inset-0 cursor-default bg-black/10 backdrop-blur-[5px]" />
+          <button type="button" aria-label="Chiudi la ricerca" onClick={() => {
+            playSound("close");
+            setOpen(false);
+          }} className="absolute inset-0 cursor-default bg-black/10 backdrop-blur-[5px]" />
           <motion.div
             role="dialog"
             aria-label="Cerca"
