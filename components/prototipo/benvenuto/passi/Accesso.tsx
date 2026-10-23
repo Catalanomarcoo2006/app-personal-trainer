@@ -11,6 +11,7 @@ import type { PropsPasso } from "../Benvenuto";
 import { usePallina } from "../Pallina";
 import { useScena } from "../scena";
 import { CodiceOtp } from "../CodiceOtp";
+import { LeoInPiedi } from "../LeoEsce";
 import { CLASSE_CAMPO, Campo, Entra, Tasto, TestaPasso } from "../ui";
 
 // Passo 1: il trainer arriva dall'email d'invito, sceglie la password e conferma l'email con un codice.
@@ -64,11 +65,11 @@ export function Accesso({ avanti }: PropsPasso) {
     aggiornaBenvenuto({ verificato: true });
     timer.current = window.setTimeout(() => {
       scena.setEmail(null);
+      // il testo sfuma e al suo posto entra il saluto: la pallina scende lì e ne esce il piccolo Leo
       setFase("saluto");
-      // la pallina va al centro della vetrina e da lì esce Leo
       pallina.mostra({ dove: "centro" });
       scena.setLeo("esce");
-    }, 1500);
+    }, 1400);
   };
 
   return (
@@ -201,23 +202,31 @@ function Regola({ ok, children }: { ok: boolean; children: string }) {
 function Saluto({ avanti }: { avanti: () => void }) {
   const { leo } = useScena();
   return (
-    <div>
-      <TestaPasso titolo={`Benvenuto, ${NOME}!`} sotto="Sono Leo, il tuo assistente. In 2 minuti prepariamo insieme l'app che riceveranno i tuoi clienti." />
-      {/* "Iniziamo" arriva quando Leo è uscito dalla pallina */}
-      <div className="mt-[28px] h-[48px]">
-        {leo === "fermo" && (
-          <Entra>
-            <Tasto
-              onClick={() => {
-                playSound("confirm");
-                avanti();
-              }}
-            >
-              Iniziamo
-            </Tasto>
-          </Entra>
-        )}
-      </div>
+    <div className="flex flex-col items-center text-center">
+      {/* il piccolo Leo esce dalla pallina proprio qui, sopra il saluto */}
+      <LeoInPiedi largo={170} className="-mb-[6px] -mt-[40px]" />
+      <motion.div
+        className="w-full"
+        initial={{ opacity: 0, y: 10 }}
+        animate={leo === "fermo" ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+        transition={{ duration: 0.5, ease: EASE_OUT }}
+      >
+        <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em]">Benvenuto, {NOME}!</h1>
+        <p className="mx-auto mt-[8px] max-w-[340px] text-[14px] leading-[1.5] text-muted">
+          Sono Leo, il tuo assistente. In 2 minuti prepariamo insieme l&apos;app che riceveranno i tuoi clienti.
+        </p>
+        <div className="mt-[24px]">
+          <Tasto
+            onClick={() => {
+              if (leo !== "fermo") return;
+              playSound("confirm");
+              avanti();
+            }}
+          >
+            Iniziamo
+          </Tasto>
+        </div>
+      </motion.div>
     </div>
   );
 }

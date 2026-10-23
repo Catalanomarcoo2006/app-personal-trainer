@@ -6,7 +6,6 @@ import { CalendarClock, Wallet } from "lucide-react";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { revenue, trainer } from "@/libs/prototipo/dati-finti";
 import { useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
-import { useScena } from "./scena";
 
 // Metà sinistra del benvenuto: la vetrina del trainer. Gradiente caldo nel suo colore con macchie sfumate
 // che si muovono piano, e sopra le schede in vetro della sua app che fluttuano (come nel riferimento
@@ -23,9 +22,8 @@ const NOTIFICHE = [
 
 export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNode }) {
   const b = useBenvenuto();
-  // quando esce Leo, e dal passo del marchio in poi (telefono al centro), le schede si fanno da parte
-  const { leo } = useScena();
-  const lato = passo >= 1 || leo !== "nessuno";
+  // dal passo del marchio in poi (telefono al centro) le schede si fanno da parte
+  const lato = passo >= 1;
   return (
     <div className="relative h-full overflow-hidden rounded-[22px]" style={{ background: `linear-gradient(180deg, ${tinta(10)} 0%, ${tinta(28)} 48%, ${tinta(58)} 100%)` }}>
       <Macchie />

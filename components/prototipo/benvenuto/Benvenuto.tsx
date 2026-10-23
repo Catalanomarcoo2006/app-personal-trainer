@@ -4,12 +4,12 @@ import { ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
-import { aggiornaBenvenuto, completaBenvenuto, passoDiRipartenza, PASSI, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
+import { aggiornaBenvenuto, azzeraBenvenuto, completaBenvenuto, passoDiRipartenza, PASSI, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
 import { Vetrina } from "./Vetrina";
-import { PallinaProvider, SlotPallina } from "./Pallina";
+import { PallinaProvider, PallinaVolante, SlotPallina } from "./Pallina";
 import { ScenaProvider, useScena } from "./scena";
 import { EmailFinta } from "./EmailFinta";
-import { LeoScena } from "./LeoEsce";
+import { LeoInPiedi } from "./LeoEsce";
 import { Accesso } from "./passi/Accesso";
 import { Barra, Tasto, TestaPasso } from "./ui";
 
@@ -23,7 +23,11 @@ export type PropsPasso = { avanti: () => void; indietro: () => void };
 export function Benvenuto() {
   const b = useBenvenuto();
   const [pronto, setPronto] = useState(false);
-  useEffect(() => setPronto(true), []);
+  useEffect(() => {
+    // ?da-capo: per le demo, ogni volta che si apre o si aggiorna la pagina il percorso riparte dall'inizio
+    if (new URLSearchParams(window.location.search).has("da-capo")) azzeraBenvenuto();
+    setPronto(true);
+  }, []);
   const passo = passoDiRipartenza(b);
 
   const vai = (p: Passo) => aggiornaBenvenuto({ passo: p });
@@ -37,17 +41,19 @@ export function Benvenuto() {
     <PallinaProvider>
       <ScenaProvider leoIniziale={b.verificato ? "fermo" : "nessuno"}>
         <div className="flex min-h-dvh items-center justify-center bg-soft p-[16px] lg:p-[22px]">
-          <div className="grid h-[min(820px,calc(100dvh-44px))] min-h-[640px] w-full max-w-[1280px] grid-cols-1 gap-[14px] rounded-[30px] bg-card p-[14px] shadow-[0_30px_70px_-40px_rgba(0,0,0,0.35)] lg:grid-cols-[46fr_54fr]">
+          <div className="relative grid h-[min(820px,calc(100dvh-44px))] min-h-[640px] w-full max-w-[1280px] grid-cols-1 gap-[14px] rounded-[30px] bg-card p-[14px] shadow-[0_30px_70px_-40px_rgba(0,0,0,0.35)] lg:grid-cols-[46fr_54fr]">
+            {/* la pallina vola sopra tutta la scheda, tra vetrina e modulo */}
+            <PallinaVolante />
             <div className="hidden lg:block">
               <Vetrina passo={passo}>
                 <ScenaVetrina passo={passo} />
               </Vetrina>
             </div>
             <div className="relative flex min-h-0 flex-col">
-            {/* senza vetrina (schermi stretti) l'email finta con il codice compare qui sopra */}
-            <div className="relative z-30 lg:hidden">
-              <EmailInAlto />
-            </div>
+              {/* senza vetrina (schermi stretti) l'email finta con il codice compare qui sopra */}
+              <div className="relative z-30 lg:hidden">
+                <EmailInAlto />
+              </div>
               <div className="flex h-[44px] items-center justify-between px-[10px]">
                 {passo > 0 && passo < 5 ? (
                   <button
@@ -109,7 +115,8 @@ function ScenaVetrina({ passo }: { passo: Passo }) {
   const { email } = useScena();
   return (
     <>
-      <LeoScena passo={passo} />
+      {/* dal passo del marchio Leo sta in piedi nella vetrina, accanto al telefono, con la pallina in mano */}
+      {passo >= 1 && <LeoInPiedi largo={210} className="!absolute bottom-[18px] right-[5%]" />}
       <SlotPallina dove="vetrina" size={72} className="absolute left-[46%] top-[63%]" />
       <EmailFinta codice={email} />
     </>
