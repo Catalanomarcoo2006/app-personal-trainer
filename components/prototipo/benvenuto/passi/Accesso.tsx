@@ -65,6 +65,9 @@ export function Accesso({ avanti }: PropsPasso) {
     timer.current = window.setTimeout(() => {
       scena.setEmail(null);
       setFase("saluto");
+      // la pallina va al centro della vetrina e da lì esce Leo
+      pallina.mostra({ dove: "centro" });
+      scena.setLeo("esce");
     }, 1500);
   };
 
@@ -196,19 +199,25 @@ function Regola({ ok, children }: { ok: boolean; children: string }) {
 }
 
 function Saluto({ avanti }: { avanti: () => void }) {
+  const { leo } = useScena();
   return (
     <div>
       <TestaPasso titolo={`Benvenuto, ${NOME}!`} sotto="Sono Leo, il tuo assistente. In 2 minuti prepariamo insieme l'app che riceveranno i tuoi clienti." />
-      <Entra i={3} className="mt-[28px]">
-        <Tasto
-          onClick={() => {
-            playSound("confirm");
-            avanti();
-          }}
-        >
-          Iniziamo
-        </Tasto>
-      </Entra>
+      {/* "Iniziamo" arriva quando Leo è uscito dalla pallina */}
+      <div className="mt-[28px] h-[48px]">
+        {leo === "fermo" && (
+          <Entra>
+            <Tasto
+              onClick={() => {
+                playSound("confirm");
+                avanti();
+              }}
+            >
+              Iniziamo
+            </Tasto>
+          </Entra>
+        )}
+      </div>
     </div>
   );
 }

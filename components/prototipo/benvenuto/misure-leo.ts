@@ -7,9 +7,9 @@ export const LEO = {
   larghezza: 360,
   altezza: 599,
   // primo fotogramma: la pallina da sola, prima che esca Leo
-  pallinaInizio: { x: 0.4931, y: 0.4366, r: 0.147 },
+  pallinaInizio: { x: 0.502, y: 0.4332, r: 0.15 },
   // ultimo fotogramma (= con-pallina.webp): la pallina sopra la mano aperta
-  pallina: { x: 0.1931, y: 0.2304, r: 0.1097 },
+  pallina: { x: 0.1972, y: 0.2396, r: 0.114 },
 };
 
 // 72 fotogrammi a 20 al secondo

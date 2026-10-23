@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, CSSProperties, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 // La pallina di Leo, la mascotte del benvenuto (come la sfera del riferimento animazione-login.mp4):
@@ -83,7 +83,7 @@ export function PallinaColorata({ size }: { size: number }) {
 }
 
 // Segnaposto: la pallina compare qui quando il suo "dove" coincide. size = diametro in quel posto.
-export function SlotPallina({ dove, size, className, style }: { dove: DovePallina; size: number; className?: string; style?: React.CSSProperties }) {
+export function SlotPallina({ dove, size, className, style }: { dove: DovePallina; size: number; className?: string; style?: CSSProperties }) {
   const { stato } = useContesto();
   const reduce = useReducedMotion();
   const qui = stato.dove === dove;

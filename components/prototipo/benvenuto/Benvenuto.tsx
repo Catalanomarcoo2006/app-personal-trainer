@@ -9,6 +9,7 @@ import { Vetrina } from "./Vetrina";
 import { PallinaProvider, SlotPallina } from "./Pallina";
 import { ScenaProvider, useScena } from "./scena";
 import { EmailFinta } from "./EmailFinta";
+import { LeoScena } from "./LeoEsce";
 import { Accesso } from "./passi/Accesso";
 import { Barra, Tasto, TestaPasso } from "./ui";
 
@@ -39,7 +40,7 @@ export function Benvenuto() {
           <div className="grid h-[min(820px,calc(100dvh-44px))] min-h-[640px] w-full max-w-[1280px] grid-cols-1 gap-[14px] rounded-[30px] bg-card p-[14px] shadow-[0_30px_70px_-40px_rgba(0,0,0,0.35)] lg:grid-cols-[46fr_54fr]">
             <div className="hidden lg:block">
               <Vetrina passo={passo}>
-                <ScenaVetrina />
+                <ScenaVetrina passo={passo} />
               </Vetrina>
             </div>
             <div className="relative flex min-h-0 flex-col">
@@ -95,10 +96,11 @@ function CambioPasso({ chiave, children }: { chiave: number; children: ReactNode
 }
 
 // Quello che i passi mettono in primo piano nella vetrina.
-function ScenaVetrina() {
+function ScenaVetrina({ passo }: { passo: Passo }) {
   const { email } = useScena();
   return (
     <>
+      <LeoScena passo={passo} />
       <SlotPallina dove="vetrina" size={72} className="absolute left-[46%] top-[63%]" />
       <EmailFinta codice={email} />
     </>
