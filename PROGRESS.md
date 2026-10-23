@@ -10,10 +10,12 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Stato attuale (Completato)
 - Brainstorming, design approvato (`docs/specs/2026-10-21-design.md`), setup con boilerplate ZeroToShip, sito su Vercel.
 - Area trainer del prototipo: tutte le sezioni, Leo con AI (presentazione alla prima apertura, identikit dalla "i" con Leo che si siede, luce intermittente sulla home).
-- Piano Fase 1: Task 2 (pulizia boilerplate: via Stripe, blog, Crisp, GPT, testimonianze; slug) e Task 5 (logica di dominio in `libs/domain/`) fatti; del Task 6 c'è `resolveRoute` (`libs/auth/routing.ts`), manca il collegamento al middleware. 43 test Vitest.
+- Piano Fase 1: Task 2 (pulizia boilerplate: via Stripe, blog, Crisp, GPT, testimonianze; slug) e Task 5 (logica di dominio in `libs/domain/`) fatti; del Task 6 c'è `resolveRoute` (`libs/auth/routing.ts`), manca il collegamento al middleware. 58 test Vitest.
+- Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo nella casetta, "Iniziamo"); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; `?da-capo` lo fa ripartire a ogni aggiornamento.
 
 ## In corso
-- Area cliente: spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
+- Benvenuto: passi 2-6 ancora provvisori (marchio con telefono d'anteprima, privacy e accordi, primo cliente, conosci Leo, finale), piano `docs/plans/2026-10-23-benvenuto-trainer.md` dal Task 7; prima decidere dove sta Leo dopo "Iniziamo" (la casetta sparisce).
+- Area cliente (in attesa, dopo il benvenuto): spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
 
 ## Da fare (TODO)
 - Fase 1, con le chiavi Supabase: schema (Task 3), RLS con test (Task 4), `getAccess` e middleware (Task 6), pannello admin (Task 7).
@@ -30,6 +32,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Leo del trainer risponde con DeepSeek (`deepseek-flash`, ~0,1 cent a domanda): `app/prototipo/api/leo`, clienti come codici [C1] (mai nomi), senza chiave o se l'AI non risponde usa le risposte fisse.
 - Area trainer = una pagina sola (`TrainerApp.tsx`, cambio sezione con `history.pushState`). Nessun tasto nero: `btn-trainer` / `sel-trainer` / `glass` in `globals.css`.
 - Animazioni di Leo seduto: ritagliate dal video con ffmpeg + Python (sfondo tolto), WebP animate in `public/prototipo/coach/`, ripartono con un indirizzo blob nuovo.
+- Benvenuto: niente pallina (tolta da Marco); casetta come MP4 vero (960 × 720) su fondo bianco, non con trasparenza: niente righe ai bordi né perdita di qualità (`IMMAGINI APP/pulisci-casa.py`). Niente filtri `blur` CSS sugli aloni (Chrome su Windows li taglia in linee dritte). Sorgenti Gemini in `IMMAGINI APP/` (esclusa da git), nomi in maiuscolo.
 
 ## Problemi noti / blocchi
 - Licenza ZeroToShip da verificare con Alberto Ravasini prima di vendere.
@@ -40,17 +43,18 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Nota nel vault non creata: il brain è stato azzerato il 2026-10-21; aggiungerla quando la nuova struttura è pronta.
 
 ## Prossimi passi immediati
-- **Via di Marco dato (23/10):** prima l'area cliente (grafiche, onboarding compreso), poi il backend. Partire dal Task 1 del piano area cliente, in una sessione nuova; circa una settimana, dati finti con la forma delle tabelle future (facilita il collegamento al database).
+- Benvenuto, passi 2-6 (dal Task 7 del piano), poi area cliente (Task 1 del suo piano), poi backend.
 - Marco: creare il progetto Supabase di sviluppo (UE) in parallelo, per il Task 3 subito dopo.
 
 ## Contesto tecnico utile
 - Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: `git push` sul ramo `setup-iniziale`, Vercel pubblica da solo. Chiavi: elenco senza valori in `docs/chiavi.md`.
 - Build come su Vercel: `NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npm run build`. In locale, senza chiavi Supabase, il middleware lascia passare (niente più errore 500 su `/signin` e simili).
-- Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git).
+- Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git); `animazione-login.mp4` è il riferimento del benvenuto.
+- Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
+- 2026-10-23 (3): benvenuto del trainer, primo passo (accesso, codice, sveglia di Leo), vetrina con grafiche dell'app, "Salta per ora"; Tailwind `dark:` segue la classe `.dark`.
 - 2026-10-23 (2): Leo si presenta alla prima apertura; identikit dalla "i" con Leo che si siede; luce intermittente su Leo in home; revisione del sito (prova di tutti i pulsanti, plurali, 404 ed errore in italiano, middleware senza chiavi); pulizia del boilerplate, slug, logica di dominio e smistamento per ruolo con test.
 - 2026-10-23: pop a ogni clic con tonalità per azione; Leo più luminoso e visibile in tutte le sezioni; Leo accorda il genere; revisione del sito; push su GitHub.
 - 2026-10-22: Leo con AI DeepSeek (codici al posto dei nomi, risposte di riserva); macchia d'olio; spec e piano dell'area cliente; Vitest; sito su Vercel; foto del trainer modificabile.
 - 2026-10-22: navigazione istantanea, agenda e calendario in lastre di vetro, ricerca (Ctrl+K) e avvisi funzionanti.
-- 2026-10-21: progetto avviato con /start (brainstorming, spec, setup con boilerplate, piano).

@@ -2,7 +2,8 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { playSound } from "@/libs/ui/sound";
 import { EASE_OUT } from "@/components/ui/motion";
 import { aggiornaBenvenuto, azzeraBenvenuto, completaBenvenuto, passoDiRipartenza, PASSI, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
 import { Vetrina } from "./Vetrina";
@@ -70,6 +71,7 @@ export function Benvenuto() {
                 </CambioPasso>
               </div>
             </div>
+            <Salta />
           </div>
         </div>
       </div>
@@ -128,5 +130,23 @@ function SchermataPasso({ passo, avanti, indietro }: { passo: Passo } & PropsPas
         </Tasto>
       </div>
     </div>
+  );
+}
+
+// Finché i passi sono in costruzione: dal benvenuto si può andare subito alla dashboard. Il benvenuto risulta
+// fatto (la dashboard non rimanda più qui); per rivederlo: Impostazioni → "Rivedi il benvenuto", o ?da-capo.
+function Salta() {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        playSound("nav");
+        completaBenvenuto();
+        window.location.assign("/prototipo/trainer");
+      }}
+      className="absolute bottom-[6px] right-[10px] z-20 flex min-h-[40px] cursor-pointer items-center gap-[6px] rounded-full px-[12px] text-[12.5px] font-semibold text-muted transition-colors hover:bg-soft hover:text-ink"
+    >
+      Salta per ora <ArrowRight size={14} />
+    </button>
   );
 }
