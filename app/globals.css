@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Tema scuro dell'app: segue la classe .dark (scelta in Impostazioni), non il tema del sistema */
+@custom-variant dark (&:where(.dark, .dark *));
 @plugin "daisyui" {
   themes: light --default;
 }

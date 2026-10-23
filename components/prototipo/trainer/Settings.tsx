@@ -3,13 +3,15 @@
 import { MouseEvent as ReactMouseEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
-import { ArrowRightLeft, Bot, Check, CheckCheck, Globe, Moon, MousePointerClick, Palette, PanelTopOpen, Sun, Volume2, type LucideIcon } from "lucide-react";
+import { ArrowRightLeft, Bot, Check, CheckCheck, Globe, Moon, MousePointerClick, Palette, PanelTopOpen, Sparkles, Sun, Volume2, type LucideIcon } from "lucide-react";
 import { Avatar, Toggle } from "@/components/ui/basics";
 import { Appear, ProgressBar } from "@/components/ui/motion";
 import { ACCENTS, useAppearance } from "@/components/ui/appearance";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled, type SoundKind } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { shrinkPhoto, stato, useTrainerPhoto } from "@/libs/prototipo/stato";
+import { aggiornaBenvenuto, azzeraBenvenuto, useBenvenuto } from "@/libs/prototipo/benvenuto";
+import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 
 // I suoni dell'app, da ascoltare: nascono tutti dallo stesso "pop" con tonalità diverse.
 const soundSamples: { kind: SoundKind; label: string; hint: string; icon: LucideIcon }[] = [
@@ -83,7 +85,7 @@ export function SettingsView() {
   const photoInput = useRef<HTMLInputElement>(null);
   const { theme, setTheme, accent, setAccent } = useAppearance();
   const [sound, setSound] = useState(true);
-  const [tone, setTone] = useState<"amichevole" | "professionale" | "motivante">("amichevole");
+  const tone = useBenvenuto().tono;
 
   useEffect(() => {
     setSound(isSoundEnabled());
@@ -152,17 +154,31 @@ export function SettingsView() {
               <Field label="Email" value="marco.rossi@esempio.it" />
               <Field label="Telefono" value="+39 340 000 0100" />
             </div>
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.96 }}
-              onClick={() => {
-                playSound("confirm");
-                toast.success("Profilo salvato");
-              }}
-              className="mt-[14px] flex h-[38px] cursor-pointer items-center justify-center gap-[6px] rounded-full btn-trainer text-[12.5px] font-semibold"
-            >
-              <Check size={14} /> Salva le modifiche
-            </motion.button>
+            <div className="mt-[14px] flex gap-[8px]">
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  playSound("confirm");
+                  toast.success("Profilo salvato");
+                }}
+                className="flex h-[38px] flex-1 cursor-pointer items-center justify-center gap-[6px] rounded-full btn-trainer text-[12.5px] font-semibold"
+              >
+                <Check size={14} /> Salva le modifiche
+              </motion.button>
+              {/* per rifare la demo: il primo accesso riparte da capo */}
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  azzeraBenvenuto();
+                  window.location.assign(BENVENUTO);
+                }}
+                className="flex h-[38px] cursor-pointer items-center justify-center gap-[6px] rounded-full bg-soft px-[14px] text-[12.5px] font-semibold text-ink/80"
+              >
+                <Sparkles size={13} /> Rivedi il benvenuto
+              </motion.button>
+            </div>
           </Card>
         </Appear>
         <Appear i={2}>
@@ -306,7 +322,7 @@ export function SettingsView() {
                 value={tone}
                 onChange={(v) => {
                   playSound("tap");
-                  setTone(v);
+                  aggiornaBenvenuto({ tono: v });
                 }}
                 options={[
                   { value: "amichevole", label: "Amichevole" },

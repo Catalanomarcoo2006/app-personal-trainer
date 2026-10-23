@@ -24,6 +24,8 @@ import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { useTrainerPhoto } from "@/libs/prototipo/stato";
+import { benvenutoAttuale } from "@/libs/prototipo/benvenuto";
+import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 import { CoachAssistant } from "./CoachAssistant";
 import { BASE, navigate, ROUTES } from "./nav";
 import { NotificationsButton, SearchButton, SearchPalette } from "./TopBarTools";
@@ -277,6 +279,10 @@ export function Sidebar() {
 // Cornice delle pagine del trainer, montata una volta sola dal layout: tela 1303 px, barra in alto,
 // barra laterale e Leo restano fermi mentre cambia solo il contenuto.
 export function TrainerFrame({ children }: { children: ReactNode }) {
+  // primo accesso: prima il benvenuto (lo stato salvato si legge solo nel browser, dopo il montaggio)
+  useEffect(() => {
+    if (!benvenutoAttuale().fatto) window.location.replace(BENVENUTO);
+  }, []);
   return (
     <FitCanvas width={1303} minHeight={640}>
       <AmbientBackdrop />

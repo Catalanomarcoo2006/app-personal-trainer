@@ -115,6 +115,9 @@ export function useBenvenuto(): Benvenuto {
   return useSyncExternalStore(iscrivi, leggi, () => BENVENUTO_INIZIALE);
 }
 
+// Lettura diretta, per gli effetti: durante l'idratazione useBenvenuto restituisce ancora lo stato iniziale.
+export const benvenutoAttuale = () => leggi();
+
 export const aggiornaBenvenuto = (parte: Partial<Benvenuto>) => scrivi({ ...leggi(), ...parte });
 export const completaBenvenuto = () => scrivi({ ...leggi(), fatto: true });
 // Per rifare la demo: si riparte da zero ma si tiene il tono scelto per Leo.
