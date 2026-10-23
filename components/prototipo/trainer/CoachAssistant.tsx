@@ -9,6 +9,8 @@ import { playSound } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
 import { estraiAzione, ripristinaNomi, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { navigateWithStain, ROUTES } from "./nav";
+import { InfoSparkle, LeoIdentikit, preloadLeoSeduto } from "./LeoIdentikit";
+import { infoSeen, INTRO_LAST, introSeen, LeoPresentazione, setInfoSeen, setIntroSeen } from "./LeoPresentazione";
 
 // L'assistente del trainer si chiama Leo.
 export const COACH_NAME = "Leo";
@@ -32,6 +34,9 @@ const PANEL_TOP = 112;
 const PANEL_LEFT_MIN = 84; // a destra della barra laterale
 
 const POP = { type: "spring" as const, duration: 0.5, bounce: 0.3 };
+
+// Leo sulla home si illumina a intervalli per dire che si può toccare: 1,4 s di luce, poi 2,2 s di pausa.
+const PULSE = { duration: 1.4, pause: 2.2, first: 1.6 };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -358,14 +363,45 @@ function SidePeek() {
 }
 
 // close: chiude con il suono (X, velo, Esc); dismiss: chiude in silenzio, sotto la macchia di un link di Leo.
-function ChatPanel({ left, origin, chat, close, dismiss }: { left: number; origin: string; chat: Chat; close: () => void; dismiss: () => void }) {
-  const { messages, typing, thinking, ask } = chat;
+function ChatPanel({
+  left,
+  origin,
+  chat,
+  close,
+  dismiss,
+  openInfo,
+}: {
+  left: number;
+  origin: string;
+  chat: Chat;
+  close: () => void;
+  dismiss: () => void;
+  openInfo: () => void;
+}) {
+  const { messages, typing, thinking, ask: askChat } = chat;
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
+  // la prima volta Leo si presenta; scrivere una domanda vale come "salta"
+  const [intro, setIntro] = useState(() => !introSeen());
+  const [introStep, setIntroStep] = useState(0);
+  const endIntro = () => {
+    setIntroSeen(true);
+    setIntro(false);
+  };
+  const ask = (q: string) => {
+    if (intro) endIntro();
+    askChat(q);
+  };
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
   }, [messages, typing]);
+
+  // le animazioni dell'identikit si scaricano mentre la chat è aperta: alla i sono già pronte
+  useEffect(() => {
+    const t = window.setTimeout(preloadLeoSeduto, 1200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -393,6 +429,7 @@ function ChatPanel({ left, origin, chat, close, dismiss }: { left: number; origi
               <span className="flex items-center gap-[4px] rounded-full px-[7px] py-[2px] text-[10px] font-semibold" style={{ color: "var(--color-ok, #1f9d55)", background: "color-mix(in srgb, #1f9d55 12%, transparent)" }}>
                 <span className="size-[5px] rounded-full bg-current" /> online
               </span>
+              <InfoSparkle onClick={openInfo} inviting={!infoSeen()} strong={intro && introStep === INTRO_LAST} />
             </p>
             <p className="text-[11px] text-muted">Il tuo assistente: conosce clienti, pagamenti, agenda e app</p>
           </div>
@@ -402,7 +439,8 @@ function ChatPanel({ left, origin, chat, close, dismiss }: { left: number; origi
         </div>
 
         <div ref={scroller} className="flex min-h-0 flex-1 flex-col gap-[8px] overflow-y-auto px-[16px] py-[14px] [scrollbar-width:none]">
-          {messages.length === 0 && (
+          {intro && <LeoPresentazione face={<CoachFace size={64} />} onStep={setIntroStep} onDone={endIntro} />}
+          {!intro && messages.length === 0 && (
             <div className="mt-[2px]">
               <p className="text-[15px] font-bold">Ciao {firstName}! 👋</p>
               <p className="mt-[4px] text-[12px] leading-relaxed text-muted">
@@ -427,7 +465,7 @@ function ChatPanel({ left, origin, chat, close, dismiss }: { left: number; origi
               </div>
             </div>
           )}
-          {messages.map((m) => (
+          {!intro && messages.map((m) => (
             <motion.div
               key={m.id}
               initial={{ opacity: 0, y: 8 }}
@@ -475,7 +513,7 @@ function ChatPanel({ left, origin, chat, close, dismiss }: { left: number; origi
         </div>
 
         <div className="flex flex-wrap gap-[6px] px-[16px] pb-[10px]">
-          {suggestions.map((s) => (
+          {!intro && suggestions.map((s) => (
             <motion.button key={s} type="button" whileTap={{ scale: 0.95 }} onClick={() => ask(s)} className="cursor-pointer rounded-full border border-line px-[10px] py-[5px] text-[11px] font-medium transition-colors hover:bg-soft">
               {s}
             </motion.button>
@@ -679,6 +717,7 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
   }, [home, fade, rise, reduce]);
 
   // Al primo passaggio del mouse dice che si può cliccare. Al passaggio la figura resta ferma.
+  const [hover, setHover] = useState(false);
   const hinted = useRef(false);
   const hint = () => {
     if (hinted.current || speech || open) return;
@@ -701,15 +740,37 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
   const closeChat = () => {
     playSound("close");
     setOpen(false);
+    setInfo(false);
   };
 
-  // Esc chiude la chat.
+  // ——— Identikit: dalla i della chat; si torna alla chat con la X, il tasto o Esc ———
+  const [info, setInfo] = useState(false);
+  const openInfo = () => {
+    playSound("open");
+    setInfoSeen();
+    setIntroSeen(true); // l'identikit dice già tutto: la presentazione non riparte
+    setInfo(true);
+  };
+  const closeInfo = () => {
+    playSound("close");
+    setInfo(false);
+  };
+  const replayIntro = () => {
+    setIntroSeen(false);
+    closeInfo();
+  };
+
+  // Esc chiude l'identikit (si torna alla chat), poi la chat.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (info) setInfo(false);
+      else setOpen(false);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, info]);
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -736,7 +797,10 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
           />
         )}
       </AnimatePresence>
-      <AnimatePresence>{open && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} chat={chat} close={closeChat} dismiss={() => setOpen(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {open && !info && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} chat={chat} close={closeChat} dismiss={() => setOpen(false)} openInfo={openInfo} />}
+      </AnimatePresence>
+      <AnimatePresence>{open && info && <LeoIdentikit key="identikit" onBack={closeInfo} onReplayIntro={replayIntro} />}</AnimatePresence>
 
       {!home && <CoachButton hidden={open} count={unseen} onOpen={() => openChat()} />}
 
@@ -766,6 +830,35 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
                   className="pointer-events-none absolute rounded-[50%] bg-black/20 blur-[4px] dark:bg-black/50"
                   style={{ width: standW * 0.95, height: 9, left: (-standW * 0.95) / 2, bottom: -4 }}
                 />
+                {/* onde sul pavimento, insieme al contorno: "toccami" */}
+                {!reduce &&
+                  [0, 0.35].map((d) => (
+                    <motion.span
+                      key={d}
+                      aria-hidden
+                      className="leo-onda pointer-events-none absolute rounded-[50%]"
+                      style={{ width: standW * 1.1, height: standW * 0.3, left: (-standW * 1.1) / 2, bottom: (-standW * 0.3) / 2 + 2 }}
+                      initial={{ opacity: 0, scale: 0.45 }}
+                      animate={{ opacity: [0, 0.9, 0], scale: [0.45, 1, 1.45] }}
+                      transition={{ duration: PULSE.duration, repeat: Infinity, repeatDelay: PULSE.pause, delay: PULSE.first + d, ease: "easeOut", times: [0, 0.25, 1] }}
+                    />
+                  ))}
+                {/* contorno luminoso che si accende a intervalli (fisso al passaggio del mouse) */}
+                <motion.img
+                  src="/prototipo/coach/in-piedi.webp"
+                  alt=""
+                  aria-hidden
+                  draggable={false}
+                  className="leo-contorno pointer-events-none absolute bottom-0 max-w-none select-none"
+                  style={{ width: standW, left: -standW / 2 }}
+                  initial={{ opacity: 0 }}
+                  animate={hover ? { opacity: 1 } : reduce ? { opacity: 0.45 } : { opacity: [0, 1, 0] }}
+                  transition={
+                    hover || reduce
+                      ? { duration: 0.2 }
+                      : { duration: PULSE.duration, repeat: Infinity, repeatDelay: PULSE.pause, delay: PULSE.first, ease: "easeInOut" }
+                  }
+                />
                 <img
                   src="/prototipo/coach/in-piedi.webp"
                   alt=""
@@ -780,7 +873,11 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
                   aria-label={`${COACH_NAME}, il tuo assistente. Clicca o premi Invio per fargli una domanda.`}
                   onClick={() => openChat()}
                   onKeyDown={onKeyDown}
-                  onMouseEnter={hint}
+                  onMouseEnter={() => {
+                    setHover(true);
+                    hint();
+                  }}
+                  onMouseLeave={() => setHover(false)}
                   className="pointer-events-auto absolute bottom-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--trainer)]"
                   style={{
                     width: standW,
