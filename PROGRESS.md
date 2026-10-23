@@ -44,7 +44,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Marco: creare il progetto Supabase di sviluppo (UE) prima del Task 3.
 
 ## Contesto tecnico utile
-- Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`, account catalanomarcoo2006). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: `vercel deploy --prod` con `--build-env`/`--env` NEXT_PUBLIC_SUPABASE_URL e ANON_KEY segnaposto finché non ci sono le chiavi vere, meglio da una copia pulita dell'ultimo commit.
+- Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`, account catalanomarcoo2006). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: basta `git push` sul ramo `setup-iniziale`, Vercel è collegato a GitHub e pubblica da solo (il `vercel deploy` a mano ora risponde "Not authorized"). Online Leo usa le risposte fisse: la chiave AI non è su Vercel.
 - Build senza chiavi: fallisce su `/tos` (Supabase richiede URL e chiave). Per una verifica: `NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npm run build`.
 - Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git).
 
