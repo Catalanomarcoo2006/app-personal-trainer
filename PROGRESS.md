@@ -13,7 +13,9 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Setup: cartella, git (ramo `setup-iniziale`), boilerplate ZeroToShip applicato, `npm install` fatto, build ok con chiavi finte, CLAUDE.md, PROGRESS.md, gruppo sidebar "🏋️ APP PERSONAL TRAINER".
 
 ## In corso
-- Piano Fase 1 (fondamenta) scritto: `docs/plans/2026-10-21-piano-v1.md`, 7 task; Fasi 2-5 nella roadmap del piano.
+- Area trainer del prototipo quasi completa (Leo con AI DeepSeek anche online, suoni per azione, macchia d'olio).
+- Area cliente: spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
+- Piano Fase 1 (fondamenta): `docs/plans/2026-10-21-piano-v1.md` (Vitest già installato).
 
 ## Da fare (TODO)
 - Prototipo visivo di 2 schermate (Oggi del trainer, allenamento del cliente) da approvare.
@@ -40,7 +42,8 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Nota nel vault non creata: il brain è stato azzerato il 2026-10-21; aggiungerla quando la nuova struttura è pronta.
 
 ## Prossimi passi immediati
-- Task 1 del piano `docs/plans/2026-10-21-piano-v1.md`: prototipo visivo (Oggi del trainer + allenamento del cliente), poi approvazione di Marco.
+- Chiedere a Marco il via per il piano dell'area cliente e partire dal Task 1 (stato condiviso).
+- Chiavi API: elenco senza valori in `docs/chiavi.md`, da aggiornare a ogni chiave nuova.
 - Marco: creare il progetto Supabase di sviluppo (UE) prima del Task 3.
 
 ## Contesto tecnico utile
