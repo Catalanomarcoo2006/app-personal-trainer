@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { BellRing, Check, CircleDollarSign, Hourglass, TrendingUp, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Appear, CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
+import { conta } from "@/libs/ui/testo";
 import { clientById, clients, revenue } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
@@ -59,7 +60,7 @@ export function PaymentsView() {
         <Kpi icon={Wallet} label="Incassato a ottobre" i={0} note={<span className="inline-flex items-center gap-[3px] rounded-full bg-ok-soft px-[6px] py-[2px] font-bold text-ok"><TrendingUp size={10} /> +{revenue.delta}% su settembre</span>}>
           <CountUp key={collected} value={collected} format={formatEuro} />
         </Kpi>
-        <Kpi icon={Hourglass} label="Da incassare" i={1} note={<span className="text-muted">{open.length} pagamenti aperti</span>}>
+        <Kpi icon={Hourglass} label="Da incassare" i={1} note={<span className="text-muted">{conta(open.length, "pagamento aperto", "pagamenti aperti")}</span>}>
           <span className={outstanding > 0 ? "text-[#d43b4f]" : "text-ok"}>{formatEuro(outstanding)}</span>
         </Kpi>
         <Kpi icon={CircleDollarSign} label="Previsto a fine mese" i={2} note={<span className="text-muted">pacchetti e rinnovi già fissati</span>}>

@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { CalendarClock, CalendarPlus, Check, MapPin, MessageCircle, Plus, Trash2, UserRound, X } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
+import { conta } from "@/libs/ui/testo";
 import { Appointment, appointmentColors, AppointmentType, clientById, clients, trainer } from "@/libs/prototipo/dati-finti";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
@@ -381,7 +382,7 @@ export function WeekCalendar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[10px]">
             <WeekArrows label={`${week.label} 2026`} onMove={move} size={30} className="text-[15px] font-bold" />
-            <span className="rounded-full bg-soft px-[10px] py-[5px] text-[11px] font-semibold">{total} sedute</span>
+            <span className="rounded-full bg-soft px-[10px] py-[5px] text-[11px] font-semibold">{conta(total, "seduta", "sedute")}</span>
             {offset !== 0 && (
               <button
                 type="button"

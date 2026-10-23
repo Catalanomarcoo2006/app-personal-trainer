@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check, FileText, FileUp, Loader2, Sparkles, X } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
+import { conta } from "@/libs/ui/testo";
 import { ParsedDay, parsePlan, readPdfLines } from "@/libs/prototipo/pdf-scheda";
 
 const STEPS = ["Apro il PDF", "Leggo il testo", "Riconosco giorni ed esercizi"];
@@ -134,7 +135,7 @@ export function PdfImport({ clientName, onClose, onImported }: { clientName: str
           {phase.kind === "done" && (
             <motion.div key="done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-[16px]">
               <p className="flex items-center gap-[8px] text-[13px] font-semibold">
-                <Sparkles size={15} style={{ color: "var(--trainer)" }} /> Trovati {phase.days.length} giorni e {exercises} esercizi
+                <Sparkles size={15} style={{ color: "var(--trainer)" }} /> Trovati {conta(phase.days.length, "giorno", "giorni")} e {conta(exercises, "esercizio", "esercizi")}
               </p>
               <div className="mt-[10px] flex max-h-[220px] flex-col gap-[8px] overflow-y-auto [scrollbar-width:none]">
                 {phase.days.map((d, i) => (

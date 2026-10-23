@@ -6,9 +6,15 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  // Senza chiavi Supabase (in locale prima del Task 3) non c'è sessione da rinnovare:
+  // la pagina si apre lo stesso invece di dare errore 500.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return supabaseResponse;
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     {
       cookies: {
         getAll() {
@@ -29,8 +35,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // refreshing the auth token
-  await supabase.auth.getUser();
+  // rinnova il token di accesso; se Supabase non risponde la pagina si apre comunque
+  try {
+    await supabase.auth.getUser();
+  } catch (e) {
+    console.warn("Supabase non raggiungibile dal middleware", e instanceof Error ? e.message : e);
+  }
 
   return supabaseResponse;
 }

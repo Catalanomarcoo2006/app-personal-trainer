@@ -7,6 +7,7 @@ import { Check, Dumbbell, FileText, FileUp, LoaderCircle, Play, Plus, Search, Se
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
+import { conta } from "@/libs/ui/testo";
 import { clients, exerciseById, library, Muscle, trainer } from "@/libs/prototipo/dati-finti";
 import { ParsedDay } from "@/libs/prototipo/pdf-scheda";
 import { buildPlanPdf } from "@/libs/prototipo/pdf-invio";
@@ -200,7 +201,7 @@ function SendSheet({
         <div className="leading-tight">
           <p className="text-[14px] font-bold">Invia la scheda a {first}</p>
           <p className="text-[11px] text-muted">
-            {days} {days === 1 ? "giorno" : "giorni"} · {exercises} esercizi · {withVideo} con video
+            {conta(days, "giorno", "giorni")} · {conta(exercises, "esercizio", "esercizi")} · {withVideo} con video
           </p>
         </div>
       </div>
@@ -308,7 +309,7 @@ export function PlansView({ search }: { search: string }) {
     setDayIndex(0);
     setImporting(false);
     const linked = next.flatMap((d) => d.rows).filter((r) => rowVideo(r, videos)).length;
-    toast.success(`Scheda importata: ${next.length} giorni, ${linked} video collegati in automatico.`);
+    toast.success(`Scheda importata: ${conta(next.length, "giorno", "giorni")}, ${conta(linked, "video collegato", "video collegati")} in automatico.`);
   };
 
   const send = async () => {
@@ -420,7 +421,7 @@ export function PlansView({ search }: { search: string }) {
             <Dumbbell size={14} style={{ color: "var(--trainer)" }} /> {day.focus || day.label}
           </p>
           <p className="text-[11px] text-muted">
-            {day.rows.length} esercizi · {day.rows.filter((r) => rowVideo(r, videos)).length} con video · clicca un valore per modificarlo
+            {conta(day.rows.length, "esercizio", "esercizi")} · {day.rows.filter((r) => rowVideo(r, videos)).length} con video · clicca un valore per modificarlo
           </p>
         </div>
 

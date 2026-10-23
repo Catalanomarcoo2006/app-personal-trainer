@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, CalendarPlus, Check, ChevronLeft, ChevronRight, ClipboardCheck, Dumbbell, Footprints, Video, type LucideIcon } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
+import { conta } from "@/libs/ui/testo";
 import { agenda, Appointment, appointmentColors, AppointmentType, clientById, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
@@ -140,7 +141,7 @@ export function GlassDays({
               animate={{ y: isSel ? -2 : 0 }}
               transition={{ type: "spring", stiffness: 420, damping: 28 }}
               aria-pressed={onSelect ? isSel : undefined}
-              aria-label={`${d.long} ${d.n} ${d.month}, ${d.items.length ? `${d.items.length} appuntamenti` : "libero"}`}
+              aria-label={`${d.long} ${d.n} ${d.month}, ${d.items.length ? conta(d.items.length, "appuntamento", "appuntamenti") : "libero"}`}
               className={`glass-tile relative flex flex-col items-center justify-center rounded-[14px] ${onSelect ? "cursor-pointer" : ""}`}
               style={{ height }}
             >
@@ -290,7 +291,7 @@ export function AgendaCard() {
           {day.long} {day.n}
         </p>
         <div className="flex gap-[5px] text-[10.5px] font-semibold">
-          <span className="rounded-full bg-soft px-[8px] py-[3px]">{day.items.length ? `${day.items.length} appuntament${day.items.length === 1 ? "o" : "i"}` : "Giornata libera"}</span>
+          <span className="rounded-full bg-soft px-[8px] py-[3px]">{day.items.length ? conta(day.items.length, "appuntamento", "appuntamenti") : "Giornata libera"}</span>
           {total > 0 && <span className="rounded-full bg-soft px-[8px] py-[3px]">{duration(total)}</span>}
         </div>
       </div>

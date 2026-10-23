@@ -7,6 +7,7 @@ import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, Use
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
+import { conta } from "@/libs/ui/testo";
 import { Attachment, ChatMessage, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
 import { SentPlan, stato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
@@ -21,7 +22,7 @@ const sentMessage = (p: SentPlan): ChatMessage => ({
   from: "trainer",
   text: "Ecco la tua nuova scheda! Sotto ogni esercizio trovi il video dell’esecuzione.",
   time: p.time,
-  attachment: { name: p.fileName, url: p.url, detail: `${p.days.length} ${p.days.length === 1 ? "giorno" : "giorni"} · ${p.exercises} esercizi · ${p.withVideo} video` },
+  attachment: { name: p.fileName, url: p.url, detail: `${conta(p.days.length, "giorno", "giorni")} · ${conta(p.exercises, "esercizio", "esercizi")} · ${p.withVideo} video` },
 });
 
 function initialThreads(): Record<string, ChatMessage[]> {
