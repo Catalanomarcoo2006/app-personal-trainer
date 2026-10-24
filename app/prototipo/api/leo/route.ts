@@ -1,10 +1,14 @@
-// Leo con l'AI: riceve la conversazione, la manda al fornitore (API compatibile OpenAI, oggi DeepSeek)
-// insieme ai dati della dashboard e restituisce il testo della risposta man mano che arriva.
+// Leo con l'AI: riceve la conversazione e il calendario, li manda al fornitore (API compatibile OpenAI, oggi DeepSeek)
+// insieme ai dati della dashboard e al menu delle azioni (tools), e restituisce NDJSON: il testo man mano che arriva
+// ({"tipo":"testo"}) e, alla fine, le azioni ricomposte e controllate ({"tipo":"azione"}). Le esegue il browser.
 // Sta sotto /prototipo perché il middleware lo esclude: gira senza chiavi Supabase.
+// Verificato il 24/10: DeepSeek accetta tools con thinking attivo in streaming (azioni in delta.tool_calls).
 // Solo dati finti: DeepSeek ha i server in Cina, con clienti veri serve il fornitore UE (cambiano solo le variabili AI_*).
 
 import { z } from "zod";
-import { contestoLeo, pseudonimizza } from "@/libs/prototipo/leo-contesto";
+import { LEO_TOOLS, type Seduta } from "@/libs/prototipo/leo-azioni";
+import { contestoLeo, pseudonimizza, SedutaContesto } from "@/libs/prototipo/leo-contesto";
+import { raccoglitoreAzioni, type EventoLeo } from "@/libs/prototipo/leo-flusso";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +24,7 @@ const Richiesta = z.object({
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() }))
     .min(1)
     .max(50),
+  calendario: z.array(SedutaContesto).max(80).optional(),
 });
 
 // Rete di sicurezza contro l'uso eccessivo: al massimo 20 domande al minuto per indirizzo (in memoria).
@@ -52,8 +57,10 @@ export async function POST(req: Request) {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${chiave}` },
     body: JSON.stringify({
       model: process.env.AI_MODEL ?? "deepseek-flash",
-      messages: [{ role: "system", content: contestoLeo() }, ...messaggi],
+      messages: [{ role: "system", content: contestoLeo(corpo.data.calendario as Seduta[] | undefined) }, ...messaggi],
       stream: true,
+      tools: LEO_TOOLS,
+      tool_choice: "auto",
       thinking: { type: "enabled" },
       reasoning_effort: process.env.AI_REASONING_EFFORT ?? "low",
       max_tokens: 2000,
@@ -86,16 +93,19 @@ export async function POST(req: Request) {
     return Response.json({ errore: `il fornitore AI ha risposto ${risposta.status}` }, { status: 502 });
   }
 
-  // Dal flusso SSE del fornitore tiene solo il testo della risposta (delta.content): il ragionamento
-  // (delta.reasoning_content) resta sul server. Al browser arriva testo semplice, pezzo per pezzo.
+  // Dal flusso SSE del fornitore tiene il testo della risposta (delta.content) e i pezzi delle azioni
+  // (delta.tool_calls): il ragionamento (delta.reasoning_content) resta sul server. Al browser arriva una riga
+  // JSON per evento: il testo pezzo per pezzo, le azioni tutte insieme alla fine.
   const fine = setTimeout(() => stop.abort(), DURATA_MASSIMA);
   const lettore = risposta.body.getReader();
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
+  const azioni = raccoglitoreAzioni();
+  const riga = (e: EventoLeo) => encoder.encode(JSON.stringify(e) + "\n");
   let resto = "";
 
   const flusso = new ReadableStream<Uint8Array>({
-    // Legge finché non ha qualcosa da mandare: durante il ragionamento arrivano pezzi senza testo
+    // Legge finché non ha qualcosa da mandare: durante il ragionamento e le azioni arrivano pezzi senza testo
     // e, se pull finisse a mani vuote, il flusso resterebbe fermo.
     async pull(controller) {
       try {
@@ -103,6 +113,7 @@ export async function POST(req: Request) {
           const { done, value } = await lettore.read();
           if (done) {
             clearTimeout(fine);
+            for (const a of azioni.azioni()) controller.enqueue(riga({ tipo: "azione", ...a }));
             controller.close();
             return;
           }
@@ -110,15 +121,16 @@ export async function POST(req: Request) {
           const righe = resto.split("\n");
           resto = righe.pop() ?? "";
           let inviato = false;
-          for (const riga of righe) {
-            const dati = riga.trim();
+          for (const r of righe) {
+            const dati = r.trim();
             if (!dati.startsWith("data:")) continue;
             const json = dati.slice(5).trim();
             if (json === "[DONE]") continue;
             try {
-              const testo = JSON.parse(json)?.choices?.[0]?.delta?.content;
-              if (testo) {
-                controller.enqueue(encoder.encode(testo));
+              const delta = JSON.parse(json)?.choices?.[0]?.delta;
+              if (delta?.tool_calls) azioni.aggiungi(delta.tool_calls);
+              if (delta?.content) {
+                controller.enqueue(riga({ tipo: "testo", v: delta.content }));
                 inviato = true;
               }
             } catch {
@@ -130,7 +142,8 @@ export async function POST(req: Request) {
       } catch (e) {
         clearTimeout(fine);
         console.error("Leo: risposta interrotta", e instanceof Error ? e.message : e);
-        controller.error(e);
+        controller.enqueue(riga({ tipo: "errore", v: "risposta interrotta" }));
+        controller.close();
       }
     },
     cancel() {
@@ -139,5 +152,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return new Response(flusso, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+  return new Response(flusso, { headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" } });
 }
