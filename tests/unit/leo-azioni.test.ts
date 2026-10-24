@@ -85,10 +85,8 @@ describe("verificaAzione", () => {
   });
   it("tiene le sedute tra le 6 e le 22", () => {
     const presto = verificaAzione(fissa("05:30"), sedute);
-
     expect(presto).toMatchObject({ ok: false, motivo: expect.stringContaining("6:00") });
     const tardi = verificaAzione(fissa("21:30"), sedute);
-
     expect(tardi).toMatchObject({ ok: false, motivo: expect.stringContaining("22:00") });
     expect(verificaAzione(fissa("21:00"), sedute)).toEqual({ ok: true });
   });
