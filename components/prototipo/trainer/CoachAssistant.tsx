@@ -5,15 +5,16 @@ import { usePathname } from "next/navigation";
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
-import { playSound } from "@/libs/ui/sound";
+import { playSound, type SoundKind } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
-import { daConfermare, inChiaro, notaPerLeo, riassunto, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
+import { daConfermare, inChiaro, notaPerLeo, riassunto, verificaAzione, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
 import { estraiAzione, ripristinaNomi, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
+import { durataScrittura, sezioneDi, TEMPI } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
 import { SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
-import { navigateWithStain, ROUTES } from "./nav";
+import { navigateFade, navigateWithStain, ROUTES } from "./nav";
 import { InfoSparkle, LeoIdentikit, preloadLeoSeduto } from "./LeoIdentikit";
 import { infoSeen, INTRO_LAST, introSeen, LeoPresentazione, setInfoSeen, setIntroSeen } from "./LeoPresentazione";
 
@@ -66,6 +67,14 @@ export function CoachFace({ size }: { size: number }) {
     </span>
   );
 }
+
+// ——— Viaggio di Leo ———
+
+const attesa = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
+const ridotto = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "complete", sposta_appuntamento: "open", cancella_appuntamento: "close", scrivi_messaggio: "confirm" };
+// la chat durante il viaggio: un riquadro piccolo in basso, Leo resta aggrappato al bordo
+const COMPATTA = { w: 168, h: 150 };
 
 // ——— Le risposte, calcolate dai dati ———
 
@@ -244,6 +253,9 @@ type Chat = {
   conferma: (msgId: number, key: string, testo?: string) => void;
   rifiuta: (msgId: number, key: string) => void;
   annulla: (msgId: number, key: string) => void;
+  torna: (msgId: number) => void;
+  partenza: (msgId: number) => string | undefined;
+  compatta: boolean; // durante il viaggio di Leo la chat si fa piccola e l'app va dove succede l'azione
 };
 // msgId e testo: per riscrivere la nota sugli esiti delle azioni nel turno di Leo (notaPerLeo)
 type Turn = { role: "user" | "assistant"; content: string; msgId?: number; testo?: string };
@@ -279,6 +291,10 @@ function useCoachChat(): Chat {
   const history = useRef<Turn[]>([]);
   const request = useRef<AbortController | null>(null);
   const schede = useRef(new Map<number, SchedaAzione[]>());
+  const [compatta, setCompatta] = useState(false);
+  // una sola fila per tutti i viaggi: le azioni (e gli annulla) non si accavallano mai
+  const coda = useRef<Promise<void>>(Promise.resolve());
+  const partenze = useRef(new Map<number, string>());
   useEffect(
     () => () => {
       timers.current.forEach((t) => window.clearTimeout(t));
@@ -304,22 +320,51 @@ function useCoachChat(): Chat {
     [salvaSchede],
   );
 
-  // Esegue in ordine le azioni in fila ("in-corso"); si ferma alla prima che aspetta la conferma.
+  // Porta il trainer dove succede l'azione: chat piccola, sezione giusta, poi l'azione si vede accadere.
+  const viaggia = useCallback(async (msgId: number, azione: AzioneLeo) => {
+    if (!partenze.current.has(msgId)) partenze.current.set(msgId, window.location.pathname + window.location.search);
+    setCompatta(true);
+    await attesa(TEMPI.compatta);
+    await navigateFade(sezioneDi(azione));
+    await attesa(TEMPI.arrivo);
+  }, []);
+
+  // Esegue in ordine le azioni in fila ("in-corso"), ognuna con il suo viaggio; si ferma alla prima che aspetta
+  // la conferma. Un'azione che non passa i controlli non parte: la scheda dice il motivo, il trainer resta dov'è.
   const procedi = useCallback(
     (msgId: number) => {
-      for (const s of schede.current.get(msgId) ?? []) {
-        if (s.stato === "da-confermare") return;
-        if (s.stato !== "in-corso") continue;
-        const esito = eseguiAzione(s.azione);
-        if ("motivo" in esito) {
-          cambia(msgId, s.key, { stato: "rifiutato", motivo: esito.motivo });
-        } else {
-          playSound("complete");
+      coda.current = coda.current.then(async () => {
+        let viaggiato = false;
+        for (;;) {
+          const s = (schede.current.get(msgId) ?? []).find((x) => x.stato === "in-corso" || x.stato === "da-confermare");
+          if (!s || s.stato === "da-confermare") break;
+          const verifica = verificaAzione(s.azione, stato.get().sedute);
+          if ("motivo" in verifica) {
+            cambia(msgId, s.key, { stato: "rifiutato", motivo: verifica.motivo });
+            continue;
+          }
+          await viaggia(msgId, s.azione);
+          viaggiato = true;
+          if (s.azione.nome === "scrivi_messaggio") {
+            stato.setFocus({ tipo: "messaggio", clientId: s.azione.dati.cliente, testo: s.azione.dati.testo, daScrivere: true });
+            await attesa(durataScrittura(s.azione.dati.testo, ridotto()) + 250);
+          }
+          const esito = eseguiAzione(s.azione);
+          if ("motivo" in esito) {
+            cambia(msgId, s.key, { stato: "rifiutato", motivo: esito.motivo });
+            continue;
+          }
+          playSound(SUONI[s.azione.nome]);
           cambia(msgId, s.key, { stato: "fatto", annulla: esito.annulla, fattaAlle: Date.now() });
+          await attesa(ridotto() ? TEMPI.azioneRidotta : TEMPI.azione);
         }
-      }
+        if (viaggiato) {
+          await attesa(TEMPI.ritorno);
+          setCompatta(false);
+        }
+      });
     },
-    [cambia],
+    [cambia, viaggia],
   );
 
   const conferma = useCallback(
@@ -348,11 +393,25 @@ function useCoachChat(): Chat {
       const s = schede.current.get(msgId)?.find((x) => x.key === key);
       if (!s || s.stato !== "fatto" || !s.annulla) return;
       playSound("tap");
-      s.annulla();
       cambia(msgId, key, { stato: "annullato", annulla: undefined });
+      coda.current = coda.current.then(async () => {
+        await viaggia(msgId, s.azione);
+        s.annulla?.();
+        playSound(s.azione.nome === "fissa_appuntamento" ? "close" : "open");
+        await attesa((ridotto() ? TEMPI.azioneRidotta : TEMPI.azione) + TEMPI.ritorno);
+        setCompatta(false);
+      });
     },
-    [cambia],
+    [cambia, viaggia],
   );
+
+  const torna = useCallback((msgId: number) => {
+    const dove = partenze.current.get(msgId);
+    if (!dove) return;
+    playSound("tap");
+    void navigateFade(dove);
+  }, []);
+  const partenza = useCallback((msgId: number) => partenze.current.get(msgId), []);
 
   const ask = useCallback(
     async (question: string) => {
@@ -453,7 +512,7 @@ function useCoachChat(): Chat {
     [procedi, salvaSchede],
   );
 
-  return { messages, typing, thinking, ask, conferma, rifiuta, annulla };
+  return { messages, typing, thinking, ask, conferma, rifiuta, annulla, torna, partenza, compatta };
 }
 
 // Leo che si sporge dal bordo destro della chat, aggrappato con le mani: esce da dietro la chat quando si apre.
@@ -478,6 +537,7 @@ function SidePeek() {
 function ChatPanel({
   left,
   origin,
+  height,
   chat,
   close,
   dismiss,
@@ -485,12 +545,13 @@ function ChatPanel({
 }: {
   left: number;
   origin: string;
+  height: number; // altezza della tela: la chat compatta si appoggia in basso
   chat: Chat;
   close: () => void;
   dismiss: () => void;
   openInfo: () => void;
 }) {
-  const { messages, typing, thinking, ask: askChat, conferma, rifiuta, annulla } = chat;
+  const { messages, typing, thinking, ask: askChat, conferma, rifiuta, annulla, torna, partenza, compatta } = chat;
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   // la prima volta Leo si presenta; scrivere una domanda vale come "salta"
@@ -523,17 +584,36 @@ function ChatPanel({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, y: 18, scale: 0.97, width: compatta ? COMPATTA.w : PANEL_W, top: compatta ? height - 10 - COMPATTA.h : PANEL_TOP }}
+      animate={{ opacity: 1, y: 0, scale: 1, width: compatta ? COMPATTA.w : PANEL_W, top: compatta ? height - 10 - COMPATTA.h : PANEL_TOP }}
       exit={{ opacity: 0, y: 14, scale: 0.98, transition: { duration: 0.22, ease: EASE_OUT, delay: 0.08 } }}
-      transition={{ duration: 0.32, ease: EASE_OUT }}
-      style={{ left, width: PANEL_W, top: PANEL_TOP, transformOrigin: origin }}
+      transition={{ duration: 0.32, ease: EASE_OUT, width: { duration: 0.35, ease: EASE_OUT }, top: { duration: 0.35, ease: EASE_OUT } }}
+      style={{ left, transformOrigin: origin }}
       className="absolute bottom-[10px] z-50"
       role="dialog"
       aria-label={`${COACH_NAME}, il tuo assistente`}
     >
       <SidePeek />
-      <div className="relative flex size-full flex-col overflow-hidden rounded-[22px] bg-card shadow-[0_30px_80px_rgba(0,0,0,0.22)]">
+      <div className="relative size-full overflow-hidden rounded-[22px] bg-card shadow-[0_30px_80px_rgba(0,0,0,0.22)]">
+      {/* durante il viaggio: Leo al lavoro, il resto della chat resta montato sotto (ritrovi tutto com'era) */}
+      <AnimatePresence>
+        {compatta && (
+          <motion.div
+            key="al-lavoro"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { delay: 0.15, duration: 0.2 } }}
+            exit={{ opacity: 0, transition: { duration: 0.15 } }}
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-[8px] bg-card text-center"
+            aria-live="polite"
+          >
+            <CoachFace size={58} />
+            <p className="text-[12px] leading-tight font-bold">
+              {COACH_NAME} è al lavoro…
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className={`flex h-full flex-col transition-opacity duration-150 ${compatta ? "pointer-events-none opacity-0" : ""}`} style={{ width: PANEL_W }} aria-hidden={compatta || undefined}>
         <div className="flex items-center gap-[10px] border-b border-line px-[16px] py-[12px]">
           <div className="leading-tight">
             <p className="flex items-center gap-[7px] text-[15px] font-bold">
@@ -595,6 +675,7 @@ function ChatPanel({
                       onConferma={(testo) => conferma(m.id, sc.key, testo)}
                       onRifiuta={() => rifiuta(m.id, sc.key)}
                       onAnnulla={() => annulla(m.id, sc.key)}
+                      onTorna={partenza(m.id) ? () => torna(m.id) : undefined}
                     />
                   ))}
                 </div>
@@ -650,6 +731,7 @@ function ChatPanel({
             <ArrowUp size={15} />
           </motion.button>
         </form>
+      </div>
       </div>
     </motion.div>
   );
@@ -772,10 +854,12 @@ function CoachButton({ hidden, count, onOpen }: { hidden: boolean; count: number
 export function CoachAssistant() {
   const home = usePathname() === ROUTES.oggi;
   const chat = useCoachChat();
-  return <CoachStage key={home ? "home" : "pagine"} home={home} chat={chat} />;
+  // aperta qui: CoachStage si rimonta passando tra la home e le altre pagine, e il viaggio di Leo ci passa
+  const [open, setOpen] = useState(false);
+  return <CoachStage key={home ? "home" : "pagine"} home={home} chat={chat} open={open} setOpen={setOpen} />;
 }
 
-function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
+function CoachStage({ home, chat, open, setOpen }: { home: boolean; chat: Chat; open: boolean; setOpen: (open: boolean) => void }) {
   const reduce = useReducedMotion();
   const layer = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1303, h: 640 });
@@ -795,7 +879,6 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
   const standW = Math.round(standH * STAND_RATIO);
   const standX = size.w - STAND_RIGHT;
 
-  const [open, setOpen] = useState(false);
   const [unseen, setUnseen] = useState(novitaViste ? 0 : novita.length);
 
   // Cliccato, Leo lascia l'angolo e si sporge dal bordo destro della chat: sulla home la chat si apre
@@ -909,7 +992,7 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
     <>
       {/* il velo sotto la chat */}
       <AnimatePresence>
-        {open && (
+        {open && !chat.compatta && (
           <motion.button
             key="velo"
             type="button"
@@ -923,7 +1006,7 @@ function CoachStage({ home, chat }: { home: boolean; chat: Chat }) {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {open && !info && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} chat={chat} close={closeChat} dismiss={() => setOpen(false)} openInfo={openInfo} />}
+        {open && !info && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} height={size.h} chat={chat} close={closeChat} dismiss={() => setOpen(false)} openInfo={openInfo} />}
       </AnimatePresence>
       <AnimatePresence>{open && info && <LeoIdentikit key="identikit" onBack={closeInfo} onReplayIntro={replayIntro} />}</AnimatePresence>
 

@@ -61,3 +61,21 @@ function sectionShown(path: string): Promise<void> {
     const timer = window.setTimeout(done, 600);
   });
 }
+
+// Cambio di sezione con una dissolvenza veloce (viaggio di Leo): la sezione attuale sfuma, compare la nuova.
+// Risolve quando la sezione nuova è visibile. Con "riduci movimento" il cambio è immediato.
+export async function navigateFade(href: string): Promise<void> {
+  const url = new URL(href, window.location.href);
+  if (url.pathname + url.search === window.location.pathname + window.location.search) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const live = () => document.querySelector<HTMLElement>("[data-sezione].section-live");
+  const before = live();
+  // fill: la sezione vecchia resta trasparente finché non è nascosta, senza lampi
+  const out = before && !reduce && url.pathname !== window.location.pathname ? before.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: "ease-out", fill: "forwards" }) : null;
+  await out?.finished.catch(() => {});
+  navigate(href);
+  await sectionShown(url.pathname);
+  out?.cancel();
+  const after = live();
+  if (after && !reduce && after !== before) await after.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "ease-out" }).finished.catch(() => {});
+}

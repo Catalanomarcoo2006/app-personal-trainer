@@ -2,12 +2,13 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound } from "lucide-react";
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { Attachment, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
+import { durataScrittura, TEMPI } from "@/libs/prototipo/leo-viaggio";
 import { stato, useStato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
@@ -55,6 +56,32 @@ export function MessagesView({ search }: { search: string }) {
   const timers = useRef<number[]>([]);
 
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+
+  // Leo scrive al cliente: apre la sua conversazione e scrive il testo nella barra; quando il messaggio parte
+  // (focus senza daScrivere) la barra si svuota e compare il fumetto.
+  const focus = useStato((s) => s.focus);
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    if (focus?.tipo !== "messaggio" || !focus.clientId) return;
+    const id = focus.clientId;
+    setActiveId(id);
+    setUnread((u) => ({ ...u, [id]: 0 }));
+    setTyping(false);
+    const testo = focus.daScrivere ? (focus.testo ?? "") : "";
+    const durata = durataScrittura(testo, !!reduce);
+    if (!durata) return setDraft(testo);
+    const passi = Math.max(1, Math.round(durata / TEMPI.carattere));
+    const perPasso = Math.ceil(testo.length / passi);
+    let n = 0;
+    setDraft("");
+    const t = window.setInterval(() => {
+      n = Math.min(testo.length, n + perPasso);
+      setDraft(testo.slice(0, n));
+      if (n >= testo.length) window.clearInterval(t);
+    }, TEMPI.carattere);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus]);
 
   // Il cliente risponde alla scheda appena ricevuta.
   useEffect(() => {

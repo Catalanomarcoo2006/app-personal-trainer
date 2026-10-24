@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { ReactNode, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import toast from "react-hot-toast";
 import { CalendarClock, CalendarPlus, Check, MapPin, MessageCircle, Plus, Trash2, UserRound, X } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
@@ -10,6 +10,7 @@ import { conta } from "@/libs/ui/testo";
 import { Appointment, appointmentColors, AppointmentType, clientById, clients, trainer } from "@/libs/prototipo/dati-finti";
 import { giornoDi, isoDi, SETTIMANE_LEO } from "@/libs/prototipo/calendario";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
+import { settimanaDi } from "@/libs/prototipo/leo-viaggio";
 import { stato, useStato } from "@/libs/prototipo/stato";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
@@ -29,7 +30,8 @@ const bandOf = (a: Appointment) => BANDS.findIndex((b) => toMinutes(a.time) < b.
 const placeFor = (type: AppointmentType) => (type === "Online" ? "Videochiamata" : type === "Corsa" ? "Parco di Meolo" : "Fit Lab, Meolo");
 
 // Una seduta nella cella (il tipo lo dicono icona e colore). density: 0 completa, 1 senza luogo, 2 una riga sola. Al clic apre il dettaglio.
-function SessionCard({ day, a, i, density, onOpen }: { day: WeekDay; a: Appointment; i: number; density: number; onOpen: () => void }) {
+// layoutId: la stessa seduta in un'altra cella vola fin lì (spostamento di Leo). atterra: appena fissata da Leo.
+function SessionCard({ day, a, i, density, onOpen, layoutId, atterra }: { day: WeekDay; a: Appointment; i: number; density: number; onOpen: () => void; layoutId?: string; atterra?: boolean }) {
   const c = clientById(a.clientId);
   const colors = appointmentColors[a.type];
   const Icon = typeIcons[a.type];
@@ -38,10 +40,11 @@ function SessionCard({ day, a, i, density, onOpen }: { day: WeekDay; a: Appointm
     <motion.button
       type="button"
       layout="position"
-      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+      layoutId={layoutId}
+      initial={atterra ? { opacity: 0, y: 0, scale: 0.6 } : { opacity: 0, y: 8, scale: 0.97 }}
       animate={{ opacity: done ? 0.6 : 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.12 } }}
-      transition={{ delay: 0.04 + i * 0.04, duration: 0.3, ease: EASE_OUT }}
+      transition={atterra ? { type: "spring", duration: 0.6, bounce: 0.45 } : { delay: 0.04 + i * 0.04, duration: 0.3, ease: EASE_OUT, layout: { duration: 0.7, ease: EASE_OUT } }}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.97 }}
       onClick={() => {
@@ -79,6 +82,21 @@ function SessionCard({ day, a, i, density, onOpen }: { day: WeekDay; a: Appointm
         </>
       )}
     </motion.button>
+  );
+}
+
+// Dove c'era la seduta appena cancellata da Leo: un contorno tratteggiato che svanisce.
+function Fantasma({ a }: { a: Appointment }) {
+  return (
+    <motion.div
+      initial={{ opacity: 1, scale: 1 }}
+      animate={{ opacity: 0, scale: 0.85 }}
+      transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.25 }}
+      className="relative z-10 shrink-0 rounded-[11px] border-2 border-dashed px-[9px] py-[7px] text-[10px] font-bold"
+      style={{ borderColor: appointmentColors[a.type].strong, color: appointmentColors[a.type].strong }}
+    >
+      {a.time} · {clientById(a.clientId)?.name.split(" ")[0]}
+    </motion.div>
   );
 }
 
@@ -301,6 +319,7 @@ function Cell({
   deps,
   onAdd,
   onOpen,
+  leo,
 }: {
   day: WeekDay;
   band: number;
@@ -308,6 +327,7 @@ function Cell({
   deps: unknown[];
   onAdd: () => void;
   onOpen: (a: Appointment) => void;
+  leo: { acceso: boolean; volo: boolean; nuova?: string; fantasma?: Appointment; ridotto: boolean };
 }) {
   const box = useRef<HTMLDivElement>(null);
   const density = useFitDensity(box, 2, [...deps, items.length]);
@@ -320,7 +340,7 @@ function Cell({
     <div
       ref={box}
       data-fit
-      className={`group/cella relative flex min-h-0 flex-col gap-[4px] overflow-hidden rounded-[12px] border p-[4px] ${day.isToday ? "" : day.isPast ? "border-line/70 bg-soft/40" : "border-line/70"}`}
+      className={`group/cella relative flex min-h-0 flex-col gap-[4px] rounded-[12px] border p-[4px] ${leo.volo ? "overflow-visible" : "overflow-hidden"} ${leo.acceso ? "z-20" : ""} ${day.isToday ? "" : day.isPast ? "border-line/70 bg-soft/40" : "border-line/70"}`}
       style={day.isToday ? { background: "color-mix(in srgb, var(--trainer) 6%, transparent)", borderColor: "color-mix(in srgb, var(--trainer) 22%, transparent)" } : undefined}
     >
       <button
@@ -342,13 +362,41 @@ function Cell({
         )}
       </button>
 
+      {/* la cella dove agisce Leo si accende col colore del trainer */}
+      {leo.acceso && (
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute inset-[-2px] z-20 rounded-[13px] border-2"
+          style={{ borderColor: "var(--trainer)", boxShadow: "0 0 0 4px color-mix(in srgb, var(--trainer) 18%, transparent)" }}
+          initial={{ opacity: 0 }}
+          animate={leo.ridotto ? { opacity: [0, 1, 1, 0] } : { opacity: [0, 1, 0.35, 1, 0] }}
+          transition={{ duration: 1.7, ease: "easeInOut" }}
+        />
+      )}
       <AnimatePresence mode="popLayout" initial={false}>
-        {items.flatMap((a, i) => {
-          const out = [];
-          if (i === nowAt) out.push(<NowMark key="adesso" />);
-          out.push(<SessionCard key={"id" in a ? (a as Seduta).id : `${a.time}-${a.clientId}`} day={day} a={a} i={i} density={density} onOpen={() => onOpen(a)} />);
-          return out;
-        })}
+        {(() => {
+          const ghost = leo.fantasma;
+          const ghostAt = ghost ? items.findIndex((a) => toMinutes(a.time) > toMinutes(ghost.time)) : -2;
+          return items.flatMap((a, i) => {
+            const out = [];
+            if (i === nowAt) out.push(<NowMark key="adesso" />);
+            if (ghost && i === ghostAt) out.push(<Fantasma key="fantasma" a={ghost} />);
+            const id = "id" in a ? (a as Seduta).id : undefined;
+            out.push(
+              <SessionCard
+                key={id ?? `${a.time}-${a.clientId}`}
+                day={day}
+                a={a}
+                i={i}
+                density={density}
+                onOpen={() => onOpen(a)}
+                layoutId={id && !leo.ridotto ? `seduta-${id}` : undefined}
+                atterra={!!id && id === leo.nuova && !leo.ridotto}
+              />,
+            );
+            return out;
+          }).concat(ghost && ghostAt === -1 ? [<Fantasma key="fantasma" a={ghost} />] : []);
+        })()}
       </AnimatePresence>
       {showNow && (nowAt === -1 || items.length === 0) && <NowMark />}
     </div>
@@ -363,7 +411,14 @@ export function WeekCalendar() {
   const [hidden, setHidden] = useState<AppointmentType[]>([]);
   // questa settimana e la prossima vivono nello store (le modifica anche Leo); le altre hanno modifiche locali
   const sedute = useStato((s) => s.sedute);
+  const focus = useStato((s) => s.focus);
+  const ridotto = !!useReducedMotion();
   const [edits, setEdits] = useState<Record<number, Appointment[][]>>({});
+  // tutte le sedute viste: per disegnare il contorno di quella appena cancellata da Leo
+  const viste = useRef(new Map<string, Seduta>());
+  sedute.forEach((s) => viste.current.set(s.id, s));
+  // dove sta agendo Leo: la cella si accende e la seduta atterra, vola o svanisce
+  const [leo, setLeo] = useState<{ tipo: string; id: string; date: string; time: string } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [open, setOpen] = useState<{ day: number; a: Appointment } | null>(null);
 
@@ -373,6 +428,24 @@ export function WeekCalendar() {
   const days: WeekDay[] = week.days.map((d, i) => ({ ...d, items: [...items[i]].sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) }));
   const total = days.reduce((s, d) => s + d.items.length, 0);
   const todayIndex = days.findIndex((d) => d.isToday);
+
+  useEffect(() => {
+    if (!focus?.id || focus.tipo === "messaggio") return;
+    const s = stato.get().sedute.find((x) => x.id === focus.id);
+    const date = s?.date ?? focus.da?.date;
+    const time = s?.time ?? focus.da?.time;
+    if (!date || !time) return;
+    const target = settimanaDi(date);
+    setOffset((o) => {
+      if (o !== target) setDirection(Math.sign(target - o));
+      return target;
+    });
+    setOpen(null);
+    setDraft(null);
+    setLeo({ tipo: focus.tipo, id: focus.id, date, time });
+    const t = window.setTimeout(() => setLeo(null), 1900);
+    return () => window.clearTimeout(t);
+  }, [focus]);
 
   const update = (fn: (week: Appointment[][]) => Appointment[][]) => setEdits((e) => ({ ...e, [offset]: fn((e[offset] ?? week.days.map((d) => d.items)).map((d) => [...d])) }));
 
@@ -472,6 +545,11 @@ export function WeekCalendar() {
                     deps={[offset, hidden, edits, sedute]}
                     onAdd={() => setDraft({ day: di, time: band.start })}
                     onOpen={(a) => setOpen({ day: di, a })}
+                    leo={(() => {
+                      const qui = !!leo && inStore && leo.date === isoDi(giornoDi(offset, di)) && bandOf({ time: leo.time } as Appointment) === bi;
+                      const fantasma = qui && leo.tipo === "cancella" ? viste.current.get(leo.id) : undefined;
+                      return { acceso: qui, volo: !!leo && leo.tipo === "sposta", nuova: qui && leo.tipo === "fissa" ? leo.id : undefined, fantasma: ridotto ? undefined : fantasma, ridotto };
+                    })()}
                   />
                 )),
               )}
