@@ -13,7 +13,7 @@ import {
   type AzioneLeo,
   type Seduta,
 } from "@/libs/prototipo/leo-azioni";
-import { clienteDaCodice } from "@/libs/prototipo/leo-contesto";
+import { clienteDa } from "@/libs/prototipo/leo-contesto";
 
 // Una sola seduta di prova: giovedì 22 alle 18:00 per un'ora con Giulia Bianchi.
 const sedute: Seduta[] = [{ id: "A1", date: "2026-10-22", time: "18:00", minutes: 60, clientId: "giulia-bianchi", type: "Workout", place: "Fit Lab, Meolo" }];
@@ -66,19 +66,21 @@ describe("leggiAzione", () => {
   });
 });
 
-describe("codici dei clienti", () => {
-  it("accetta il codice con o senza parentesi, maiuscolo o minuscolo", () => {
-    expect(clienteDaCodice("[C4]")).toBe("sara-conti");
-    expect(clienteDaCodice("C4")).toBe("sara-conti");
-    expect(clienteDaCodice("c4")).toBe("sara-conti");
-    expect(clienteDaCodice("C99")).toBeUndefined();
+describe("riconoscere il cliente", () => {
+  it("accetta l'id, il nome completo o il solo nome, in qualunque maiuscolo", () => {
+    expect(clienteDa("sara-conti")).toBe("sara-conti");
+    expect(clienteDa("Sara Conti")).toBe("sara-conti");
+    expect(clienteDa(" sara conti ")).toBe("sara-conti");
+    expect(clienteDa("Sara")).toBe("sara-conti");
+    expect(clienteDa("Mario")).toBeUndefined();
+    expect(clienteDa("")).toBeUndefined();
   });
-  it("inChiaro mette l'id del cliente e i nomi veri nel messaggio", () => {
-    expect(inChiaro({ nome: "scrivi_messaggio", dati: { cliente: "[C4]", testo: "Ciao [C4], ci vediamo venerdì" } })).toEqual({
+  it("inChiaro mette l'id del cliente e lascia il messaggio com'è", () => {
+    expect(inChiaro({ nome: "scrivi_messaggio", dati: { cliente: "Sara Conti", testo: "Ciao Sara, ci vediamo venerdì" } })).toEqual({
       nome: "scrivi_messaggio",
-      dati: { cliente: "sara-conti", testo: "Ciao Sara Conti, ci vediamo venerdì" },
+      dati: { cliente: "sara-conti", testo: "Ciao Sara, ci vediamo venerdì" },
     });
-    expect(inChiaro({ nome: "fissa_appuntamento", dati: { cliente: "C99", data: "2026-10-22", ora: "10:00", durata: 60, tipo: "Workout" } })).toBeNull();
+    expect(inChiaro({ nome: "fissa_appuntamento", dati: { cliente: "Mario Rossi", data: "2026-10-22", ora: "10:00", durata: 60, tipo: "Workout" } })).toBeNull();
     expect(inChiaro({ nome: "cancella_appuntamento", dati: { id: "A1" } })).toEqual({ nome: "cancella_appuntamento", dati: { id: "A1" } });
   });
 });
@@ -160,16 +162,15 @@ describe("altre regole", () => {
     expect(riassunto({ nome: "cancella_appuntamento", dati: { id: "A3" } }, s)).toBe("Cancello Workout con Sara Conti · gio 22/10 10:00");
     expect(riassunto({ nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao" } }, s)).toBe("Messaggio a Sara Conti");
   });
-  it("la nota per Leo racconta gli esiti con i codici, non i nomi", () => {
+  it("la nota per Leo racconta gli esiti con i nomi", () => {
     const nota = notaPerLeo([
       { azione: { nome: "sposta_appuntamento", dati: { id: "A1", data: "2026-10-23", ora: "10:00" } }, stato: "fatto" },
       { azione: { nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao" } }, stato: "annullato" },
       { azione: fissa("18:30"), stato: "rifiutato", motivo: "Si sovrappone con Giulia Bianchi alle 18:00" },
     ]);
     expect(nota).toContain("fatto: spostato A1 a 2026-10-23 10:00");
-    expect(nota).toContain("messaggio a [C4] annullato dal trainer");
-    expect(nota).toContain("rifiutato");
-    expect(nota).not.toMatch(/Sara|Giulia/);
+    expect(nota).toContain("messaggio a Sara Conti annullato dal trainer");
+    expect(nota).toContain("rifiutato dall'app (Si sovrappone con Giulia Bianchi alle 18:00)");
     expect(notaPerLeo([])).toBe("");
   });
 });

@@ -1,6 +1,6 @@
 # Leo agisce: azioni dal calendario e dai messaggi (design)
 
-**Data:** 2026-10-24 · **Stato:** approvato a voce da Marco, da rileggere per iscritto · **Ambito:** prototipo dell'area trainer (dati finti)
+**Data:** 2026-10-24 · **Aggiornamento 24/10 sera:** niente più codici [C1]: Leo vede i nomi, nelle azioni il cliente è il suo id (`sara-conti`), riconosciuto anche per nome; email e telefoni tolti da `ripulisci`. · **Stato:** approvato a voce da Marco, da rileggere per iscritto · **Ambito:** prototipo dell'area trainer (dati finti)
 
 ## 1. Obiettivo
 

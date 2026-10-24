@@ -1,54 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { clients } from "@/libs/prototipo/dati-finti";
-import { contestoLeo, estraiAzione, pseudonimizza, ripristinaNomi, SedutaContesto } from "@/libs/prototipo/leo-contesto";
+import { contestoLeo, estraiAzione, ripulisci, SedutaContesto } from "@/libs/prototipo/leo-contesto";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
 
-const codice = (id: string) => `[C${clients.findIndex((c) => c.id === id) + 1}]`;
-
 describe("contesto per l'AI", () => {
-  it("non contiene nomi, cognomi, email né telefoni dei clienti", () => {
-    const testo = contestoLeo().toLowerCase();
+  it("contiene i nomi dei clienti ma non email né telefoni", () => {
+    const testo = contestoLeo();
     for (const c of clients) {
-      const [nome, cognome] = c.name.toLowerCase().split(" ");
-      expect(testo).not.toMatch(new RegExp(`\\b${nome}\\b`));
-      expect(testo).not.toContain(c.name.toLowerCase());
-      expect(testo).not.toContain(c.email.toLowerCase());
+      expect(testo).toContain(c.name);
+      expect(testo.toLowerCase()).not.toContain(c.email.toLowerCase());
       expect(testo).not.toContain(c.phone.replace(/\s/g, ""));
       expect(testo).not.toContain(c.phone);
-      // il cognome da solo può essere una parola comune ("conti"): basta che non compaia accanto al nome
-      expect(testo).not.toContain(`${nome} ${cognome}`);
     }
   });
 
-  it("dice se ogni cliente è donna o uomo, per accordare l'italiano", () => {
+  it("dice se ogni cliente è donna o uomo e il suo id per le azioni", () => {
     const testo = contestoLeo();
-    expect(testo).toContain(`${codice("chiara-fontana")} (donna)`);
-    expect(testo).toContain(`${codice("luca-ferri")} (uomo)`);
-    for (const c of clients) expect(testo).toMatch(new RegExp(`\\${codice(c.id).slice(0, -1)}\\] \\((donna|uomo)\\)`));
+    expect(testo).toContain("Chiara Fontana (donna, id chiara-fontana)");
+    expect(testo).toContain("Luca Ferri (uomo, id luca-ferri)");
+    for (const c of clients) expect(testo).toContain(`${c.name} (${c.gender}, id ${c.id})`);
   });
 
-  it("usa i codici dei clienti e contiene i dati della giornata", () => {
+  it("contiene i dati della giornata e non parla più di codici", () => {
     const testo = contestoLeo();
-    expect(testo).toContain(codice("giulia-bianchi"));
     expect(testo).toContain("11:00");
     expect(testo).toContain("2.840");
+    expect(testo).not.toMatch(/\[C\d+\]/);
   });
 });
 
-describe("pseudonimi", () => {
-  it("sostituisce nome e cognome, e il nome da solo, con il codice", () => {
-    expect(pseudonimizza("Luca Ferri ha pagato")).toBe(`${codice("luca-ferri")} ha pagato`);
-    expect(pseudonimizza("Luca ha segnalato un fastidio")).toBe(`${codice("luca-ferri")} ha segnalato un fastidio`);
-    expect(pseudonimizza("cosa ha fatto giulia oggi?")).toBe(`cosa ha fatto ${codice("giulia-bianchi")} oggi?`);
-  });
-
-  it("non tocca le parole che contengono un nome", () => {
-    expect(pseudonimizza("Lucano e Saracena")).toBe("Lucano e Saracena");
-  });
-
-  it("rimette i nomi al posto dei codici", () => {
-    expect(ripristinaNomi(`${codice("luca-ferri")} deve pagare, ${codice("sara-conti")} rinnova`)).toBe("Luca Ferri deve pagare, Sara Conti rinnova");
-    expect(ripristinaNomi("[C99] non esiste")).toBe("[C99] non esiste");
+describe("pulizia dei messaggi", () => {
+  it("toglie email e numeri di telefono, lascia i nomi", () => {
+    expect(ripulisci("Luca Ferri ha scritto da luca.ferri@esempio.it, chiamalo al +39 333 123 4567")).toBe("Luca Ferri ha scritto da [email], chiamalo al [telefono]");
+    expect(ripulisci("cosa ha fatto giulia oggi?")).toBe("cosa ha fatto giulia oggi?");
   });
 });
 
@@ -57,11 +41,12 @@ describe("tasto per aprire una sezione", () => {
     expect(estraiAzione("Ci sono 2 pagamenti aperti.\n[[vai:incassi]]")).toEqual({ text: "Ci sono 2 pagamenti aperti.", vai: { sezione: "incassi" } });
   });
 
-  it("riconosce il profilo di un cliente", () => {
-    expect(estraiAzione(`Scrivi a ${codice("luca-ferri")}. [[vai:cliente:${codice("luca-ferri").slice(1, -1)}]]`)).toEqual({
-      text: `Scrivi a ${codice("luca-ferri")}.`,
+  it("riconosce il profilo di un cliente dal suo id", () => {
+    expect(estraiAzione("Scrivi a Luca Ferri. [[vai:cliente:luca-ferri]]")).toEqual({
+      text: "Scrivi a Luca Ferri.",
       vai: { sezione: "cliente", clienteId: "luca-ferri" },
     });
+    expect(estraiAzione("Ciao [[vai:cliente:nessuno]]")).toEqual({ text: "Ciao" });
   });
 
   it("ignora etichette sconosciute e nasconde quella ancora a metà mentre arriva", () => {
@@ -79,9 +64,8 @@ describe("calendario e azioni nel contesto", () => {
   it("elenca le sedute delle due settimane con id, giorno e codice del cliente", () => {
     const testo = contestoLeo(sedute);
     expect(testo).toContain("## Calendario (questa settimana e la prossima)");
-    expect(testo).toContain(`A3 · giovedì 22/10 · 10:00 · 60 min · workout · Fit Lab, Meolo · ${codice("sara-conti")}`);
-    expect(testo).toContain(`A40 · martedì 27/10 · 18:30 · 45 min · corsa · Parco di Meolo · ${codice("luca-ferri")}`);
-    expect(testo).not.toContain("Sara");
+    expect(testo).toContain("A3 · giovedì 22/10 · 10:00 · 60 min · workout · Fit Lab, Meolo · Sara Conti");
+    expect(testo).toContain("A40 · martedì 27/10 · 18:30 · 45 min · corsa · Parco di Meolo · Luca Ferri");
   });
 
   it("dice la data della demo e senza argomento usa il calendario iniziale", () => {
@@ -95,8 +79,8 @@ describe("calendario e azioni nel contesto", () => {
     expect(testo).toContain("se non è chiaro");
   });
 
-  it("pseudonimizza anche luoghi e testi scritti nel calendario", () => {
-    expect(contestoLeo([{ ...sedute[0], place: "Casa di Luca Ferri" }])).not.toContain("Luca Ferri");
+  it("toglie email e telefoni anche da luoghi scritti nel calendario", () => {
+    expect(contestoLeo([{ ...sedute[0], place: "Da Sara, sara@esempio.it" }])).not.toContain("sara@esempio.it");
   });
 
   it("valida il calendario mandato dal browser", () => {

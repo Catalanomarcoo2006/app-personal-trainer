@@ -171,10 +171,10 @@ const knows: { icon: LucideIcon; title: string; text: string }[] = [
 const numbers: { value: string; label: string }[] = [
   { value: "7", label: "sezioni dell’app che conosce" },
   { value: "1 tocco", label: "per aprire la sezione giusta" },
-  { value: "0", label: "nomi dei clienti inviati all’AI" },
+  { value: "0", label: "email e telefoni inviati all’AI" },
 ];
 
-const steps = ["Chiedi a parole tue", "Leo legge i tuoi dati", "Risponde e ti porta lì"];
+const steps = ["Chiedi a parole tue", "Leo legge i tuoi dati", "Risponde o agisce per te"];
 
 export function LeoIdentikit({ onBack, onReplayIntro }: { onBack: () => void; onReplayIntro: () => void }) {
   const reduce = useReducedMotion();
@@ -261,7 +261,7 @@ export function LeoIdentikit({ onBack, onReplayIntro }: { onBack: () => void; on
             <motion.p {...item(4)} className="flex items-start gap-[8px] text-[11.5px] leading-snug text-muted">
               <ShieldCheck size={16} className="mt-[1px] shrink-0" style={{ color: "var(--color-ok)" }} />
               <span>
-                <b className="text-ink">Decidi sempre tu:</b> Leo non scrive ai clienti e non cambia i tuoi dati. All’AI arrivano codici come [C1], mai i nomi.
+                <b className="text-ink">Decidi sempre tu:</b> fissare e spostare sedute ha sempre “Annulla”, cancellazioni e messaggi ai clienti partono solo con la tua conferma. Email e telefoni non arrivano all’AI.
               </span>
             </motion.p>
           </div>

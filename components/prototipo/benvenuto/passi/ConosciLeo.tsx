@@ -30,7 +30,7 @@ export function ConosciLeo({ avanti }: PropsPasso) {
   const battute = [
     { emoji: "👋", testo: `Ciao ${nome}, sono Leo! Da oggi lavoro con te: conosco i tuoi clienti, l'agenda e gli incassi.` },
     { emoji: "💬", testo: "Chiedimi quello che vuoi, a parole tue: “chi deve ancora pagare?”, “chi non si allena da una settimana?”. Rispondo in un attimo." },
-    { emoji: "✨", testo: "Ai tuoi clienti rispondo su schede e abitudini, anche di notte. I loro nomi non escono mai dall'app: all'AI arrivano solo codici." },
+    { emoji: "✨", testo: "Ai tuoi clienti rispondo su schede e abitudini, anche di notte. Email e numeri di telefono dei clienti non arrivano mai all'AI." },
   ];
   const ultima = battuta === battute.length - 1;
 

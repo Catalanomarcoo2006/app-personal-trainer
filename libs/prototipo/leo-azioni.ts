@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { clientById, trainer, type Appointment, type AppointmentType } from "./dati-finti";
 import { giornoDi, isoDi } from "./calendario";
-import { clienteDaCodice, codiceDi, pseudonimizza, ripristinaNomi } from "./leo-contesto";
+import { clienteDa } from "./leo-contesto";
 
 // Una seduta del calendario con id stabile (A1, A2, …) e data vera.
 export type Seduta = Appointment & { id: string; date: string }; // date "AAAA-MM-GG"
@@ -72,12 +72,12 @@ export function leggiAzione(nome: string, argomenti: unknown): AzioneLeo | null 
   return r.success ? ({ nome, dati: r.data } as AzioneLeo) : null;
 }
 
-// Dai codici dell'AI ai dati veri: cliente "C3" → id, nomi rimessi nel testo. null se il cliente non esiste.
+// Dal cliente indicato dall'AI (id, nome completo o nome) all'id vero. null se il cliente non esiste.
 export function inChiaro(a: AzioneLeo): AzioneLeo | null {
   if (a.nome === "fissa_appuntamento" || a.nome === "scrivi_messaggio") {
-    const cliente = clienteDaCodice(a.dati.cliente);
+    const cliente = clienteDa(a.dati.cliente);
     if (!cliente) return null;
-    if (a.nome === "scrivi_messaggio") return { nome: a.nome, dati: { cliente, testo: ripristinaNomi(a.dati.testo) } };
+    if (a.nome === "scrivi_messaggio") return { nome: a.nome, dati: { cliente, testo: a.dati.testo } };
     return { nome: a.nome, dati: { ...a.dati, cliente } };
   }
   return a;
@@ -101,7 +101,7 @@ function controllaOrario(data: string, ora: string, durata: number, sedute: Sedu
   return { ok: true };
 }
 
-// a è già in chiaro (inChiaro): i clienti sono id, non codici.
+// a è già in chiaro (inChiaro): i clienti sono id.
 export function verificaAzione(a: AzioneLeo, sedute: Seduta[], adesso: { data: string; ora: string } = ADESSO): Verifica {
   switch (a.nome) {
     case "fissa_appuntamento":
@@ -159,30 +159,30 @@ export type StatoScheda = "da-confermare" | "in-corso" | "fatto" | "annullato" |
 function cosa(a: AzioneLeo): string {
   switch (a.nome) {
     case "fissa_appuntamento":
-      return `fissato ${a.dati.tipo.toLowerCase()} con ${codiceDi(a.dati.cliente)} il ${a.dati.data} alle ${a.dati.ora}`;
+      return `fissato ${a.dati.tipo.toLowerCase()} con ${nomeDi(a.dati.cliente)} il ${a.dati.data} alle ${a.dati.ora}`;
     case "sposta_appuntamento":
       return `spostato ${a.dati.id} a ${a.dati.data} ${a.dati.ora}`;
     case "cancella_appuntamento":
       return `cancellato ${a.dati.id}`;
     case "scrivi_messaggio":
-      return `messaggio a ${codiceDi(a.dati.cliente)}`;
+      return `messaggio a ${nomeDi(a.dati.cliente)}`;
   }
 }
 
-// Nota per i turni successivi: cosa è successo alle azioni proposte, con i codici dei clienti (mai i nomi).
+// Nota per i turni successivi: cosa è successo alle azioni proposte.
 export function notaPerLeo(schede: { azione: AzioneLeo; stato: StatoScheda; motivo?: string }[]): string {
   const parti = schede.map(({ azione, stato, motivo }) => {
     if (stato === "fatto") return `fatto: ${cosa(azione)}`;
     if (stato === "annullato") return `${cosa(azione)} annullato dal trainer`;
     if (stato === "da-confermare" || stato === "in-corso") return `${cosa(azione)} in attesa del trainer`;
-    return `${cosa(azione)} rifiutato dall'app (${pseudonimizza(motivo ?? "errore")})`;
+    return `${cosa(azione)} rifiutato dall'app (${motivo ?? "errore"})`;
   });
   return parti.length ? `(${parti.join("; ")})` : "";
 }
 
 // ——— Il menu per l'AI (formato tools dell'API compatibile OpenAI) ———
 
-const cliente = { type: "string", description: "codice del cliente, per esempio C3" };
+const cliente = { type: "string", description: "id del cliente, per esempio sara-conti" };
 const data = { type: "string", description: "data nel formato AAAA-MM-GG, solo questa settimana o la prossima" };
 const ora = { type: "string", description: "ora di inizio nel formato HH:MM, 24 ore" };
 
@@ -231,7 +231,7 @@ export const LEO_TOOLS = [
     function: {
       name: "scrivi_messaggio",
       description:
-        "Prepara un messaggio dal trainer a un cliente, nella chat dell'app. Il trainer lo legge e conferma prima dell'invio. Scrivi come se fossi il trainer, in prima persona, tono cordiale, breve, senza firma; per il cliente usa il suo codice. Scrivi solo quello che il trainer ti ha chiesto di dire: niente consigli di allenamento, salute o alimentazione aggiunti da te.",
+        "Prepara un messaggio dal trainer a un cliente, nella chat dell'app. Il trainer lo legge e conferma prima dell'invio. Scrivi come se fossi il trainer, in prima persona, tono cordiale, breve, senza firma; chiama il cliente per nome. Scrivi solo quello che il trainer ti ha chiesto di dire: niente consigli di allenamento, salute o alimentazione aggiunti da te.",
       parameters: { type: "object", properties: { cliente, testo: { type: "string", description: "testo del messaggio, massimo 1000 caratteri" } }, required: ["cliente", "testo"] },
     },
   },

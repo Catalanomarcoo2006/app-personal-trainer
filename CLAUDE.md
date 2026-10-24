@@ -49,4 +49,4 @@ Il design approvato è in `docs/specs/2026-10-21-design.md`, il piano in `docs/p
 - Mai dati reali di clienti verso l'API ufficiale DeepSeek (server in Cina): solo dati finti finché non c'è il fornitore UE.
 - Niente diete prescritte dal trainer o dall'assistente: la dieta è solo un PDF del nutrizionista.
 - Niente pagamenti online, Stripe, iscrizione libera: gli account trainer li crea Marco.
-- Mai nome o email del cliente nei messaggi verso l'AI.
+- Verso l'AI mai email e telefoni dei clienti. I nomi sì (decisione di Marco del 24/10), ma con clienti veri solo con fornitore AI in UE, DPA firmato e informativa che lo dice.

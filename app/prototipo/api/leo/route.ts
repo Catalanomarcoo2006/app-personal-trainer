@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { LEO_TOOLS, type Seduta } from "@/libs/prototipo/leo-azioni";
-import { contestoLeo, pseudonimizza, SedutaContesto } from "@/libs/prototipo/leo-contesto";
+import { contestoLeo, ripulisci, SedutaContesto } from "@/libs/prototipo/leo-contesto";
 import { raccoglitoreAzioni, type EventoLeo } from "@/libs/prototipo/leo-flusso";
 
 export const runtime = "nodejs";
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   if (!corpo.success) return Response.json({ errore: "richiesta non valida" }, { status: 400 });
 
   // Ultimi 10 messaggi, tagliati a 2.000 caratteri, senza nomi dei clienti (anche quelli scritti dal trainer).
-  const messaggi = corpo.data.messages.slice(-MAX_MESSAGGI).map((m) => ({ role: m.role, content: pseudonimizza(m.content.slice(0, MAX_CARATTERI)) }));
+  const messaggi = corpo.data.messages.slice(-MAX_MESSAGGI).map((m) => ({ role: m.role, content: ripulisci(m.content.slice(0, MAX_CARATTERI)) }));
 
   const stop = new AbortController();
   const attesa = setTimeout(() => stop.abort(), ATTESA_RISPOSTA);

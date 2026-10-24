@@ -58,9 +58,9 @@ describe("POST /prototipo/api/leo", () => {
     expect(await testoDi(res)).toBe("Ci sono 2 pagamenti aperti. [[vai:incassi]]");
   });
 
-  it("chiede il modello con il ragionamento basso e i dati senza nomi dei clienti", async () => {
+  it("chiede il modello con il ragionamento basso, con i nomi ma senza email e telefoni", async () => {
     fetchFinto.mockResolvedValue(sse([{ choices: [{ delta: { content: "ok" } }] }]));
-    await (await POST(domanda("Come sta andando Luca Ferri? E Giulia?"))).text();
+    await (await POST(domanda("Come sta andando Luca Ferri? Scrivigli a luca@esempio.it o al 333 123 4567"))).text();
     const [url, init] = fetchFinto.mock.calls[0];
     const corpo = JSON.parse(init.body);
     expect(url).toBe("https://api.deepseek.com/chat/completions");
@@ -68,8 +68,8 @@ describe("POST /prototipo/api/leo", () => {
     expect(corpo).toMatchObject({ model: "deepseek-flash", stream: true, thinking: { type: "enabled" }, reasoning_effort: "low" });
     expect(corpo.messages[0].role).toBe("system");
     const inviato = JSON.stringify(corpo.messages);
-    expect(inviato).not.toMatch(/Luca|Ferri|Giulia/);
-    expect(corpo.messages[1].content).toMatch(/^Come sta andando \[C\d+\]\? E \[C\d+\]\?$/);
+    expect(inviato).not.toMatch(/luca@esempio|333 123/);
+    expect(corpo.messages[1].content).toBe("Come sta andando Luca Ferri? Scrivigli a [email] o al [telefono]");
   });
 
   it("senza chiave risponde 503 senza chiamare il fornitore", async () => {
@@ -146,9 +146,9 @@ describe("POST /prototipo/api/leo", () => {
     expect(await eventi(await POST(domanda("cancella A5")))).toEqual([{ tipo: "azione", nome: "cancella_appuntamento", dati: { id: "A5" } }]);
   });
 
-  it("mette nel contesto il calendario mandato dal browser, senza nomi", async () => {
+  it("mette nel contesto il calendario mandato dal browser, con i nomi", async () => {
     fetchFinto.mockResolvedValue(sse([{ choices: [{ delta: { content: "ok" } }] }]));
-    const calendario = [{ id: "A3", date: "2026-10-22", time: "10:00", minutes: 60, clientId: "sara-conti", type: "Workout", place: "Casa di Luca Ferri" }];
+    const calendario = [{ id: "A3", date: "2026-10-22", time: "10:00", minutes: 60, clientId: "sara-conti", type: "Workout", place: "Fit Lab, Meolo" }];
     const req = new Request("http://localhost/prototipo/api/leo", {
       method: "POST",
       body: JSON.stringify({ messages: [{ role: "user", content: "ciao" }], calendario }),
@@ -157,7 +157,7 @@ describe("POST /prototipo/api/leo", () => {
     await (await POST(req)).text();
     const sistema = JSON.parse(fetchFinto.mock.calls[0][1].body).messages[0].content as string;
     expect(sistema).toMatch(/A3 · giovedì 22\/10 · 10:00/);
-    expect(sistema).not.toMatch(/Luca Ferri|Sara/);
+    expect(sistema).toContain("A3 · giovedì 22/10 · 10:00 · 60 min · workout · Fit Lab, Meolo · Sara Conti");
   });
 
   it("rifiuta un calendario troppo lungo", async () => {

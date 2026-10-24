@@ -8,7 +8,7 @@ import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound, type SoundKind } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
 import { daConfermare, inChiaro, notaPerLeo, riassunto, verificaAzione, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
-import { estraiAzione, ripristinaNomi, type Sezione } from "@/libs/prototipo/leo-contesto";
+import { estraiAzione, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
 import { creaFila } from "@/libs/prototipo/leo-fila";
@@ -474,7 +474,7 @@ function useCoachChat(): Chat {
           if (e.tipo === "testo") {
             raw += e.v;
             stopAttesa();
-            show(ripristinaNomi(estraiAzione(raw).text));
+            show(estraiAzione(raw).text);
           } else if (e.tipo === "azione") {
             azioni.push({ nome: e.nome, dati: e.dati } as AzioneLeo);
           } else console.warn("Leo: risposta interrotta dal server", e.v);
@@ -489,7 +489,7 @@ function useCoachChat(): Chat {
         stopAttesa();
         const { text: final, vai } = estraiAzione(raw);
         // a volte l'AI propone le azioni senza scrivere niente: una frase di riserva, le schede dicono il resto
-        const testo = ripristinaNomi(final) || (azioni.length ? "Ecco cosa preparo:" : "");
+        const testo = final || (azioni.length ? "Ecco cosa preparo:" : "");
         // con un'azione il tasto per aprire la sezione non serve: ci pensa l'azione
         show(testo, azioni.length ? undefined : actionFor(vai));
         finish(testo);
@@ -511,7 +511,7 @@ function useCoachChat(): Chat {
         if (ctrl.signal.aborted) return;
         if (raw.trim()) {
           // interrotta a metà: resta quello che è arrivato
-          finish(ripristinaNomi(estraiAzione(raw).text));
+          finish(estraiAzione(raw).text);
           return;
         }
         console.warn("Leo: AI non raggiungibile, uso le risposte di riserva.", e instanceof Error ? e.message : e);

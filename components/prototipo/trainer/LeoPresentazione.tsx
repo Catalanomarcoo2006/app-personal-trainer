@@ -48,7 +48,7 @@ const firstName = trainer.name.split(" ")[0];
 const lines = [
   { emoji: "👋", text: `Ciao ${firstName}, sono Leo! Sono il tuo assistente: vivo qui nell’app e conosco i tuoi clienti, l’agenda e gli incassi.` },
   { emoji: "💬", text: "Chiedimi quello che vuoi, a parole tue: “chi deve ancora pagare?”, “chi non si allena da una settimana?”. Rispondo in un attimo e ti porto nella sezione giusta." },
-  { emoji: "✨", text: "I nomi dei tuoi clienti non escono mai dall’app: all’AI arrivano solo codici. Vuoi sapere tutto di me? Tocca la i luccicante qui sopra." },
+  { emoji: "✨", text: "Posso anche agire per te: fissare, spostare e cancellare sedute, scrivere ai clienti. Le cose delicate le confermi tu. Vuoi sapere tutto di me? Tocca la i luccicante qui sopra." },
 ];
 
 export const INTRO_LAST = lines.length - 1;

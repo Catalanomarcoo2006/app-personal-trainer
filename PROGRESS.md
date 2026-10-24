@@ -31,7 +31,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Calendario gestito dal trainer; il cliente chiede lo spostamento con un messaggio: semplice e senza conflitti.
 - Avvisi in app + email; push solo dopo, insieme alla versione telefono completa del trainer.
 - Dati sanitari: consenso esplicito, Supabase UE, Marco responsabile del trattamento (DPA).
-- Azioni di Leo: tool calling con un solo giro verso l'AI (l'app controlla ed esegue, niente secondo giro: costa ~0,15-0,2 cent a domanda); risposta della rotta in NDJSON (testo + azioni). Ragionamento acceso anche con i tools (verificato il 24/10). Leo del trainer risponde con DeepSeek (`deepseek-flash`, ~0,1 cent a domanda): `app/prototipo/api/leo`, clienti come codici [C1] (mai nomi), senza chiave o se l'AI non risponde usa le risposte fisse.
+- Azioni di Leo: tool calling con un solo giro verso l'AI (l'app controlla ed esegue, niente secondo giro: costa ~0,15-0,2 cent a domanda); risposta della rotta in NDJSON (testo + azioni). Ragionamento acceso anche con i tools (verificato il 24/10). Leo del trainer risponde con DeepSeek (`deepseek-flash`, ~0,1 cent a domanda): `app/prototipo/api/leo`, Leo vede i nomi dei clienti (dal 24/10, niente più codici [C1]: li capisce anche scritti male), mai email e telefoni; senza chiave o se l'AI non risponde usa le risposte fisse.
 - Area trainer = una pagina sola (`TrainerApp.tsx`, cambio sezione con `history.pushState`). Nessun tasto nero: `btn-trainer` / `sel-trainer` / `glass` in `globals.css`.
 - Animazioni di Leo seduto: ritagliate dal video con ffmpeg + Python (sfondo tolto), WebP animate in `public/prototipo/coach/`, ripartono con un indirizzo blob nuovo.
 - Benvenuto: niente asterisco (somigliava al logo di Claude), icona del passo al suo posto; niente macchia d'olio verso la dashboard, schede a meteoriti (scelta di Marco del 24/10). Niente pallina (tolta da Marco); casetta come MP4 vero (960 × 720) su fondo bianco, non con trasparenza: niente righe ai bordi né perdita di qualità (`IMMAGINI APP/pulisci-casa.py`). Niente filtri `blur` CSS sugli aloni (Chrome su Windows li taglia in linee dritte). Sorgenti Gemini in `IMMAGINI APP/` (esclusa da git), nomi in maiuscolo.
@@ -39,8 +39,8 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Problemi noti / blocchi
 - Licenza ZeroToShip da verificare con Alberto Ravasini prima di vendere.
 - Partita IVA da aprire prima del primo incasso.
-- Fornitore AI in UE da scegliere prima del primo cliente vero.
-- Informativa, DPA e termini da far rivedere a un professionista.
+- Fornitore AI in UE da scegliere prima del primo cliente vero: strade possibili DeepSeek ospitato in UE da un provider europeo (modello aperto: stesso Leo, dati in UE; verificare versione, DPA e tool calling), Mistral, o i grandi modelli su server UE. Cambiano solo le variabili AI_*.
+- Informativa, DPA e termini da far rivedere a un professionista; l'informativa deve dire che l'assistente (fornitore UE) tratta nomi e dati dei clienti.
 - Nome del prodotto da scegliere.
 - Nota nel vault non creata: il brain è stato azzerato il 2026-10-21; aggiungerla quando la nuova struttura è pronta.
 
@@ -55,6 +55,6 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
-- 2026-10-24 (3): animazioni di Leo nel calendario più lente e visibili: la seduta cancellata diventa rossa, trema e si spezza in 6 pezzi; la seduta nuova compare verde con alone e sfuma nel suo colore.
+- 2026-10-24 (3): animazioni di Leo nel calendario più lente e visibili: la seduta cancellata diventa rossa, trema e si spezza in 6 pezzi; la seduta nuova compare verde con alone e sfuma nel suo colore; Leo vede i nomi dei clienti (via i codici [C1], capisce anche nomi scritti male), mai email e telefoni; regole, spec e testi dell'app aggiornati.
 - 2026-10-24 (2): Leo agisce: azioni con controlli (sovrapposizioni, orari 6-22, due settimane), schede in chat con conferma/annulla, viaggio animato (seduta che atterra, vola o lascia il contorno; messaggio che si scrive da solo), memoria degli esiti; prova di 10 frasi con DeepSeek ok.
 - 2026-10-24: finale del benvenuto (coriandoli continui, riepilogo modificabile, Leo fermo con "Tutto pronto!", ingresso in dashboard con le schede che cadono come meteoriti, con fischio e impatto); push e deploy su Vercel (commit d4dba3f); sveglia di Leo più veloce (scritte subito, "Iniziamo" a ~3,7 s); icona del passo al posto dell'asterisco.
