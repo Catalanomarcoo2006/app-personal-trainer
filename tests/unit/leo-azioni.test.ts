@@ -85,11 +85,11 @@ describe("verificaAzione", () => {
   });
   it("tiene le sedute tra le 6 e le 22", () => {
     const presto = verificaAzione(fissa("05:30"), sedute);
-    expect(presto.ok).toBe(false);
-    expect(presto.ok ? "" : presto.motivo).toContain("6:00");
+
+    expect(presto).toMatchObject({ ok: false, motivo: expect.stringContaining("6:00") });
     const tardi = verificaAzione(fissa("21:30"), sedute);
-    expect(tardi.ok).toBe(false);
-    expect(tardi.ok ? "" : tardi.motivo).toContain("22:00");
+
+    expect(tardi).toMatchObject({ ok: false, motivo: expect.stringContaining("22:00") });
     expect(verificaAzione(fissa("21:00"), sedute)).toEqual({ ok: true });
   });
   it("tiene la durata tra 15 e 180 minuti", () => {
