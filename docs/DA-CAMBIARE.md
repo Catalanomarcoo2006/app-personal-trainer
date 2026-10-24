@@ -14,6 +14,11 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 - [ ] **Macchia d'olio da "Salta per ora"**: passaggio dal benvenuto/onboarding alla dashboard con la macchia d'olio. (2026-10-24)
 - [ ] **Macchia d'olio come nel video di riferimento** (`Videos/ANIMAZIONE SCHERMO NERO APP.mp4`, da copiare in `docs/riferimenti/`): la macchia di oggi è troppo tonda e pulita; quella del video è una forma liquida grande e asimmetrica, che parte dal pulsante e attraversa lo schermo in diagonale con un fronte a onda (lingue curve lunghe), in circa mezzo secondo. Vale per tutte le macchie (`libs/ui/macchia.ts`, forma in `app/globals.css`). (2026-10-24)
 
+- [ ] **Leo, "Conferma tutte"**: quando Leo propone più azioni da confermare (es. 5 cancellazioni), un tasto unico per confermarle tutte; nella prova del 24/10 Marco ne ha lasciate indietro alcune. (2026-10-24)
+- [ ] **Leo fa tutto** (in pausa): peso, misure, note, obiettivo, nuovo cliente; segna pagato, registra pagamento, aggiungi lezioni/rinnova, sollecito come messaggio vero; colore, tema, suoni, notifiche; azioni su più clienti con una scheda a spunte e "Invia a tutti". Subito + Annulla: peso, misure, obiettivo, nota, impostazioni; con conferma: nuovo cliente, soldi, pacchetti, solleciti, azioni multiple. Schede escluse. Dettagli in `PROGRESS.md`; si parte dalla spec. (2026-10-24)
+- [ ] **Vocali a Leo dal telefono del trainer**: idea in `IDEE.md`, insieme alla versione telefono del trainer. (2026-10-24)
+- [ ] **Leo, rifiniture dalla revisione del 24/10** (minori): azione malformata scartata in silenzio (mostrare "non ho capito, riprova"); il viaggio continua se si chiude la chat a metà; Calendario/Messaggi riaperti dopo tanto ripartono dall'ultima azione di Leo; limite 1.000 caratteri del messaggio; ultima riga del flusso e tool_calls senza indice (per il fornitore UE); test dell'evento errore della rotta e della fila con timer finti; spec da allineare (chat compatta in basso, tasto Invia). (2026-10-24)
+
 ## Area cliente
 
 ## Varie
