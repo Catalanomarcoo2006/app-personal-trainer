@@ -19,7 +19,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Area cliente (in attesa, dopo il benvenuto): spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
 
 ## Da fare (TODO)
-- Leo, opzione C: `segna_pagamento` e `aggiungi_lezioni` con lo stesso meccanismo (un'azione, un controllo, un'animazione in `libs/prototipo/leo-azioni.ts`).
+- **Leo fa tutto** (in pausa, Marco prima prova Leo): blocchi cliente (peso, misure, note, obiettivo, nuovo cliente con codice [Cn] dinamico), soldi (segna pagato, registra pagamento, aggiungi lezioni/rinnova, sollecito come messaggio vero), impostazioni (colore, tema, suoni, notifiche), più clienti in una volta (una scheda con spunte e "Invia a tutti"). Subito + Annulla: peso, misure, obiettivo, nota, impostazioni; conferma: nuovo cliente, soldi, pacchetti, solleciti, azioni multiple. Schede escluse (scelta di Marco). Prossimo passo: spec.
 - Fase 1, con le chiavi Supabase: schema (Task 3), RLS con test (Task 4), `getAccess` e middleware (Task 6), pannello admin (Task 7).
 - Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate).
 - Marco: chiavi Supabase (progetto UE) e Resend; email di supporto e dominio del prodotto (`config.ts`).
