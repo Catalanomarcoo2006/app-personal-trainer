@@ -10,13 +10,17 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }
 
+// Spostamenti fluidi: Motion anima `transform` e `opacity` sulla scheda grafica (Web Animations), mentre
+// x, y e scale li calcola in JavaScript a ogni fotogramma, e scattano appena la pagina ha da fare.
+// Chi si muove con `transform` ha la classe "mosso": con "riduci movimento" il CSS lo tiene fermo (globals.css).
+
 // Ingresso a cascata: ogni blocco entra 35 ms dopo il precedente.
 export function Appear({ i = 0, className, children }: { i?: number; className?: string; children: ReactNode }) {
   return (
     <motion.div
-      className={className}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      className={`mosso ${className ?? ""}`}
+      initial={{ opacity: 0, transform: "translateY(10px)" }}
+      animate={{ opacity: 1, transform: "translateY(0px)" }}
       transition={{ delay: 0.02 + i * 0.035, duration: 0.38, ease: EASE_OUT }}
     >
       {children}

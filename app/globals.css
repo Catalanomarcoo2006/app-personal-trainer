@@ -311,6 +311,11 @@
 @media (prefers-reduced-motion: reduce) {
   .section-live { animation: none; }
 }
+/* Elementi animati con `transform` (vedi components/ui/motion.tsx): con "riduci movimento" restano fermi,
+   solo dissolvenze. !important vince anche sulle Web Animations. */
+@media (prefers-reduced-motion: reduce) {
+  .mosso { transform: none !important; }
+}
 
 /* Niente tasti neri: l'azione principale ha il colore del trainer, con una luce sul bordo alto */
 .btn-trainer {

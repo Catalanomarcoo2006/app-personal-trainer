@@ -229,11 +229,11 @@ export function Sidebar() {
 
   return (
     <motion.aside
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, transform: "translateX(-16px)" }}
+      animate={{ opacity: 1, transform: "translateX(0px)" }}
       transition={{ delay: 0.15, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       onMouseLeave={leaveBar}
-      className="glass glass-3d absolute top-[calc(50%+40px)] left-[16px] z-20 flex h-[420px] w-[56px] -translate-y-1/2 flex-col items-center gap-[19px] rounded-full pt-[32px]"
+      className="mosso glass glass-3d absolute top-[calc(50%+40px)] left-[16px] z-20 flex h-[420px] w-[56px] -translate-y-1/2 flex-col items-center gap-[19px] rounded-full pt-[32px]"
     >
       {sideItems.map(({ label, icon: Icon, href }) => {
         const isActive = section === label;
@@ -314,7 +314,7 @@ export function TrainerShell({
 }) {
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: EASE_OUT }} className="relative z-30">
+      <motion.div initial={{ opacity: 0, transform: "translateY(3px)" }} animate={{ opacity: 1, transform: "translateY(0px)" }} transition={{ duration: 0.18, ease: EASE_OUT }} className="mosso relative z-30">
         <TitleRow title={title} back={back} left={titleLeft} right={titleRight} />
       </motion.div>
       {children}

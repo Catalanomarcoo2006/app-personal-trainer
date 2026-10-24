@@ -9,6 +9,8 @@ import { audioSbloccato, isSoundEnabled, suonoComparse, suonoConteggio, suonoNot
 import { agenda, client, clientById, revenue, TODAY_INDEX, week } from "@/libs/prototipo/dati-finti";
 import type { Passo } from "@/libs/prototipo/benvenuto";
 import { AnteprimaTelefono } from "./AnteprimaTelefono";
+import { LeoPiegamenti, preparaLeo } from "./LeoPiegamenti";
+import { useScena } from "./scena";
 
 // Metà sinistra del benvenuto: la vetrina del trainer. Gradiente caldo nel suo colore con macchie che si muovono
 // piano, e sopra le schede in vetro della sua app che fluttuano, come nel riferimento (docs/riferimenti/
@@ -43,6 +45,14 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
   // dal passo del marchio in poi le schede si fanno da parte e al loro posto entra l'anteprima dell'app
   const lato = passo >= 1;
   const reduce = useReducedMotion();
+  // nel passo di Leo il telefono entra solo quando si arriva alla scelta del tono: prima Leo si allena da solo
+  const { sceltaTono } = useScena();
+  const telefono = lato && (passo !== 4 || sceltaTono);
+  // mentre Leo fa i piegamenti (sul bianco, sopra) il pannello si abbassa per fargli posto
+  const ristretta = passo === 4 && !sceltaTono;
+  useEffect(() => {
+    if (passo === 3 && !reduce) preparaLeo().catch(() => {});
+  }, [passo, reduce]);
   const vetrina = useRef<HTMLDivElement>(null);
   const x = useMotionValue(-9999);
   const y = useMotionValue(-9999);
@@ -82,9 +92,13 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
   return (
     <VetrinaCtx.Provider value={{ giro, attiva: !lato }}>
     <CursoreCtx.Provider value={{ x, y, vetrina }}>
-      <div
+      <div className="relative h-full">
+      <motion.div
         ref={vetrina}
-        className="relative h-full overflow-hidden rounded-[22px]"
+        className="absolute inset-x-0 bottom-0 overflow-hidden rounded-[22px]"
+        initial={false}
+        animate={{ top: ristretta ? "54%" : "0%" }}
+        transition={reduce ? { duration: 0.3 } : { duration: 0.75, ease: EASE_OUT }}
         style={{ background: `linear-gradient(180deg, ${tinta(10)} 0%, ${tinta(26)} 46%, ${tinta(56)} 100%)` }}
         onPointerMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
@@ -144,7 +158,29 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
         </motion.div>
 
         {/* al posto delle schede, il telefono con l'app che riceveranno i clienti */}
-        <AnimatePresence>{lato && <AnteprimaTelefono key="telefono" nascita={passo === 1} />}</AnimatePresence>
+        <AnimatePresence>
+          {telefono && <AnteprimaTelefono key="telefono" nascita={passo === 1} consenso={passo === 2} invito={passo === 3} leo={passo === 4} finale={passo === 5} />}
+        </AnimatePresence>
+
+        {/* nel pannello abbassato, sotto Leo che si allena */}
+        <AnimatePresence>
+          {ristretta && (
+            <motion.div
+              key="leo-testo"
+              className="pointer-events-none absolute bottom-[34px] left-[7%] right-[7%] z-20"
+              initial={{ opacity: 0, y: reduce ? 0 : 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.2 } }}
+              transition={{ duration: 0.45, ease: EASE_OUT, delay: 0.4 }}
+            >
+              <p className="text-[13px] font-semibold text-ink/55">Leo, il tuo assistente</p>
+              <p className="mt-[6px] text-[31px] font-semibold leading-[1.14] tracking-[-0.025em] text-ink">
+                Si allena con te
+                <br />e risponde ai tuoi clienti.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="pointer-events-none absolute inset-0 z-10">{children}</div>
 
@@ -160,6 +196,9 @@ export function Vetrina({ passo, children }: { passo: Passo; children?: ReactNod
             <br />e incassi, con il tuo marchio.
           </p>
         </motion.div>
+      </motion.div>
+      {/* Leo sta fuori dal pannello: sopra, sul bianco, e poi in basso a sinistra sopra l'arancione; nel finale resta lì e saluta */}
+      <AnimatePresence>{passo >= 4 && <LeoPiegamenti key="leo" piccolo={passo === 5 || sceltaTono} festa={passo === 5} />}</AnimatePresence>
       </div>
     </CursoreCtx.Provider>
     </VetrinaCtx.Provider>

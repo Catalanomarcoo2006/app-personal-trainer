@@ -2,35 +2,39 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Check, Eye, EyeOff, Lock } from "lucide-react";
+import { Check, Eye, EyeOff, KeyRound, Lock, Mail, MailCheck } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
-import { playSound } from "@/libs/ui/sound";
-import { trainer } from "@/libs/prototipo/dati-finti";
-import { aggiornaBenvenuto, benvenutoAttuale, CIFRE_CODICE, nuovoCodice, passwordValida, regolePassword } from "@/libs/prototipo/benvenuto";
+import { playSound, suonoTonfo } from "@/libs/ui/sound";
+import { aggiornaBenvenuto, benvenutoAttuale, CIFRE_CODICE, nuovoCodice, passwordValida, regolePassword, useNomeTrainer } from "@/libs/prototipo/benvenuto";
 import type { PropsPasso } from "../Benvenuto";
 import { useScena } from "../scena";
 import { CodiceOtp } from "../CodiceOtp";
 import { CLASSE_CAMPO, Campo, Entra, Tasto, TestaPasso } from "../ui";
 
 // Passo 1: il trainer arriva dall'email d'invito, sceglie la password e conferma l'email con un codice.
-// Poi la sveglia: compare la casetta di Leo e parte il video (Leo dorme, si sveglia ed esce), sotto una frase
-// che si scrive lettera per lettera; a fine video la frase lascia il posto al pannello "Iniziamo".
+// Poi la sveglia: Leo fa uno stacco da terra (video), sotto compare il saluto; quando il bilanciere gli scivola
+// e tocca terra, il video sobbalza e sotto il saluto scende il pannello "Iniziamo".
 
 const EMAIL = "marco.rossi@esempio.it";
-const NOME = trainer.name.split(" ")[0];
 const SCADENZA = 60;
 
-// IMMAGINI APP/VIDEO CASETTA.mp4 pulito (IMMAGINI APP/pulisci-casa.py): fondo al bianco esatto, ombre e fumo sfumati
-// verso il bianco vicino ai bordi, risoluzione piena (960 × 720). Si vede su fondo bianco senza bordi né ritagli.
-const CASA = "/prototipo/coach/casa.mp4";
-const CASA_FINE = "/prototipo/coach/casa-fine.webp"; // ultimo fotogramma
-// momenti del video (dura 9,6 s): Leo esce dalla porta, si appoggia alla casa, sorride in piedi
-const ESCE_S = 3.0;
-const APPOGGIATO_S = 5.2;
-const SORRIDE_S = 8.2;
-// la casa e Leo stanno un po' a sinistra nel fotogramma: il video si sposta per centrarli
+// IMMAGINI APP/LEO STACCO DA TERRA.mp4 ritagliato a 960 × 720 (primi 8,6 s) e pulito (IMMAGINI APP/pulisci-stacco.py):
+// fondo al bianco esatto, ombre sfumate verso il bianco vicino ai bordi. Si vede su fondo bianco senza bordi né ritagli.
+const STACCO = "/prototipo/coach/stacco.mp4";
+const STACCO_FINE = "/prototipo/coach/stacco-fine.webp"; // ultimo fotogramma
+// momenti del video (dura 8,6 s, tempo del video): il saluto compare appena parte, poi il testo; il bilanciere
+// tocca terra a 6,5 s. Rivisto il 24/10 (Marco: troppo lungo e troppo tempo senza scritte): le scritte arrivano
+// subito e il video corre più veloce, di più mentre Leo sta fermo in piedi col bilanciere (vedi velocita).
+const SALUTO_S = 0.3;
+const TESTO_S = 1.6;
+const TOCCA_S = 6.5;
+// velocità del video nei suoi tratti: lo stacco, Leo fermo in piedi, il bilanciere che scivola e cade
+function velocita(t: number): number {
+  if (t < 3.2) return 1.6;
+  if (t < 5.9) return 2.2;
+  return 1.3;
+}
 const LARGO = 392;
-const SPOSTA = Math.round(LARGO / 2 - (426 / 960) * LARGO);
 // i bordi del video sfumano nel trasparente: anche il grigio di un livello che la compressione lascia sulle prime
 // colonne non può disegnare una riga sul bianco della pagina
 const BORDI_SFUMATI = {
@@ -44,7 +48,7 @@ type Fase = "password" | "codice" | "sveglia";
 
 export function Accesso({ avanti }: PropsPasso) {
   const [fase, setFase] = useState<Fase>(() => (benvenutoAttuale().verificato ? "sveglia" : "password"));
-  const [subito] = useState(() => benvenutoAttuale().verificato); // ricaricando dopo la verifica: niente video, Leo è già fuori
+  const [subito] = useState(() => benvenutoAttuale().verificato); // ricaricando dopo la verifica: niente video, tutto già visibile
   const [codice, setCodice] = useState("");
   const [verificata, setVerificata] = useState(false);
   const scena = useScena();
@@ -67,8 +71,8 @@ export function Accesso({ avanti }: PropsPasso) {
   const vaiAlCodice = () => {
     mandaCodice();
     setFase("codice");
-    // la casetta si scarica mentre il trainer legge il codice, così dopo la verifica parte senza attese
-    fetch(CASA).catch(() => {});
+    // il video si scarica mentre il trainer legge il codice, così dopo la verifica parte senza attese
+    fetch(STACCO).catch(() => {});
   };
 
   const tornaAllaPassword = () => {
@@ -98,6 +102,7 @@ export function Accesso({ avanti }: PropsPasso) {
               <motion.div key={verificata ? "fatto" : "codice"} exit={{ opacity: 0, filter: "blur(3px)" }} transition={{ duration: 0.2 }}>
                 {verificata ? (
                   <TestaPasso
+                    icona={MailCheck}
                     titolo={
                       <>
                         Email <span className="text-ok">verificata</span>
@@ -107,6 +112,7 @@ export function Accesso({ avanti }: PropsPasso) {
                   />
                 ) : (
                   <TestaPasso
+                    icona={Mail}
                     titolo="Controlla la tua email"
                     sotto={
                       <>
@@ -135,6 +141,7 @@ export function Accesso({ avanti }: PropsPasso) {
 }
 
 function Password({ onFatto }: { onFatto: () => void }) {
+  const nome = useNomeTrainer().split(" ")[0];
   const [password, setPassword] = useState("");
   const [vedi, setVedi] = useState(false);
   const [invio, setInvio] = useState(false);
@@ -154,7 +161,7 @@ function Password({ onFatto }: { onFatto: () => void }) {
         continua();
       }}
     >
-      <TestaPasso titolo={`Ciao ${NOME}, benvenuto`} sotto="Il tuo account è pronto. Scegli una password per entrare nella tua app." />
+      <TestaPasso icona={KeyRound} titolo={`Ciao ${nome}, benvenuto`} sotto="Il tuo account è pronto. Scegli una password per entrare nella tua app." />
       <div className="mt-[26px] flex flex-col gap-[16px]">
         <Entra i={3}>
           <Campo etichetta="La tua email">
@@ -222,22 +229,44 @@ function Regola({ ok, children }: { ok: boolean; children: string }) {
   );
 }
 
-// La sveglia: la casetta con Leo che dorme, si sveglia ed esce. La casetta resta ferma al suo posto e sotto lo
-// spazio è già riservato: quando Leo esce compare il saluto parola per parola, quando si appoggia alla casa
-// il testo, quando sorride il tasto "Iniziamo". I tempi seguono il video stesso (timeupdate), non dei timer.
+// La sveglia: Leo fa uno stacco da terra. Il video resta fermo al suo posto e sotto lo spazio è già riservato:
+// appena parte compare il saluto parola per parola, poi il testo; quando il bilanciere tocca terra il video
+// sobbalza, si sente il tonfo e sotto scende il pannello "Iniziamo". I tempi seguono il video, non dei timer: fotogramma per
+// fotogramma (requestVideoFrameCallback) perché il tonfo cada insieme al bilanciere; timeupdate fa da riserva.
 function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
+  const nome = useNomeTrainer().split(" ")[0];
   const reduce = useReducedMotion();
   const fermo = subito || !!reduce;
   const [partito, setPartito] = useState(false);
-  // 0 = ancora dentro casa, 1 = è uscito (saluto), 2 = appoggiato (testo), 3 = sorride ("Iniziamo")
+  // 0 = non ancora partito, 1 = saluto, 2 = testo, 3 = il bilanciere tocca terra ("Iniziamo")
   const [momento, setMomento] = useState(fermo ? 3 : 0);
   const ultimo = useRef(momento);
   const avanza = (m: number) => {
     if (m <= ultimo.current) return;
     ultimo.current = m;
-    if (m === 3) playSound("confirm");
+    if (m === 3) suonoTonfo();
     setMomento(m);
   };
+  const tonfo = momento >= 3 && !fermo;
+  const video = useRef<HTMLVideoElement>(null);
+  const daTempo = (t: number) => {
+    const v = video.current;
+    if (v && v.playbackRate !== velocita(t)) v.playbackRate = velocita(t);
+    avanza(t >= TOCCA_S ? 3 : t >= TESTO_S ? 2 : t >= SALUTO_S ? 1 : 0);
+  };
+
+  useEffect(() => {
+    const v = video.current;
+    if (!v || !("requestVideoFrameCallback" in v)) return;
+    let id = 0;
+    const passo = (_: number, info: { mediaTime: number }) => {
+      daTempo(info.mediaTime);
+      if (ultimo.current < 3) id = v.requestVideoFrameCallback(passo);
+    };
+    id = v.requestVideoFrameCallback(passo);
+    return () => v.cancelVideoFrameCallback(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col items-center text-center">
@@ -245,31 +274,32 @@ function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
         className="relative -mt-[24px] overflow-hidden rounded-[22px] bg-white"
         style={{ width: LARGO, height: Math.round((LARGO * 720) / 960) }}
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: partito || fermo ? 1 : 0, y: 0 }}
-        transition={{ duration: 0.4, ease: EASE_OUT }}
+        animate={{ opacity: partito || fermo ? 1 : 0, y: tonfo ? [0, 3, -1.5, 0.5, 0] : 0 }}
+        transition={tonfo ? { y: { duration: 0.32, ease: "easeOut" }, opacity: { duration: 0.4 } } : { duration: 0.4, ease: EASE_OUT }}
       >
         {fermo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={CASA_FINE} alt="Leo accanto alla sua casetta" className="absolute top-0 h-full max-w-none select-none" style={{ left: SPOSTA, width: LARGO, ...BORDI_SFUMATI }} draggable={false} />
+          <img src={STACCO_FINE} alt="Leo accanto al bilanciere" className="absolute inset-0 h-full w-full select-none" style={BORDI_SFUMATI} draggable={false} />
         ) : (
           <video
-            src={CASA}
+            ref={video}
+            src={STACCO}
             muted
             playsInline
             autoPlay
             preload="auto"
             disablePictureInPicture
-            aria-label="Leo si sveglia ed esce dalla sua casetta"
-            className="absolute top-0 h-full max-w-none"
-            style={{ left: SPOSTA, width: LARGO, ...BORDI_SFUMATI }}
+            aria-label="Leo fa uno stacco da terra e il bilanciere gli scivola"
+            className="absolute inset-0 h-full w-full"
+            style={BORDI_SFUMATI}
+            onLoadedMetadata={(e) => {
+              e.currentTarget.playbackRate = velocita(0);
+            }}
             onPlaying={() => {
               if (!partito) playSound("open");
               setPartito(true);
             }}
-            onTimeUpdate={(e) => {
-              const t = e.currentTarget.currentTime;
-              avanza(t >= SORRIDE_S ? 3 : t >= APPOGGIATO_S ? 2 : t >= ESCE_S ? 1 : 0);
-            }}
+            onTimeUpdate={(e) => daTempo(e.currentTarget.currentTime)}
             onEnded={() => avanza(3)}
             onError={() => {
               setPartito(true);
@@ -279,9 +309,9 @@ function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
         )}
       </motion.div>
 
-      {/* spazio riservato: i testi compaiono senza spostare la casetta */}
-      <div className="mt-[14px] flex min-h-[186px] w-full flex-col items-center">
-        <Saluto testo={`Ciao ${NOME}, eccomi!`} visibile={momento >= 1} />
+      {/* spazio riservato: i pannelli compaiono senza spostare il video */}
+      <div className="mt-[14px] flex min-h-[204px] w-full flex-col items-center">
+        <Saluto testo={`Ciao ${nome}, eccomi!`} visibile={momento >= 1} />
         <motion.p
           className="mx-auto mt-[10px] max-w-[340px] text-[14.5px] leading-[1.5] text-muted"
           initial={false}
@@ -290,10 +320,16 @@ function Sveglia({ subito, avanti }: { subito: boolean; avanti: () => void }) {
         >
           Sono Leo, il tuo assistente. Ti accompagno nei primi passi: in 2 minuti la tua app è pronta.
         </motion.p>
-        <div className="mt-[22px] h-[48px] w-full">
+        {/* il secondo pannello scende da sotto il primo, come spinto giù dal bilanciere */}
+        <div className="mt-[18px] w-full overflow-hidden pb-[6px]">
           <AnimatePresence>
             {momento >= 3 && (
-              <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 320, damping: 24 }}>
+              <motion.div
+                initial={fermo ? false : { opacity: 0, y: -28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 420, damping: 22, mass: 0.9 }}
+              >
+                <p className="mb-[10px] text-[13px] font-semibold text-ink">Prima cosa: il tuo marchio.</p>
                 <Tasto
                   onClick={() => {
                     playSound("confirm");

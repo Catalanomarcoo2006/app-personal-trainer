@@ -4,6 +4,7 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 
 ## Area trainer
 
+- [ ] **Benvenuto, passo "Conosci Leo"**: c'è ancora qualcosa che non va; Marco lo riprende più avanti per ultimarlo (cosa, da chiarire con lui). (2026-10-24)
 - [ ] **Testa di Leo in basso a sinistra (sezioni diverse dalla home)**: non è centrata bene rispetto a ciò che ha sotto, esteticamente non convince. Da valutare: ingrandirla in modo che copra un pelo la barra laterale di vetro, oppure spostarla in un altro punto. (2026-10-23)
 - [x] **Suono all'ingresso nella home**: effetto "numeri che salgono", un suono che scorre verso l'alto come un grafico che sale rapidamente; parte con il conteggio dei numeri e finisce quando smettono di crescere. Rispettare l'interruttore "Suoni ai clic" e `prefers-reduced-motion`. (2026-10-23) **Fatto 2026-10-23.**
 - [x] **Bug nelle Impostazioni, sezione Aspetto**: in fondo, sotto "Ascolta i suoni", le schede (Apertura, Conferma…) escono dal pannello e restano tagliate dal bordo. (2026-10-23) **Fatto 2026-10-24**: la pagina aveva altezza fissa e le schede si stringevano sotto il contenuto; ora sugli schermi bassi scorre.

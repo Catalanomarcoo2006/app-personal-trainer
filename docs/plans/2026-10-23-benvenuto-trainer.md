@@ -10,7 +10,7 @@
 
 **Spec:** `docs/specs/2026-10-23-benvenuto-trainer-design.md` · riferimento di stile `docs/riferimenti/animazione-login.mp4`
 
-> **Aggiornamento 23/10 sera:** Task 2, 4 e 6 (pallina e Leo che ne esce) sono superati: Marco li ha tolti. Al loro posto: codice di 4 cifre fedele al riferimento e "sveglia di Leo" con la casetta (`casa.webp`), già fatti; vedi la spec, sezioni 3 e 4. Dove mettere Leo nei passi 2-6 si decide prima del Task 7.
+> **Aggiornamento 23/10 sera:** Task 2, 4 e 6 (pallina e Leo che ne esce) sono superati: Marco li ha tolti. Al loro posto: codice di 4 cifre fedele al riferimento e "sveglia di Leo" (dal 24/10 lo stacco da terra, `stacco.mp4`, al posto della casetta), già fatti; vedi la spec, sezioni 3 e 4. Dove mettere Leo nei passi 2-6 si decide prima del Task 7.
 
 ## Global Constraints
 
@@ -177,7 +177,7 @@
 - Consumes: `aggiornaBenvenuto`, `emailValida` (Task 1); `AnteprimaTelefono` (Task 7); `usePallina` (Task 4); `slugify` (`libs/slug.ts`).
 
 - [ ] **Step 1:** `Accordi`: le tre schede del design (testi esatti della spec, sezione 4.3) con icone (`ShieldCheck`, `FileSignature`, `Server`); "Leggi termini e accordo" → foglio laterale (velo sfocato, chiude con velo/Esc/✕) con il titolo "Bozza da far rivedere a un professionista" e un testo segnaposto in 6 punti; casella ≥ 44 px "Ho letto e accetto i termini di servizio e l'accordo sul trattamento dei dati (DPA)"; "Avanti" spento finché non è spuntata, sotto "Serve per poter seguire i dati sulla salute dei tuoi clienti"; avanti → `aggiornaBenvenuto({ accordi: { quando: new Date().toISOString() } })`; pallina in `modulo` con "Leggi con calma" all'ingresso; telefono `consenso`.
-- [ ] **Step 2:** `PrimoCliente`: nome ed email (`emailValida`, tasto spento se no), oppure "Prova con un cliente di esempio" (Giulia Bianchi, `giulia@esempio.it`); poi il link `nomeprodotto.it/marco-rossi` con "Copia" (`navigator.clipboard`, "Copiato!") e "Invia invito" → "Invito pronto! Nel prodotto vero parte un'email a {email}." e salva `primoCliente`; "Salta"; telefono `invito`.
+- [x] **Step 2:** `PrimoCliente`: nome ed email (`emailValida`, tasto spento se no), oppure "Prova con un cliente di esempio" (Giulia Bianchi, `giulia@esempio.it`); poi il link `nomeprodotto.it/marco-rossi` con "Copia" (`navigator.clipboard`, "Copiato!") e "Invia invito" → "Invito pronto! Nel prodotto vero parte un'email a {email}." e salva `primoCliente`; "Salta"; telefono `invito`.
 - [ ] **Step 3: Verifica:** senza spunta non si va avanti, nemmeno ricaricando e andando al finale; email "giulia@" → spento; cliente d'esempio → il telefono mostra Giulia.
 - [ ] **Step 4:** `npx tsc --noEmit` → ok. Commit `feat: accordi sulla privacy e primo cliente nel benvenuto`.
 
@@ -190,8 +190,8 @@
 - Consumes: `useBenvenuto`, `aggiornaBenvenuto`, `completaBenvenuto`, `Tono` (Task 1); `LeoEsce` (Task 6); `AnteprimaTelefono` (Task 7); `navigateWithStain` non serve: si cambia pagina con `conMacchia` (`libs/ui/macchia.ts`) + `window.location.assign("/prototipo/trainer")`.
 - Produces: `FRASI_TONO: Record<Tono, string>` in `ConosciLeo.tsx` ("Ciao Giulia! Oggi c'è il Giorno A, ce la fai alla grande 💪" · "Buongiorno Giulia. Oggi è in programma il Giorno A: 6 esercizi." · "Giulia, oggi Giorno A! Ogni ripetizione ti avvicina ai −8 kg 🔥"); `Coriandoli({ attivi }: { attivi: boolean })` (canvas a tutto schermo, 120 pezzi nel colore del trainer e in due sue tinte, 2,5 s, poi si toglie).
 
-- [ ] **Step 1:** `ConosciLeo`: tre battute di Leo (adattate da `LeoPresentazione.tsx`: chi è, cosa fa per il trainer, cosa fa per i clienti e che i nomi non arrivano all'AI), una alla volta con "Avanti" e parole che entrano in sequenza; poi i 3 toni come scelta `sel-trainer`; la pallina in mano a Leo si illumina a ogni battuta; telefono `leo` con `FRASI_TONO[tono]`; "Salta".
-- [ ] **Step 2:** `Finale`: "La tua app è pronta!", `Coriandoli`, riepilogo in 4 righe (colore con pallino, studio, primo cliente o "da aggiungere", tono di Leo), Leo `fermo` che saluta (piccola oscillazione dell'immagine); "Entra nella tua dashboard" → `completaBenvenuto()`, `playSound("complete")`, macchia d'olio, `/prototipo/trainer`.
+- [x] **Step 1 (24/10, con Leo che fa i piegamenti al posto della pallina; vedi la spec 4.5):** `ConosciLeo`: tre battute di Leo (adattate da `LeoPresentazione.tsx`: chi è, cosa fa per il trainer, cosa fa per i clienti e che i nomi non arrivano all'AI), una alla volta con "Avanti" e parole che entrano in sequenza; poi i 3 toni come scelta `sel-trainer`; la pallina in mano a Leo si illumina a ogni battuta; telefono `leo` con `FRASI_TONO[tono]`; "Salta".
+- [x] **Step 2:** `Finale`: "La tua app è pronta!", `Coriandoli`, riepilogo in 4 righe (colore con pallino, studio, primo cliente o "da aggiungere", tono di Leo), Leo `fermo` che saluta (piccola oscillazione dell'immagine); "Entra nella tua dashboard" → `completaBenvenuto()`, `playSound("complete")`, macchia d'olio, `/prototipo/trainer`.
 - [ ] **Step 3: Verifica:** tono scelto qui → stesso tono in Impostazioni; finale senza accordi impossibile; dopo l'ingresso il benvenuto non ricompare; riduci movimento → niente coriandoli.
 - [ ] **Step 4:** `npx tsc --noEmit` → ok. Commit `feat: conosci Leo e finale del benvenuto`.
 

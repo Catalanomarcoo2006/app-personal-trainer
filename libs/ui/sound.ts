@@ -214,6 +214,30 @@ export function suonoVento(ritardo = 0, durata = 0.75): void {
   pop(ac, t + durata * 0.9, 0.62, 0.05);
 }
 
+// Bilanciere che tocca terra: colpo grave che scende di tono, un fruscio sordo e un tintinnio dei dischi.
+export function suonoTonfo(): void {
+  if (!audioSbloccato()) return;
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  note(ac, t, 150, 48, 0.32, 0.22);
+  const src = ac.createBufferSource();
+  src.buffer = bufferRumore(ac);
+  const filtro = ac.createBiquadFilter();
+  filtro.type = "lowpass";
+  filtro.frequency.value = 520;
+  const amp = ac.createGain();
+  amp.gain.setValueAtTime(0.0001, t);
+  amp.gain.exponentialRampToValueAtTime(0.16, t + 0.006);
+  amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+  src.connect(filtro).connect(amp).connect(ac.destination);
+  src.start(t);
+  src.stop(t + 0.22);
+  note(ac, t + 0.012, 2093, 2080, 0.16, 0.012, "triangle");
+  note(ac, t + 0.03, 2637, 2620, 0.12, 0.008, "triangle");
+  if ("vibrate" in navigator) navigator.vibrate?.(18);
+}
+
 // Notifica che arriva: due note brevi e leggere che salgono.
 export function suonoNotifica(volume = 1): void {
   if (!audioSbloccato()) return;
@@ -230,4 +254,60 @@ export function suonoComparse(quante: number, ritardo = 0, passo = 0.09): void {
   const ac = audio();
   if (!ac) return;
   for (let i = 0; i < quante; i++) pop(ac, ac.currentTime + ritardo + i * passo, 1.1 + i * 0.06, 0.03);
+}
+
+// Meteorite: un fischio che scende mentre cade e, dopo `caduta` secondi, l'impatto (colpo grave che sprofonda,
+// rumore sordo e qualche crepitio). Per le schede della dashboard che cadono all'arrivo dal benvenuto.
+// tono sposta un po' l'altezza, così meteoriti diversi non suonano tutti uguali.
+export function suonoMeteora(caduta: number, tono = 1): void {
+  if (!audioSbloccato()) return;
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  const impatto = t + caduta;
+  // il fischio, sempre più vicino
+  const osc = ac.createOscillator();
+  const fischio = ac.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(1500 * tono, t);
+  osc.frequency.exponentialRampToValueAtTime(320 * tono, impatto);
+  fischio.gain.setValueAtTime(0.0001, t);
+  fischio.gain.exponentialRampToValueAtTime(0.045, impatto - 0.05);
+  fischio.gain.exponentialRampToValueAtTime(0.0001, impatto + 0.01);
+  osc.connect(fischio).connect(ac.destination);
+  osc.start(t);
+  osc.stop(impatto + 0.03);
+  // l'aria che si sposta
+  const aria = ac.createBufferSource();
+  aria.buffer = bufferRumore(ac);
+  const filtroAria = ac.createBiquadFilter();
+  filtroAria.type = "bandpass";
+  filtroAria.Q.value = 0.8;
+  filtroAria.frequency.setValueAtTime(2400, t);
+  filtroAria.frequency.exponentialRampToValueAtTime(500, impatto);
+  const ampAria = ac.createGain();
+  ampAria.gain.setValueAtTime(0.0001, t);
+  ampAria.gain.exponentialRampToValueAtTime(0.06, impatto - 0.04);
+  ampAria.gain.exponentialRampToValueAtTime(0.0001, impatto + 0.02);
+  aria.connect(filtroAria).connect(ampAria).connect(ac.destination);
+  aria.start(t);
+  aria.stop(impatto + 0.05);
+  // l'impatto
+  note(ac, impatto, 120 * tono, 38, 0.42, 0.3);
+  const colpo = ac.createBufferSource();
+  colpo.buffer = bufferRumore(ac);
+  const filtroColpo = ac.createBiquadFilter();
+  filtroColpo.type = "lowpass";
+  filtroColpo.frequency.setValueAtTime(900, impatto);
+  filtroColpo.frequency.exponentialRampToValueAtTime(160, impatto + 0.3);
+  const ampColpo = ac.createGain();
+  ampColpo.gain.setValueAtTime(0.0001, impatto);
+  ampColpo.gain.exponentialRampToValueAtTime(0.22, impatto + 0.005);
+  ampColpo.gain.exponentialRampToValueAtTime(0.0001, impatto + 0.32);
+  colpo.connect(filtroColpo).connect(ampColpo).connect(ac.destination);
+  colpo.start(impatto);
+  colpo.stop(impatto + 0.35);
+  pop(ac, impatto + 0.05, 0.5 * tono, 0.035);
+  pop(ac, impatto + 0.09, 0.62 * tono, 0.025);
+  if ("vibrate" in navigator) window.setTimeout(() => navigator.vibrate?.(22), caduta * 1000);
 }

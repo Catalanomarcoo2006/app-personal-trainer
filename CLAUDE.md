@@ -8,6 +8,10 @@ Stato di avanzamento e prossimi passi (caricati in automatico a ogni sessione, t
 
 Il design approvato è in `docs/specs/2026-10-21-design.md`, il piano in `docs/plans/`.
 
+## Idee
+- All'inizio leggi `IDEE.md` (se c'è) e tieni presenti le idee "In valutazione".
+- Quando Marco dice "idea: …", va in `IDEE.md`, sezione "In valutazione" (se manca, crealo con le sezioni In valutazione, Domande aperte, Bozze, Diventate progetto, Scartate).
+
 ## Stack
 - Boilerplate ZeroToShip (Alberto Ravasini, licenza da verificare): Next.js 15 (App Router), React 19, TypeScript, Tailwind 4 + DaisyUI 5, Supabase (auth, database, Storage) in regione UE, Resend per le email.
 - Animazioni con Motion (ex Framer Motion); assistente via API compatibile OpenAI (DeepSeek V4.1 Flash in sviluppo, fornitore UE con dati veri).
@@ -26,6 +30,7 @@ Il design approvato è in `docs/specs/2026-10-21-design.md`, il piano in `docs/p
 - `config.ts`: nome app, dominio, email
 - `docs/specs/`, `docs/plans/`: design e piani; `docs/riferimenti/`: registrazioni di riferimento per lo stile (non versionate)
 - `docs/boilerplate-regole.md`: regole complete del boilerplate
+- `docs/DA-CAMBIARE.md`: lista delle modifiche, anche piccole, che Marco vuole fare (si aggiunge man mano, si spunta quando è fatta)
 - `docs/chiavi.md`: elenco delle chiavi API e di dove sono usate, senza valori (da aggiornare a ogni chiave nuova)
 
 ## Convenzioni

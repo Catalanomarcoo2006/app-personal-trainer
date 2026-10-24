@@ -109,11 +109,10 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, transform: "translateY(14px) scale(0.98)" }}
+      animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
       transition={{ delay: 0.06 + i * 0.05, duration: 0.5, ease: EASE_OUT }}
-      whileHover={{ y: -4 }}
-      className="min-h-0"
+      className="mosso min-h-0 transition-[translate] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-[4px]"
     >
       <Link
         href={ROUTES.cliente(c.id)}

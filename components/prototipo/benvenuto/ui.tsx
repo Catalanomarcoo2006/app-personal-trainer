@@ -2,12 +2,12 @@
 
 import { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Check, LoaderCircle } from "lucide-react";
+import { Check, LoaderCircle, type LucideIcon } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import type { Passo } from "@/libs/prototipo/benvenuto";
 
 // Pezzi comuni dei passi del benvenuto, nello stile del riferimento (docs/riferimenti/animazione-login.mp4):
-// asterisco colorato, titolo deciso, sottotitolo grigio, campi chiari, un tasto pieno largo.
+// icona del passo nel colore del trainer, titolo deciso, sottotitolo grigio, campi chiari, un tasto pieno largo.
 
 // Ogni elemento di un passo entra dal basso, uno dopo l'altro.
 export function Entra({ i = 0, children, className }: { i?: number; children: ReactNode; className?: string }) {
@@ -24,24 +24,35 @@ export function Entra({ i = 0, children, className }: { i?: number; children: Re
   );
 }
 
-export function Asterisco() {
+// L'icona del passo (al posto dell'asterisco, tolto il 24/10): un quadrato arrotondato nel colore del trainer che entra
+// con un piccolo scatto.
+function IconaPasso({ icona: Icona }: { icona: LucideIcon }) {
+  const reduce = useReducedMotion();
   return (
-    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden className="text-[var(--trainer)]">
-      {[0, 60, 120].map((r) => (
-        <rect key={r} x="11.6" y="1" width="2.8" height="24" rx="1.4" fill="currentColor" transform={`rotate(${r} 13 13)`} />
-      ))}
-    </svg>
+    <motion.span
+      aria-hidden
+      className="grid size-[46px] place-items-center rounded-[15px] text-[var(--trainer)]"
+      style={{
+        background: "color-mix(in srgb, var(--trainer) 13%, var(--color-card))",
+        boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--trainer) 18%, transparent)",
+      }}
+      initial={{ scale: reduce ? 1 : 0.6, rotate: reduce ? 0 : -12 }}
+      animate={{ scale: 1, rotate: 0 }}
+      transition={{ type: "spring", stiffness: 420, damping: 18, delay: 0.08 }}
+    >
+      <Icona size={22} strokeWidth={2.2} />
+    </motion.span>
   );
 }
 
-export function TestaPasso({ titolo, sotto }: { titolo: ReactNode; sotto?: ReactNode }) {
+export function TestaPasso({ titolo, sotto, icona }: { titolo: ReactNode; sotto?: ReactNode; icona: LucideIcon }) {
   return (
     <div>
       <Entra i={0}>
-        <Asterisco />
+        <IconaPasso icona={icona} />
       </Entra>
       <Entra i={1}>
-        <h1 className="mt-[14px] text-[28px] font-bold leading-[1.15] tracking-[-0.02em]">{titolo}</h1>
+        <h1 className="mt-[16px] text-[28px] font-bold leading-[1.15] tracking-[-0.02em]">{titolo}</h1>
       </Entra>
       {sotto && (
         <Entra i={2}>

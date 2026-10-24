@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-23
+**Ultimo aggiornamento:** 2026-10-24
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -11,10 +11,10 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Brainstorming, design approvato (`docs/specs/2026-10-21-design.md`), setup con boilerplate ZeroToShip, sito su Vercel.
 - Area trainer del prototipo: tutte le sezioni, Leo con AI (presentazione alla prima apertura, identikit dalla "i" con Leo che si siede, luce intermittente sulla home).
 - Piano Fase 1: Task 2 (pulizia boilerplate: via Stripe, blog, Crisp, GPT, testimonianze; slug) e Task 5 (logica di dominio in `libs/domain/`) fatti; del Task 6 c'è `resolveRoute` (`libs/auth/routing.ts`), manca il collegamento al middleware. 58 test Vitest.
-- Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo nella casetta, "Iniziamo"); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; `?da-capo` lo fa ripartire a ogni aggiornamento.
+- Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo nella casetta, "Iniziamo"); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; nel prototipo ogni aggiornamento della pagina riparte dal primo passo (`?riprendi` riparte dal passo salvato).
 
 ## In corso
-- Benvenuto: passi 2-6 ancora provvisori (marchio con telefono d'anteprima, privacy e accordi, primo cliente, conosci Leo, finale), piano `docs/plans/2026-10-23-benvenuto-trainer.md` dal Task 7; prima decidere dove sta Leo dopo "Iniziamo" (la casetta sparisce).
+- Benvenuto: passi 2-5 fatti (marchio, privacy, primo cliente, conosci Leo); "Conosci Leo" (`passi/ConosciLeo.tsx`, `LeoPiegamenti.tsx`: piegamenti sul bianco, poi Leo piccolo e chat col tono) **da ultimare**, Marco lo riprende più avanti. Finale fatto (`passi/Finale.tsx`, `Coriandoli.tsx`: riepilogo, Leo con "Tutto pronto!", in dashboard le schede cadono come meteoriti (`trainer/Meteora.tsx`)); manca la verifica finale (Task 10).
 - Area cliente (in attesa, dopo il benvenuto): spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
 
 ## Da fare (TODO)
@@ -53,8 +53,8 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
+- 2026-10-24: finale del benvenuto (coriandoli continui, riepilogo modificabile, Leo fermo con "Tutto pronto!", ingresso in dashboard con le schede che cadono come meteoriti, con fischio e impatto); sveglia di Leo più veloce (scritte subito, "Iniziamo" a ~3,7 s); icona del passo al posto dell'asterisco.
 - 2026-10-23 (3): benvenuto del trainer, primo passo (accesso, codice, sveglia di Leo), vetrina con grafiche dell'app, "Salta per ora"; Tailwind `dark:` segue la classe `.dark`.
 - 2026-10-23 (2): Leo si presenta alla prima apertura; identikit dalla "i" con Leo che si siede; luce intermittente su Leo in home; revisione del sito (prova di tutti i pulsanti, plurali, 404 ed errore in italiano, middleware senza chiavi); pulizia del boilerplate, slug, logica di dominio e smistamento per ruolo con test.
 - 2026-10-23: pop a ogni clic con tonalità per azione; Leo più luminoso e visibile in tutte le sezioni; Leo accorda il genere; revisione del sito; push su GitHub.
 - 2026-10-22: Leo con AI DeepSeek (codici al posto dei nomi, risposte di riserva); macchia d'olio; spec e piano dell'area cliente; Vitest; sito su Vercel; foto del trainer modificabile.
-- 2026-10-22: navigazione istantanea, agenda e calendario in lastre di vetro, ricerca (Ctrl+K) e avvisi funzionanti.

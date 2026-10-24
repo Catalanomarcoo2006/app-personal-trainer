@@ -3,13 +3,13 @@
 import { MouseEvent as ReactMouseEvent, ReactNode, useState } from "react";
 import { flushSync } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ImagePlus, UserRound } from "lucide-react";
+import { Check, ImagePlus, Palette, UserRound } from "lucide-react";
 import { ACCENTS, useAppearance } from "@/components/ui/appearance";
 import { EASE_OUT } from "@/components/ui/motion";
 import { conMacchia } from "@/libs/ui/macchia";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
-import { aggiornaBenvenuto, controllaLogo, inizialiStudio, MAX_SPECIALITA, misuraLogo, scegliSpecialita, SPECIALITA, useBenvenuto } from "@/libs/prototipo/benvenuto";
+import { aggiornaBenvenuto, controllaLogo, inizialiStudio, nomeDelTrainer, MAX_SPECIALITA, misuraLogo, scegliSpecialita, SPECIALITA, useBenvenuto } from "@/libs/prototipo/benvenuto";
 import { shrinkPhoto, stato, useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
 import type { PropsPasso } from "../Benvenuto";
 import { CLASSE_CAMPO, Campo, Entra, Tasto, TastoTesto, TestaPasso } from "../ui";
@@ -104,29 +104,42 @@ export function Marchio({ avanti }: PropsPasso) {
 
   return (
     <div>
-      <TestaPasso titolo="Il tuo marchio" sotto="L'app dei tuoi clienti avrà il tuo nome, il tuo logo e il tuo colore. Guardala nascere qui a fianco." />
+      <TestaPasso icona={Palette} titolo="Il tuo marchio" sotto="L'app dei tuoi clienti avrà il tuo nome, il tuo logo e il tuo colore. Guardala nascere qui a fianco." />
       <div className="mt-[20px] flex flex-col gap-[14px]">
         <Entra i={3}>
-          <div className="grid grid-cols-2 gap-[10px]">
+          <div className="grid grid-cols-2 gap-x-[10px] gap-y-[12px]">
+            {/* già compilato con il nome dell'account (lo crea Marco); se si svuota, resta quello */}
+            <Campo etichetta="Il tuo nome">
+              <input
+                value={b.nome ?? trainer.name}
+                onChange={(e) => aggiornaBenvenuto({ nome: e.target.value })}
+                placeholder={trainer.name}
+                maxLength={40}
+                autoComplete="name"
+                className={CLASSE_CAMPO}
+              />
+            </Campo>
             <Campo etichetta="Nome dello studio">
               <input
                 value={b.studio}
                 onChange={(e) => aggiornaBenvenuto({ studio: e.target.value })}
-                placeholder={trainer.name}
+                placeholder="Es. Officina Fitness"
                 maxLength={40}
                 autoComplete="organization"
                 className={CLASSE_CAMPO}
               />
             </Campo>
-            <Campo etichetta="Motto" destra={<span className="text-[11px] font-normal text-muted">facoltativo</span>}>
-              <input
-                value={b.motto}
-                onChange={(e) => aggiornaBenvenuto({ motto: e.target.value })}
-                placeholder="Allenati con metodo"
-                maxLength={60}
-                className={CLASSE_CAMPO}
-              />
-            </Campo>
+            <div className="col-span-2">
+              <Campo etichetta="Motto" destra={<span className="text-[11px] font-normal text-muted">facoltativo</span>}>
+                <input
+                  value={b.motto}
+                  onChange={(e) => aggiornaBenvenuto({ motto: e.target.value })}
+                  placeholder="Allenati con metodo"
+                  maxLength={60}
+                  className={CLASSE_CAMPO}
+                />
+              </Campo>
+            </div>
           </div>
         </Entra>
 
@@ -144,7 +157,7 @@ export function Marchio({ avanti }: PropsPasso) {
                   <img src={b.logo} alt="Il tuo logo" className="size-full rounded-[14px] border border-line bg-white object-contain p-[5px]" />
                 ) : (
                   <span className="grid size-full place-items-center rounded-[14px] text-[15px] font-extrabold text-white transition-colors duration-500" style={{ background: "var(--trainer)" }}>
-                    {inizialiStudio(b.studio, trainer.name)}
+                    {inizialiStudio(b.studio, nomeDelTrainer(b.nome, trainer.name))}
                   </span>
                 )
               }

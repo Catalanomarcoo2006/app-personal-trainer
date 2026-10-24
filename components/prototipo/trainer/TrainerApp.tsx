@@ -6,6 +6,7 @@ import { CalendarDays } from "lucide-react";
 import { Appear } from "@/components/ui/motion";
 import { Pill } from "@/components/ui/basics";
 import { suonoConteggio } from "@/libs/ui/sound";
+import { ingressoConMeteoriti, meteoritiFatti } from "@/libs/prototipo/ingresso";
 import { clientById, trainer } from "@/libs/prototipo/dati-finti";
 import { TrainerShell } from "./Chrome";
 import { BASE, ROUTES } from "./nav";
@@ -18,6 +19,7 @@ import { ClientNotFound, ClientProfile } from "./ClientProfile";
 import { MessagesView as MessagesSection } from "./Messages";
 import { PlansView as PlansSection } from "./Plans";
 import { WeekCalendar } from "./WeekCalendar";
+import { Meteora } from "./Meteora";
 import { PaymentsView } from "./Payments";
 import { SettingsView } from "./Settings";
 
@@ -124,13 +126,34 @@ function ByQuery({ children }: { children: (query: string) => ReactNode }) {
   return <Fragment key={query}>{children(query)}</Fragment>;
 }
 
-// Home "Oggi" del trainer.
+// Home "Oggi" del trainer. All'arrivo dal benvenuto le schede principali cadono una alla volta come meteoriti
+// (Meteora): incassi, clienti, agenda, messaggi; a ogni impatto la pagina sobbalza appena.
+const METEORITI = { inizio: 0.5, passo: 0.42 };
+
 function Home() {
+  const [meteoriti] = useState(ingressoConMeteoriti);
+  const pagina = useRef<HTMLElement>(null);
+  const impatto = (ultimo: boolean) => {
+    pagina.current?.animate(
+      [{ transform: "translate(0, 0)" }, { transform: "translate(1.5px, 4px)" }, { transform: "translate(-1px, -1.5px)" }, { transform: "translate(0, 0)" }],
+      { duration: 260, easing: "ease-out" },
+    );
+    if (ultimo) meteoritiFatti();
+  };
+  // Con i meteoriti ogni scheda si monta quando cade: un posto vuoto della stessa misura finché non arriva.
+  const cade = (n: number, children: ReactNode, className: string, inclina: number, tono: number) =>
+    meteoriti ? (
+      <Meteora ritardo={METEORITI.inizio + n * METEORITI.passo} inclina={inclina} tono={tono} onAtterra={() => impatto(n === 3)} className={className}>
+        {children}
+      </Meteora>
+    ) : null;
+
   // Numeri che salgono (incassi, percentuali dei clienti, colonne del grafico): un solo ticchettio che parte
   // con il primo numero e si ferma con l'ultimo. Muto con "riduci movimento" (i numeri non contano).
   const suonato = useRef(false); // in sviluppo React esegue gli effetti due volte: il suono parte una volta sola
   useEffect(() => {
-    if (suonato.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // con i meteoriti i numeri contano a ogni atterraggio: suonano gli impatti, non il ticchettio
+    if (suonato.current || meteoriti || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     suonato.current = true;
     suonoConteggio({ ritardo: 0.27, durata: 1.25, scatti: 26 });
   }, []);
@@ -148,28 +171,34 @@ function Home() {
         </>
       }
     >
-      <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">
+      <main ref={pagina} className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">
         <div className="flex min-h-0 flex-col gap-[10px]">
           <Appear i={1}>
             <ProfileCard />
           </Appear>
-          <Appear i={3} className="min-h-0 flex-1">
-            <RevenueCard />
-          </Appear>
+          {cade(0, <RevenueCard />, "min-h-0 flex-1", -6, 1) ?? (
+            <Appear i={3} className="min-h-0 flex-1">
+              <RevenueCard />
+            </Appear>
+          )}
         </div>
 
         <div className="flex min-h-0 flex-col">
           <Appear i={1}>
             <ClientsHeader />
           </Appear>
-          <PathCards />
+          {cade(1, <PathCards />, "min-h-[132px]", 4, 1.12) ?? <PathCards />}
           <div className="mt-[10px] grid min-h-0 flex-1 grid-cols-[1.25fr_1fr] gap-[10px]">
-            <Appear i={4} className="flex min-h-0">
-              <AgendaCard />
-            </Appear>
-            <Appear i={5} className="flex min-h-0">
-              <MessagesCard />
-            </Appear>
+            {cade(2, <AgendaCard />, "min-h-0", -5, 0.92) ?? (
+              <Appear i={4} className="flex min-h-0">
+                <AgendaCard />
+              </Appear>
+            )}
+            {cade(3, <MessagesCard />, "min-h-0", 6, 0.84) ?? (
+              <Appear i={5} className="flex min-h-0">
+                <MessagesCard />
+              </Appear>
+            )}
           </div>
         </div>
       </main>

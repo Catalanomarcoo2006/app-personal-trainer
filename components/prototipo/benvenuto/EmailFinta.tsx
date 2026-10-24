@@ -2,10 +2,11 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { Mail } from "lucide-react";
-import { trainer } from "@/libs/prototipo/dati-finti";
+import { useNomeTrainer } from "@/libs/prototipo/benvenuto";
 
 // Nel prototipo nessuna email parte davvero: il codice "arriva" come notifica che scivola nella vetrina.
 export function EmailFinta({ codice }: { codice: string | null }) {
+  const nome = useNomeTrainer().split(" ")[0];
   return (
     <AnimatePresence>
       {codice && (
@@ -28,7 +29,7 @@ export function EmailFinta({ codice }: { codice: string | null }) {
               </span>
               <span className="mt-[2px] block text-[12.5px] font-semibold">Il tuo codice per entrare</span>
               <span className="mt-[1px] block text-[12px] text-muted">
-                Ciao {trainer.name.split(" ")[0]}, il tuo codice è{" "}
+                Ciao {nome}, il tuo codice è{" "}
                 {/* le 4 cifre alla stessa distanza l'una dall'altra (non due coppie) */}
                 <b className="inline-flex gap-[0.32em] font-mono text-[13.5px] text-ink">
                   {codice.split("").map((c, i) => (

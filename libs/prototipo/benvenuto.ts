@@ -3,6 +3,8 @@
 // browser (localStorage), così ricaricando si riparte da lì e, una volta finito, non ricompare.
 
 import { useSyncExternalStore } from "react";
+import { slugify } from "@/libs/slug";
+import { trainer } from "./dati-finti";
 
 export type Tono = "amichevole" | "professionale" | "motivante";
 
@@ -14,6 +16,7 @@ export type Benvenuto = {
   fatto: boolean;
   passo: Passo;
   verificato: boolean;
+  nome: string | null; // nome del trainer; null = quello dell'account (creato da Marco), non ancora toccato
   studio: string;
   logo: string | null; // data URL
   coloreScelto: boolean; // il trainer ha toccato un colore nel passo del marchio (accende il telefono)
@@ -29,6 +32,7 @@ export const BENVENUTO_INIZIALE: Benvenuto = {
   fatto: false,
   passo: 0,
   verificato: false,
+  nome: null,
   studio: "",
   logo: null,
   coloreScelto: false,
@@ -93,6 +97,24 @@ export function scegliSpecialita(scelte: string[], s: string): string[] {
   return scelte.length >= MAX_SPECIALITA ? scelte : [...scelte, s];
 }
 
+// Il nome del trainer: quello scelto nel passo del marchio, altrimenti quello dell'account.
+export const nomeDelTrainer = (nome: string | null, account: string) => nome?.trim() || account;
+
+// Indirizzo dell'app del trainer, dal suo nome (nel prodotto vero è lo slug dell'account).
+export const linkApp = (nome: string) => `nomeprodotto.it/${slugify(nome)}`;
+
+// I toni di Leo, nell'ordine in cui si scelgono, e la risposta d'esempio che il cliente vede nell'anteprima.
+export const TONI: Tono[] = ["amichevole", "professionale", "motivante"];
+
+export const FRASI_TONO: Record<Tono, string> = {
+  amichevole: "Ciao Giulia! Oggi c'è il Giorno A, ce la fai alla grande 💪",
+  professionale: "Buongiorno Giulia. Oggi è in programma il Giorno A: 6 esercizi, circa 50 minuti.",
+  motivante: "Giulia, oggi Giorno A! Ogni ripetizione ti avvicina ai −8 kg 🔥",
+};
+
+// Tono salvato non valido (dati vecchi o modificati a mano) → quello di partenza.
+export const tonoValido = (t: unknown): Tono => (TONI.includes(t as Tono) ? (t as Tono) : "amichevole");
+
 // Senza email verificata si riparte dall'accesso; il finale vuole gli accordi accettati.
 export function passoDiRipartenza(b: Benvenuto): Passo {
   if (!b.verificato) return 0;
@@ -104,7 +126,7 @@ export function leggiBenvenuto(storage: Pick<Storage, "getItem"> | null): Benven
   try {
     const dati = JSON.parse(storage?.getItem(CHIAVE) ?? "null");
     if (!dati || dati.v !== 1) return BENVENUTO_INIZIALE;
-    return { ...BENVENUTO_INIZIALE, ...dati };
+    return { ...BENVENUTO_INIZIALE, ...dati, tono: tonoValido(dati.tono) };
   } catch {
     return BENVENUTO_INIZIALE;
   }
@@ -150,6 +172,10 @@ export function useBenvenuto(): Benvenuto {
 
 // Lettura diretta, per gli effetti: durante l'idratazione useBenvenuto restituisce ancora lo stato iniziale.
 export const benvenutoAttuale = () => leggi();
+
+export function useNomeTrainer(): string {
+  return nomeDelTrainer(useBenvenuto().nome, trainer.name);
+}
 
 export const aggiornaBenvenuto = (parte: Partial<Benvenuto>) => scrivi({ ...leggi(), ...parte });
 export const completaBenvenuto = () => scrivi({ ...leggi(), fatto: true });

@@ -5,14 +5,18 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
 import { EASE_OUT } from "@/components/ui/motion";
-import { aggiornaBenvenuto, azzeraBenvenuto, completaBenvenuto, passoDiRipartenza, PASSI, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
+import { aggiornaBenvenuto, azzeraBenvenuto, completaBenvenuto, passoDiRipartenza, useBenvenuto, type Passo } from "@/libs/prototipo/benvenuto";
 import { stato } from "@/libs/prototipo/stato";
 import { Vetrina } from "./Vetrina";
 import { ScenaProvider, useScena } from "./scena";
 import { EmailFinta } from "./EmailFinta";
 import { Accesso } from "./passi/Accesso";
 import { Marchio } from "./passi/Marchio";
-import { Barra, Tasto, TestaPasso } from "./ui";
+import { Accordi } from "./passi/Accordi";
+import { PrimoCliente } from "./passi/PrimoCliente";
+import { ConosciLeo } from "./passi/ConosciLeo";
+import { Finale } from "./passi/Finale";
+import { Barra } from "./ui";
 
 export const BENVENUTO = "/prototipo/benvenuto";
 
@@ -25,9 +29,10 @@ export function Benvenuto() {
   const b = useBenvenuto();
   const [pronto, setPronto] = useState(false);
   useEffect(() => {
-    // ?da-capo: per le demo, ogni volta che si apre o si aggiorna la pagina il percorso riparte dall'inizio
-    // (anche la foto del trainer: nel passo del marchio il telefono deve ripartire tutto spento)
-    if (new URLSearchParams(window.location.search).has("da-capo")) {
+    // Prototipo (scelta di Marco del 24/10): ogni volta che si apre o si aggiorna la pagina il percorso riparte
+    // dal primo passo, anche la foto del trainer (nel passo del marchio il telefono deve ripartire tutto spento).
+    // ?riprendi: si riparte invece dal passo salvato, come farà il prodotto vero.
+    if (!new URLSearchParams(window.location.search).has("riprendi")) {
       azzeraBenvenuto();
       stato.setTrainerPhoto(null);
     }
@@ -57,7 +62,7 @@ export function Benvenuto() {
               <EmailInAlto />
             </div>
             <div className="flex h-[44px] items-center justify-between px-[10px]">
-              {passo > 0 && passo < 5 ? (
+              {passo > 0 ? (
                 <button
                   type="button"
                   onClick={indietro}
@@ -77,7 +82,7 @@ export function Benvenuto() {
                 </CambioPasso>
               </div>
             </div>
-            <Salta />
+            {passo < 5 && <Salta />}
           </div>
         </div>
       </div>
@@ -121,27 +126,14 @@ function ScenaVetrina() {
 function SchermataPasso({ passo, avanti, indietro }: { passo: Passo } & PropsPasso) {
   if (passo === 0) return <Accesso avanti={avanti} indietro={indietro} />;
   if (passo === 1) return <Marchio avanti={avanti} indietro={indietro} />;
-  // passi provvisori: ognuno viene sostituito dal suo file in passi/
-  return (
-    <div>
-      <TestaPasso titolo={`Passo: ${PASSI[passo]}`} sotto="In costruzione." />
-      <div className="mt-[28px]">
-        <Tasto
-          onClick={() => {
-            if (passo === 2) aggiornaBenvenuto({ accordi: { quando: new Date().toISOString() } });
-            if (passo === 5) completaBenvenuto();
-            avanti();
-          }}
-        >
-          Avanti
-        </Tasto>
-      </div>
-    </div>
-  );
+  if (passo === 2) return <Accordi avanti={avanti} indietro={indietro} />;
+  if (passo === 3) return <PrimoCliente avanti={avanti} indietro={indietro} />;
+  if (passo === 4) return <ConosciLeo avanti={avanti} indietro={indietro} />;
+  return <Finale />;
 }
 
 // Finché i passi sono in costruzione: dal benvenuto si può andare subito alla dashboard. Il benvenuto risulta
-// fatto (la dashboard non rimanda più qui); per rivederlo: Impostazioni → "Rivedi il benvenuto", o ?da-capo.
+// fatto (la dashboard non rimanda più qui); per rivederlo: Impostazioni → "Rivedi il benvenuto", o aggiornare la pagina del benvenuto (riparte sempre dal primo passo).
 function Salta() {
   return (
     <button

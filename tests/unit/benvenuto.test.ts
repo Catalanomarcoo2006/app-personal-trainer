@@ -4,7 +4,11 @@ import {
   codiceGiusto,
   controllaLogo,
   emailValida,
+  FRASI_TONO,
+  TONI,
   inizialiStudio,
+  linkApp,
+  nomeDelTrainer,
   leggiBenvenuto,
   misuraLogo,
   scegliSpecialita,
@@ -124,5 +128,29 @@ describe("specialità", () => {
   });
   it("ne tiene al massimo 3: oltre, la nuova non entra", () => {
     expect(scegliSpecialita(["Forza", "Posturale", "Over 60"], "Dimagrimento")).toEqual(["Forza", "Posturale", "Over 60"]);
+  });
+});
+
+describe("nome del trainer", () => {
+  it("senza nome scelto, o con il campo svuotato, resta quello dell'account", () => {
+    expect(nomeDelTrainer(null, "Marco Rossi")).toBe("Marco Rossi");
+    expect(nomeDelTrainer("   ", "Marco Rossi")).toBe("Marco Rossi");
+  });
+  it("il nome scelto vince, senza spazi ai lati", () => {
+    expect(nomeDelTrainer(" Luca De Marco ", "Marco Rossi")).toBe("Luca De Marco");
+  });
+  it("il link dell'app segue il nome", () => {
+    expect(linkApp("Luca De Marco")).toBe("nomeprodotto.it/luca-de-marco");
+  });
+});
+
+describe("tono di Leo", () => {
+  it("ogni tono ha la sua frase d'esempio, tutte diverse", () => {
+    expect(TONI).toEqual(["amichevole", "professionale", "motivante"]);
+    expect(new Set(TONI.map((t) => FRASI_TONO[t])).size).toBe(3);
+  });
+  it("un tono salvato che non esiste torna amichevole, quelli validi restano", () => {
+    expect(leggiBenvenuto(archivio(JSON.stringify({ v: 1, tono: "arrabbiato" }))).tono).toBe("amichevole");
+    expect(leggiBenvenuto(archivio(JSON.stringify({ v: 1, tono: "motivante" }))).tono).toBe("motivante");
   });
 });
