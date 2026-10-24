@@ -74,6 +74,24 @@ describe("eseguiAzione", () => {
     expect(m.stato.get().sedute.some((s) => s.id === y.id)).toBe(false);
   });
 
+  it("annulla non rimette una seduta sopra un'altra fissata a mano nel frattempo", () => {
+    const x = seduta("sara-conti", "2026-10-22");
+    const esito = m.eseguiAzione({ nome: "sposta_appuntamento", dati: { id: x.id, data: "2026-10-23", ora: "15:00" } });
+    m.stato.addSeduta({ clientId: "paolo-costa", date: "2026-10-22", time: "10:00", minutes: 60, type: "Workout", place: "Fit Lab, Meolo" });
+    const annullato = esito.ok && esito.annulla ? esito.annulla() : null;
+    expect(annullato).toEqual({ ok: false, motivo: "Si sovrappone con Paolo Costa alle 10:00" });
+    expect(m.stato.get().sedute.find((s) => s.id === x.id)).toMatchObject({ date: "2026-10-23", time: "15:00" });
+  });
+
+  it("annulla di una cancellazione controlla anche lui le sovrapposizioni", () => {
+    const y = seduta("davide-greco", "2026-10-22");
+    const esito = m.eseguiAzione({ nome: "cancella_appuntamento", dati: { id: y.id } });
+    m.stato.addSeduta({ clientId: "paolo-costa", date: y.date, time: y.time, minutes: 60, type: "Workout", place: "Fit Lab, Meolo" });
+    const annullato = esito.ok && esito.annulla ? esito.annulla() : null;
+    expect(annullato).toMatchObject({ ok: false });
+    expect(m.stato.get().sedute.some((s) => s.id === y.id)).toBe(false);
+  });
+
   it("scrive il messaggio nella conversazione del cliente, senza annulla", () => {
     const esito = m.eseguiAzione({ nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao Sara, ci vediamo venerdì" } });
     expect(esito).toEqual({ ok: true });

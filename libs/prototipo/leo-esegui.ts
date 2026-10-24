@@ -1,10 +1,14 @@
 // Esegue sullo store un'azione di Leo già in chiaro (inChiaro) e prepara il suo "Annulla".
 // Prima ricontrolla sullo stato attuale: nel frattempo il trainer può aver cambiato il calendario a mano.
 
-import { luogoPredefinito, verificaAzione, type AzioneLeo } from "./leo-azioni";
+import { luogoPredefinito, verificaAzione, type AzioneLeo, type Verifica } from "./leo-azioni";
 import { stato } from "./stato";
 
-export type Esito = { ok: true; annulla?: () => void } | { ok: false; motivo: string };
+// annulla ricontrolla prima di rimettere: nel frattempo il trainer può aver occupato quell'orario a mano.
+export type Esito = { ok: true; annulla?: () => Verifica } | { ok: false; motivo: string };
+
+// Per l'annulla non conta "già passato": si rimette com'era, anche se era prima di adesso.
+const SEMPRE = { data: "0000-00-00", ora: "00:00" };
 
 export function eseguiAzione(a: AzioneLeo): Esito {
   const { sedute } = stato.get();
@@ -20,7 +24,8 @@ export function eseguiAzione(a: AzioneLeo): Esito {
         ok: true,
         annulla: () => {
           stato.removeSeduta(nuova.id);
-          stato.setFocus({ tipo: "cancella", id: nuova.id });
+          stato.setFocus({ tipo: "cancella", id: nuova.id, da: { date: nuova.date, time: nuova.time } });
+          return { ok: true };
         },
       };
     }
@@ -31,8 +36,11 @@ export function eseguiAzione(a: AzioneLeo): Esito {
       return {
         ok: true,
         annulla: () => {
+          const v = verificaAzione({ nome: "sposta_appuntamento", dati: { id: prima.id, data: prima.date, ora: prima.time, durata: prima.minutes } }, stato.get().sedute, SEMPRE);
+          if (!v.ok) return v;
           stato.updateSeduta(prima.id, { date: prima.date, time: prima.time, minutes: prima.minutes });
           stato.setFocus({ tipo: "sposta", id: prima.id, da: { date: a.dati.data, time: a.dati.ora } });
+          return v;
         },
       };
     }
@@ -43,8 +51,15 @@ export function eseguiAzione(a: AzioneLeo): Esito {
       return {
         ok: true,
         annulla: () => {
+          const v = verificaAzione(
+            { nome: "fissa_appuntamento", dati: { cliente: tolta.clientId, data: tolta.date, ora: tolta.time, durata: tolta.minutes, tipo: tolta.type } },
+            stato.get().sedute,
+            SEMPRE,
+          );
+          if (!v.ok) return v;
           stato.putSeduta(tolta);
           stato.setFocus({ tipo: "fissa", id: tolta.id });
+          return v;
         },
       };
     }

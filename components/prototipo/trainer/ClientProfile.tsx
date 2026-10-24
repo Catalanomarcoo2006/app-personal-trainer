@@ -28,7 +28,9 @@ import { IconCircle } from "@/components/ui/basics";
 import { Appear, CountUp, EASE_OUT, formatEuro, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
-import { agenda, appointmentColors, Client, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
+import { appointmentColors, Client, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
+import { settimanaDelCliente } from "@/libs/prototipo/calendario";
+import { useStato } from "@/libs/prototipo/stato";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -80,7 +82,9 @@ export function ClientProfile({ c }: { c: Client }) {
   const [payments, setPayments] = useState(c.payments);
   const outstanding = payments.filter((p) => !p.paid).reduce((s, p) => s + p.amount, 0);
 
-  const upcoming = agenda.flatMap((day, d) => day.filter((a) => a.clientId === c.id).map((a) => ({ ...a, d })));
+  // questa settimana del cliente, dallo store: segue le modifiche fatte da Leo e dal calendario
+  const sedute = useStato((s) => s.sedute);
+  const upcoming = settimanaDelCliente(sedute, c.id);
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">

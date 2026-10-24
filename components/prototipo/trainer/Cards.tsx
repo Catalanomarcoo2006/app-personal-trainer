@@ -6,8 +6,10 @@ import { CalendarDays, ChevronDown, ChevronRight, MessageSquare } from "lucide-r
 import { Avatar, Pill } from "@/components/ui/basics";
 import { CountUp, EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { agenda, alerts, clientById, pathCards, progressOf, TODAY_INDEX, toneColors, trainer } from "@/libs/prototipo/dati-finti";
-import { useTrainerPhoto } from "@/libs/prototipo/stato";
+import { alerts, clientById, pathCards, progressOf, toneColors, trainer } from "@/libs/prototipo/dati-finti";
+import { seduteDelGiorno } from "@/libs/prototipo/calendario";
+import { ADESSO } from "@/libs/prototipo/leo-azioni";
+import { useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -16,7 +18,7 @@ const card = "panel rounded-[18px]";
 // Profilo del trainer, compatto come nel riferimento.
 export function ProfileCard() {
   const photo = useTrainerPhoto();
-  const today = agenda[TODAY_INDEX].length;
+  const today = seduteDelGiorno(useStato((s) => s.sedute), ADESSO.data).length;
   return (
     <section className={`${card} px-[16px] py-[12px]`}>
       <div className="flex items-center">

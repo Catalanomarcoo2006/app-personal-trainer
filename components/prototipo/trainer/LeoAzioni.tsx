@@ -15,7 +15,7 @@ export type SchedaAzione = {
   titolo: string; // riassunto calcolato quando è arrivata (prima dell'esecuzione)
   stato: StatoScheda;
   motivo?: string;
-  annulla?: () => void;
+  annulla?: () => { ok: boolean; motivo?: string };
   fattaAlle?: number;
 };
 
@@ -84,6 +84,7 @@ export function SchedaAzioneView({
               <Check size={11} strokeWidth={3} /> Fatto
             </p>
           )}
+          {stato === "fatto" && scheda.motivo && <p className="mt-[3px] text-[11px] text-[#d43b4f]">{scheda.motivo}</p>}
           {stato === "annullato" && <p className="mt-[3px] text-[11px] text-muted">Annullato</p>}
           {(stato === "rifiutato" || stato === "errore") && <p className="mt-[3px] text-[11px] text-[#d43b4f]">{scheda.motivo ?? "Non si può fare"}</p>}
         </div>

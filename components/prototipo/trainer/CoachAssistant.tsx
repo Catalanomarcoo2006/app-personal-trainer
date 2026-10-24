@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
@@ -11,6 +11,7 @@ import { daConfermare, inChiaro, notaPerLeo, riassunto, verificaAzione, type Azi
 import { estraiAzione, ripristinaNomi, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
+import { creaFila } from "@/libs/prototipo/leo-fila";
 import { durataScrittura, sezioneDi, TEMPI } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
 import { SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
@@ -292,8 +293,6 @@ function useCoachChat(): Chat {
   const request = useRef<AbortController | null>(null);
   const schede = useRef(new Map<number, SchedaAzione[]>());
   const [compatta, setCompatta] = useState(false);
-  // una sola fila per tutti i viaggi: le azioni (e gli annulla) non si accavallano mai
-  const coda = useRef<Promise<void>>(Promise.resolve());
   const partenze = useRef(new Map<number, string>());
   useEffect(
     () => () => {
@@ -309,6 +308,19 @@ function useCoachChat(): Chat {
     setMessages((m) => m.map((x) => (x.id === msgId ? { ...x, schede: lista } : x)));
     history.current = history.current.map((t) => (t.msgId === msgId ? { ...t, content: [t.testo, notaPerLeo(lista)].filter(Boolean).join(" ") } : t));
   }, []);
+
+  // Una sola fila per tutti i viaggi: le azioni (e gli annulla) non si accavallano mai. Se un viaggio si rompe,
+  // le schede rimaste a metà dicono che qualcosa è andato storto e la chat torna grande.
+  const fila = useMemo(
+    () =>
+      creaFila((e) => {
+        console.error("Leo: viaggio interrotto", e);
+        for (const [msgId, lista] of schede.current)
+          if (lista.some((s) => s.stato === "in-corso")) salvaSchede(msgId, lista.map((s) => (s.stato === "in-corso" ? { ...s, stato: "errore", motivo: "Qualcosa è andato storto, riprova" } : s)));
+        setCompatta(false);
+      }),
+    [salvaSchede],
+  );
 
   const cambia = useCallback(
     (msgId: number, key: string, patch: Partial<SchedaAzione>) => {
@@ -333,7 +345,7 @@ function useCoachChat(): Chat {
   // la conferma. Un'azione che non passa i controlli non parte: la scheda dice il motivo, il trainer resta dov'è.
   const procedi = useCallback(
     (msgId: number) => {
-      coda.current = coda.current.then(async () => {
+      void fila.aggiungi(async () => {
         let viaggiato = false;
         for (;;) {
           const s = (schede.current.get(msgId) ?? []).find((x) => x.stato === "in-corso" || x.stato === "da-confermare");
@@ -364,7 +376,7 @@ function useCoachChat(): Chat {
         }
       });
     },
-    [cambia, viaggia],
+    [cambia, viaggia, fila],
   );
 
   const conferma = useCallback(
@@ -393,16 +405,22 @@ function useCoachChat(): Chat {
       const s = schede.current.get(msgId)?.find((x) => x.key === key);
       if (!s || s.stato !== "fatto" || !s.annulla) return;
       playSound("tap");
-      cambia(msgId, key, { stato: "annullato", annulla: undefined });
-      coda.current = coda.current.then(async () => {
+      // "in-corso" mentre si torna indietro: blocca il doppio tocco
+      cambia(msgId, key, { stato: "in-corso", motivo: undefined });
+      void fila.aggiungi(async () => {
         await viaggia(msgId, s.azione);
-        s.annulla?.();
-        playSound(s.azione.nome === "fissa_appuntamento" ? "close" : "open");
+        const fatto = s.annulla!();
+        if ("motivo" in fatto) {
+          cambia(msgId, key, { stato: "fatto", motivo: `Non posso annullare: ${fatto.motivo}` });
+        } else {
+          playSound(s.azione.nome === "fissa_appuntamento" ? "close" : "open");
+          cambia(msgId, key, { stato: "annullato", annulla: undefined });
+        }
         await attesa((ridotto() ? TEMPI.azioneRidotta : TEMPI.azione) + TEMPI.ritorno);
         setCompatta(false);
       });
     },
-    [cambia, viaggia],
+    [cambia, viaggia, fila],
   );
 
   const torna = useCallback((msgId: number) => {

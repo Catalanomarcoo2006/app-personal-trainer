@@ -26,3 +26,13 @@ export function seduteIniziali(): Seduta[] {
     SHORT.flatMap((_, i) => seduteDemo(offset, i).map((a) => ({ ...a, id: `A${++n}`, date: isoDi(giornoDi(offset, i)) }))),
   );
 }
+
+const perOra = (a: Seduta, b: Seduta) => a.time.localeCompare(b.time);
+
+// Le sedute dello store in un giorno, in ordine di ora (home e conteggi).
+export const seduteDelGiorno = (sedute: Seduta[], date: string) => sedute.filter((s) => s.date === date).sort(perOra);
+
+// Le sedute di questa settimana di un cliente, con l'indice del giorno (0 = lunedì 19): profilo del cliente.
+export function settimanaDelCliente(sedute: Seduta[], clientId: string): (Seduta & { d: number })[] {
+  return SHORT.flatMap((_, d) => seduteDelGiorno(sedute, isoDi(giornoDi(0, d))).filter((s) => s.clientId === clientId).map((s) => ({ ...s, d })));
+}

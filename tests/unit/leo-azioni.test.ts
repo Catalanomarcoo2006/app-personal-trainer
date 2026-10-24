@@ -51,6 +51,14 @@ describe("leggiAzione", () => {
     expect(leggiAzione("fissa_appuntamento", { cliente: "C1" })).toBeNull();
     expect(leggiAzione("sposta_appuntamento", { id: "A3", data: "23/10", ora: "10:00" })).toBeNull();
   });
+  it("un luogo vuoto vale come luogo abituale, una durata vuota come nessuna durata", () => {
+    expect(leggiAzione("fissa_appuntamento", { cliente: "C4", data: "2026-10-23", ora: "10:00", durata: 60, tipo: "Workout", luogo: "" })).toEqual({
+      nome: "fissa_appuntamento",
+      dati: { cliente: "C4", data: "2026-10-23", ora: "10:00", durata: 60, tipo: "Workout" },
+    });
+    expect(leggiAzione("sposta_appuntamento", { id: "A3", data: "2026-10-23", ora: "10:00", durata: null })?.dati).toEqual({ id: "A3", data: "2026-10-23", ora: "10:00" });
+    expect(leggiAzione("sposta_appuntamento", { id: "A3", data: "2026-10-23", ora: "10:00", durata: "" })?.dati).toEqual({ id: "A3", data: "2026-10-23", ora: "10:00" });
+  });
   it("scarta messaggi vuoti o troppo lunghi", () => {
     expect(leggiAzione("scrivi_messaggio", { cliente: "C1", testo: "" })).toBeNull();
     expect(leggiAzione("scrivi_messaggio", { cliente: "C1", testo: "a".repeat(1001) })).toBeNull();

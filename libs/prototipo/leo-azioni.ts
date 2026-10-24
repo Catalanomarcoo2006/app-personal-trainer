@@ -48,6 +48,8 @@ export function normalizzaOra(s: string): string | null {
 const Ora = z.preprocess((v) => (typeof v === "string" ? (normalizzaOra(v) ?? v) : v), z.string().regex(/^\d{2}:\d{2}$/));
 const Data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const Durata = z.coerce.number().int();
+// campi facoltativi lasciati vuoti dall'AI ("", null): valgono come non scritti
+const vuotoComeAssente = (v: unknown) => (v === null || (typeof v === "string" && v.trim() === "") ? undefined : v);
 
 const Schemi = {
   fissa_appuntamento: z.object({
@@ -56,9 +58,9 @@ const Schemi = {
     ora: Ora,
     durata: Durata,
     tipo: z.enum(["Workout", "Valutazione", "Online", "Corsa"]),
-    luogo: z.string().min(1).max(80).optional(),
+    luogo: z.preprocess(vuotoComeAssente, z.string().max(80).optional()),
   }),
-  sposta_appuntamento: z.object({ id: z.string().min(1), data: Data, ora: Ora, durata: Durata.optional() }),
+  sposta_appuntamento: z.object({ id: z.string().min(1), data: Data, ora: Ora, durata: z.preprocess(vuotoComeAssente, Durata.optional()) }),
   cancella_appuntamento: z.object({ id: z.string().min(1) }),
   scrivi_messaggio: z.object({ cliente: z.string().min(1), testo: z.string().trim().min(1).max(MAX_TESTO) }),
 };
@@ -198,7 +200,7 @@ export const LEO_TOOLS = [
           ora,
           durata: { type: "integer", description: "durata in minuti (15-180); se il trainer non la dice usa 60" },
           tipo: { type: "string", enum: TIPI, description: "tipo di seduta; se non è detto usa Workout" },
-          luogo: { type: "string", description: "facoltativo: lascialo vuoto per il luogo abituale" },
+          luogo: { type: "string", description: "facoltativo: ometti il campo per il luogo abituale" },
         },
         required: ["cliente", "data", "ora", "durata", "tipo"],
       },
