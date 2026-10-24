@@ -7,7 +7,12 @@ import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet,
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
+import { daConfermare, inChiaro, notaPerLeo, riassunto, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
 import { estraiAzione, ripristinaNomi, type Sezione } from "@/libs/prototipo/leo-contesto";
+import { eseguiAzione } from "@/libs/prototipo/leo-esegui";
+import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
+import { stato } from "@/libs/prototipo/stato";
+import { SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
 import { navigateWithStain, ROUTES } from "./nav";
 import { InfoSparkle, LeoIdentikit, preloadLeoSeduto } from "./LeoIdentikit";
 import { infoSeen, INTRO_LAST, introSeen, LeoPresentazione, setInfoSeen, setIntroSeen } from "./LeoPresentazione";
@@ -230,9 +235,18 @@ function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; pla
 
 // ——— La chat (resta mentre si cambia pagina) ———
 
-type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"] };
-type Chat = { messages: Msg[]; typing: boolean; thinking: boolean; ask: (q: string) => void };
-type Turn = { role: "user" | "assistant"; content: string };
+type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"]; schede?: SchedaAzione[] };
+type Chat = {
+  messages: Msg[];
+  typing: boolean;
+  thinking: boolean;
+  ask: (q: string) => void;
+  conferma: (msgId: number, key: string, testo?: string) => void;
+  rifiuta: (msgId: number, key: string) => void;
+  annulla: (msgId: number, key: string) => void;
+};
+// msgId e testo: per riscrivere la nota sugli esiti delle azioni nel turno di Leo (notaPerLeo)
+type Turn = { role: "user" | "assistant"; content: string; msgId?: number; testo?: string };
 
 const sectionLinks: Record<Exclude<Sezione, "cliente">, NonNullable<Answer["action"]>> = {
   oggi: { label: "Apri Oggi", href: ROUTES.oggi },
@@ -252,7 +266,8 @@ function actionFor(vai: ReturnType<typeof estraiAzione>["vai"]): Answer["action"
   return c ? { label: `Apri il profilo di ${c.name.split(" ")[0]}`, href: ROUTES.cliente(c.id) } : undefined;
 }
 
-// Le risposte arrivano dall'AI (app/prototipo/api/leo) e si scrivono man mano che arrivano.
+// Le risposte arrivano dall'AI (app/prototipo/api/leo) come eventi NDJSON: il testo si scrive man mano che arriva,
+// le azioni diventano schede sotto la frase e partono in ordine (quelle da confermare fermano la fila).
 // Senza chiave o se l'AI non risponde, Leo usa le risposte calcolate dai dati: la demo non si blocca mai.
 function useCoachChat(): Chat {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -263,6 +278,7 @@ function useCoachChat(): Chat {
   const busy = useRef(false);
   const history = useRef<Turn[]>([]);
   const request = useRef<AbortController | null>(null);
+  const schede = useRef(new Map<number, SchedaAzione[]>());
   useEffect(
     () => () => {
       timers.current.forEach((t) => window.clearTimeout(t));
@@ -271,77 +287,173 @@ function useCoachChat(): Chat {
     [],
   );
 
-  const ask = useCallback(async (question: string) => {
-    const text = question.trim();
-    if (!text || busy.current) return;
-    busy.current = true;
-    playSound("tap");
-    setMessages((m) => [...m, { id: nextId.current++, from: "trainer", text }]);
-    history.current = [...history.current, { role: "user", content: text }];
-    setTyping(true);
-    const id = nextId.current++;
-    const thinkTimer = window.setTimeout(() => setThinking(true), 1200);
+  // Aggiorna le schede di un messaggio: nella chat e nella nota per i turni successivi di Leo.
+  const salvaSchede = useCallback((msgId: number, lista: SchedaAzione[]) => {
+    schede.current.set(msgId, lista);
+    setMessages((m) => m.map((x) => (x.id === msgId ? { ...x, schede: lista } : x)));
+    history.current = history.current.map((t) => (t.msgId === msgId ? { ...t, content: [t.testo, notaPerLeo(lista)].filter(Boolean).join(" ") } : t));
+  }, []);
 
-    const finish = (shown: string) => {
-      history.current = [...history.current, { role: "assistant", content: shown }];
-      busy.current = false;
-      playSound("confirm");
-    };
-    const show = (shown: string, action?: Answer["action"]) =>
-      setMessages((m) => (m.some((x) => x.id === id) ? m.map((x) => (x.id === id ? { ...x, text: shown, action } : x)) : [...m, { id, from: "coach", text: shown, action }]));
+  const cambia = useCallback(
+    (msgId: number, key: string, patch: Partial<SchedaAzione>) => {
+      salvaSchede(
+        msgId,
+        (schede.current.get(msgId) ?? []).map((s) => (s.key === key ? { ...s, ...patch } : s)),
+      );
+    },
+    [salvaSchede],
+  );
 
-    const ctrl = new AbortController();
-    request.current = ctrl;
-    let raw = "";
-    try {
-      const res = await fetch("/prototipo/api/leo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history.current.slice(-10) }),
-        signal: ctrl.signal,
-      });
-      if (!res.ok || !res.body) throw new Error(`${res.status} ${((await res.json().catch(() => ({}))) as { errore?: string }).errore ?? ""}`);
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        raw += decoder.decode(value, { stream: true });
+  // Esegue in ordine le azioni in fila ("in-corso"); si ferma alla prima che aspetta la conferma.
+  const procedi = useCallback(
+    (msgId: number) => {
+      for (const s of schede.current.get(msgId) ?? []) {
+        if (s.stato === "da-confermare") return;
+        if (s.stato !== "in-corso") continue;
+        const esito = eseguiAzione(s.azione);
+        if ("motivo" in esito) {
+          cambia(msgId, s.key, { stato: "rifiutato", motivo: esito.motivo });
+        } else {
+          playSound("complete");
+          cambia(msgId, s.key, { stato: "fatto", annulla: esito.annulla, fattaAlle: Date.now() });
+        }
+      }
+    },
+    [cambia],
+  );
+
+  const conferma = useCallback(
+    (msgId: number, key: string, testo?: string) => {
+      const s = schede.current.get(msgId)?.find((x) => x.key === key);
+      if (!s || s.stato !== "da-confermare") return;
+      playSound("tap");
+      const azione: AzioneLeo = testo !== undefined && s.azione.nome === "scrivi_messaggio" ? { ...s.azione, dati: { ...s.azione.dati, testo: testo.trim() } } : s.azione;
+      cambia(msgId, key, { stato: "in-corso", azione });
+      procedi(msgId);
+    },
+    [cambia, procedi],
+  );
+
+  const rifiuta = useCallback(
+    (msgId: number, key: string) => {
+      playSound("tap");
+      cambia(msgId, key, { stato: "annullato" });
+      procedi(msgId);
+    },
+    [cambia, procedi],
+  );
+
+  const annulla = useCallback(
+    (msgId: number, key: string) => {
+      const s = schede.current.get(msgId)?.find((x) => x.key === key);
+      if (!s || s.stato !== "fatto" || !s.annulla) return;
+      playSound("tap");
+      s.annulla();
+      cambia(msgId, key, { stato: "annullato", annulla: undefined });
+    },
+    [cambia],
+  );
+
+  const ask = useCallback(
+    async (question: string) => {
+      const text = question.trim();
+      if (!text || busy.current) return;
+      busy.current = true;
+      playSound("tap");
+      setMessages((m) => [...m, { id: nextId.current++, from: "trainer", text }]);
+      history.current = [...history.current, { role: "user", content: text }];
+      setTyping(true);
+      const id = nextId.current++;
+      const thinkTimer = window.setTimeout(() => setThinking(true), 1200);
+
+      const finish = (shown: string) => {
+        history.current = [...history.current, { role: "assistant", content: shown, msgId: id, testo: shown }];
+        busy.current = false;
+        playSound("confirm");
+      };
+      const show = (shown: string, action?: Answer["action"]) =>
+        setMessages((m) => (m.some((x) => x.id === id) ? m.map((x) => (x.id === id ? { ...x, text: shown, action } : x)) : [...m, { id, from: "coach", text: shown, action }]));
+      const stopAttesa = () => {
         window.clearTimeout(thinkTimer);
         setTyping(false);
         setThinking(false);
-        show(ripristinaNomi(estraiAzione(raw).text));
-      }
-      if (!raw.trim()) throw new Error("risposta vuota");
-      const { text: final, vai } = estraiAzione(raw);
-      show(ripristinaNomi(final), actionFor(vai));
-      finish(ripristinaNomi(final));
-    } catch (e) {
-      window.clearTimeout(thinkTimer);
-      setThinking(false);
-      if (ctrl.signal.aborted) return;
-      if (raw.trim()) {
-        // interrotta a metà: resta quello che è arrivato
-        finish(ripristinaNomi(estraiAzione(raw).text));
-        return;
-      }
-      console.warn("Leo: AI non raggiungibile, uso le risposte di riserva.", e instanceof Error ? e.message : e);
-      const a = answer(text);
-      const words = a.text.split(" ");
-      setTyping(false);
-      words.forEach((_, i) =>
-        timers.current.push(
-          window.setTimeout(() => {
-            const last = i === words.length - 1;
-            show(words.slice(0, i + 1).join(" "), last ? a.action : undefined);
-            if (last) finish(a.text);
-          }, i * 28),
-        ),
-      );
-    }
-  }, []);
+      };
 
-  return { messages, typing, thinking, ask };
+      const ctrl = new AbortController();
+      request.current = ctrl;
+      let raw = "";
+      const azioni: AzioneLeo[] = [];
+      try {
+        const res = await fetch("/prototipo/api/leo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history.current.slice(-10).map(({ role, content }) => ({ role, content })), calendario: stato.get().sedute }),
+          signal: ctrl.signal,
+        });
+        if (!res.ok || !res.body) throw new Error(`${res.status} ${((await res.json().catch(() => ({}))) as { errore?: string }).errore ?? ""}`);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        const lettore = lettoreNdjson((e) => {
+          if (e.tipo === "testo") {
+            raw += e.v;
+            stopAttesa();
+            show(ripristinaNomi(estraiAzione(raw).text));
+          } else if (e.tipo === "azione") {
+            azioni.push({ nome: e.nome, dati: e.dati } as AzioneLeo);
+          } else console.warn("Leo: risposta interrotta dal server", e.v);
+        });
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          lettore.scrivi(decoder.decode(value, { stream: true }));
+        }
+        lettore.chiudi();
+        if (!raw.trim() && !azioni.length) throw new Error("risposta vuota");
+        stopAttesa();
+        const { text: final, vai } = estraiAzione(raw);
+        const testo = ripristinaNomi(final);
+        // con un'azione il tasto per aprire la sezione non serve: ci pensa l'azione
+        show(testo, azioni.length ? undefined : actionFor(vai));
+        finish(testo);
+        if (azioni.length) {
+          const sedute = stato.get().sedute;
+          salvaSchede(
+            id,
+            azioni.map((a, i): SchedaAzione => {
+              const chiara = inChiaro(a);
+              const key = `${id}-${i}`;
+              if (!chiara) return { key, azione: a, titolo: "Azione su un cliente che non conosco", stato: "errore", motivo: "Cliente non trovato" };
+              return { key, azione: chiara, titolo: riassunto(chiara, sedute), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
+            }),
+          );
+          procedi(id);
+        }
+      } catch (e) {
+        stopAttesa();
+        if (ctrl.signal.aborted) return;
+        if (raw.trim()) {
+          // interrotta a metà: resta quello che è arrivato
+          finish(ripristinaNomi(estraiAzione(raw).text));
+          return;
+        }
+        console.warn("Leo: AI non raggiungibile, uso le risposte di riserva.", e instanceof Error ? e.message : e);
+        const a = answer(text);
+        const words = a.text.split(" ");
+        words.forEach((_, i) =>
+          timers.current.push(
+            window.setTimeout(() => {
+              const last = i === words.length - 1;
+              show(words.slice(0, i + 1).join(" "), last ? a.action : undefined);
+              if (last) finish(a.text);
+            }, i * 28),
+          ),
+        );
+      }
+    },
+    [procedi, salvaSchede],
+  );
+
+  return { messages, typing, thinking, ask, conferma, rifiuta, annulla };
 }
 
 // Leo che si sporge dal bordo destro della chat, aggrappato con le mani: esce da dietro la chat quando si apre.
@@ -378,7 +490,7 @@ function ChatPanel({
   dismiss: () => void;
   openInfo: () => void;
 }) {
-  const { messages, typing, thinking, ask: askChat } = chat;
+  const { messages, typing, thinking, ask: askChat, conferma, rifiuta, annulla } = chat;
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   // la prima volta Leo si presenta; scrivere una domanda vale come "salta"
@@ -473,7 +585,20 @@ function ChatPanel({
               transition={{ duration: 0.3, ease: EASE_OUT }}
               className={`flex max-w-[86%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
             >
-              <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
+              {m.text && <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>}
+              {m.schede && (
+                <div className="mt-[6px] flex w-[300px] max-w-full flex-col gap-[6px]">
+                  {m.schede.map((sc) => (
+                    <SchedaAzioneView
+                      key={sc.key}
+                      scheda={sc}
+                      onConferma={(testo) => conferma(m.id, sc.key, testo)}
+                      onRifiuta={() => rifiuta(m.id, sc.key)}
+                      onAnnulla={() => annulla(m.id, sc.key)}
+                    />
+                  ))}
+                </div>
+              )}
               {m.action && (
                 <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
                   {/* la sezione nuova si allarga a macchia d'olio dal punto toccato; la chat si chiude sotto la macchia */}
