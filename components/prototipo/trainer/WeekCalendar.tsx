@@ -36,15 +36,20 @@ function SessionCard({ day, a, i, density, onOpen, layoutId, atterra }: { day: W
   const colors = appointmentColors[a.type];
   const Icon = typeIcons[a.type];
   const { done, live } = statusOf(day, a);
+  const reduce = useReducedMotion();
   return (
     <motion.button
       type="button"
       layout="position"
       layoutId={layoutId}
-      initial={atterra ? { opacity: 0, y: 0, scale: 0.6 } : { opacity: 0, y: 8, scale: 0.97 }}
-      animate={{ opacity: done ? 0.6 : 1, y: 0, scale: 1 }}
+      initial={atterra ? { opacity: 0, y: 0, scale: reduce ? 1 : 0.55, boxShadow: VERDE.spento } : { opacity: 0, y: 8, scale: 0.97 }}
+      animate={atterra ? { opacity: 1, y: 0, scale: 1, boxShadow: [VERDE.spento, VERDE.acceso, VERDE.acceso, VERDE.spento] } : { opacity: done ? 0.6 : 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.12 } }}
-      transition={atterra ? { type: "spring", duration: 0.6, bounce: 0.45 } : { delay: 0.04 + i * 0.04, duration: 0.3, ease: EASE_OUT, layout: { duration: 0.7, ease: EASE_OUT } }}
+      transition={
+        atterra
+          ? { type: "spring", duration: reduce ? 0 : 0.85, bounce: 0.4, opacity: { duration: 0.3 }, boxShadow: { duration: 1.9, times: [0, 0.15, 0.7, 1] } }
+          : { delay: 0.04 + i * 0.04, duration: 0.3, ease: EASE_OUT, layout: { duration: 0.7, ease: EASE_OUT } }
+      }
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.97 }}
       onClick={() => {
@@ -56,6 +61,17 @@ function SessionCard({ day, a, i, density, onOpen, layoutId, atterra }: { day: W
       style={{ background: colors.bg }}
     >
       <span className="absolute top-0 bottom-0 left-0 w-[3px]" style={{ background: colors.strong }} />
+      {/* appena fissata da Leo: velo verde che sfuma nel colore della seduta */}
+      {atterra && (
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[11px] border-2"
+          style={{ background: "color-mix(in srgb, #1f9d55 22%, transparent)", borderColor: "#1f9d55" }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ delay: 1.1, duration: 0.8, ease: "easeOut" }}
+        />
+      )}
       {density === 2 ? (
         <span className="flex min-w-0 items-center gap-[5px] leading-none">
           <span className="shrink-0 text-[10px] font-bold tabular-nums" style={{ color: colors.strong }}>
@@ -85,18 +101,68 @@ function SessionCard({ day, a, i, density, onOpen, layoutId, atterra }: { day: W
   );
 }
 
-// Dove c'era la seduta appena cancellata da Leo: un contorno tratteggiato che svanisce.
+const ROSSO = "#e5484d";
+const VERDE = { spento: "0 0 0 0px rgba(31,157,85,0)", acceso: "0 0 0 4px rgba(31,157,85,0.35)" };
+// i 6 pezzi (3 × 2) in cui si spezza la seduta: ritaglio e direzione in cui vola ciascuno
+const PEZZI = [0, 1, 2, 3, 4, 5].map((n) => {
+  const col = n % 3;
+  const riga = Math.floor(n / 3);
+  return {
+    clip: `inset(${riga * 50}% ${(2 - col) * 33.34}% ${(1 - riga) * 50}% ${col * 33.33}%)`,
+    x: (col - 1) * 26 + (riga ? 6 : -6),
+    y: riga ? 22 : -18,
+    r: (col - 1) * 28 + (riga ? 14 : -14),
+  };
+});
+
+// Dove c'era la seduta appena cancellata da Leo: la seduta diventa rossa e trema, poi si spezza in 6 pezzi che volano
+// via; resta un attimo il contorno tratteggiato rosso. Con "riduci movimento" diventa rossa e sbiadisce.
 function Fantasma({ a }: { a: Appointment }) {
-  return (
-    <motion.div
-      initial={{ opacity: 1, scale: 1 }}
-      animate={{ opacity: 0, scale: 0.85 }}
-      transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.25 }}
-      className="relative z-10 shrink-0 rounded-[11px] border-2 border-dashed px-[9px] py-[7px] text-[10px] font-bold"
-      style={{ borderColor: appointmentColors[a.type].strong, color: appointmentColors[a.type].strong }}
-    >
+  const reduce = useReducedMotion();
+  const contenuto = (
+    <span className="block rounded-[11px] border-2 px-[9px] py-[7px] text-[10px] leading-tight font-bold text-white" style={{ background: ROSSO, borderColor: ROSSO }}>
       {a.time} · {clientById(a.clientId)?.name.split(" ")[0]}
-    </motion.div>
+      <span className="mt-[3px] block text-[9px] font-semibold opacity-80">{a.type}</span>
+    </span>
+  );
+  if (reduce)
+    return (
+      <motion.div initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ delay: 0.5, duration: 0.6 }} className="relative z-10 shrink-0">
+        {contenuto}
+      </motion.div>
+    );
+  return (
+    <div className="relative z-10 shrink-0">
+      {/* il contorno che resta, sotto i pezzi */}
+      <motion.span
+        aria-hidden
+        className="absolute inset-0 rounded-[11px] border-2 border-dashed"
+        style={{ borderColor: ROSSO }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.9, 0] }}
+        transition={{ delay: 0.9, duration: 1.1, times: [0, 0.3, 1] }}
+      />
+      <span className="invisible block">{contenuto}</span>
+      <motion.div
+        className="absolute inset-0"
+        initial={{ x: 0 }}
+        animate={{ x: [0, -4, 4, -3, 3, -1, 0] }}
+        transition={{ duration: 0.45, delay: 0.1, ease: "easeInOut" }}
+      >
+        {PEZZI.map((p, n) => (
+          <motion.div
+            key={n}
+            className="absolute inset-0"
+            style={{ clipPath: p.clip }}
+            initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
+            animate={{ x: p.x, y: p.y, rotate: p.r, opacity: 0 }}
+            transition={{ delay: 0.6 + n * 0.03, duration: 0.75, ease: [0.3, 0, 0.6, 1] }}
+          >
+            {contenuto}
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
   );
 }
 
@@ -391,7 +457,7 @@ function Cell({
                 density={density}
                 onOpen={() => onOpen(a)}
                 layoutId={id && !leo.ridotto ? `seduta-${id}` : undefined}
-                atterra={!!id && id === leo.nuova && !leo.ridotto}
+                atterra={!!id && id === leo.nuova}
               />,
             );
             return out;
@@ -443,7 +509,7 @@ export function WeekCalendar() {
     setOpen(null);
     setDraft(null);
     setLeo({ tipo: focus.tipo, id: focus.id, date, time });
-    const t = window.setTimeout(() => setLeo(null), 1900);
+    const t = window.setTimeout(() => setLeo(null), 2600);
     return () => window.clearTimeout(t);
   }, [focus]);
 
@@ -548,7 +614,7 @@ export function WeekCalendar() {
                     leo={(() => {
                       const qui = !!leo && inStore && leo.date === isoDi(giornoDi(offset, di)) && bandOf({ time: leo.time } as Appointment) === bi;
                       const fantasma = qui && leo.tipo === "cancella" ? viste.current.get(leo.id) : undefined;
-                      return { acceso: qui, volo: !!leo && leo.tipo === "sposta", nuova: qui && leo.tipo === "fissa" ? leo.id : undefined, fantasma: ridotto ? undefined : fantasma, ridotto };
+                      return { acceso: qui, volo: !!leo && (leo.tipo === "sposta" || leo.tipo === "cancella"), nuova: qui && leo.tipo === "fissa" ? leo.id : undefined, fantasma, ridotto };
                     })()}
                   />
                 )),

@@ -19,7 +19,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Area cliente (in attesa, dopo il benvenuto): spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
 
 ## Da fare (TODO)
-- **Leo fa tutto** (in pausa, Marco prima prova Leo): blocchi cliente (peso, misure, note, obiettivo, nuovo cliente con codice [Cn] dinamico), soldi (segna pagato, registra pagamento, aggiungi lezioni/rinnova, sollecito come messaggio vero), impostazioni (colore, tema, suoni, notifiche), più clienti in una volta (una scheda con spunte e "Invia a tutti"). Subito + Annulla: peso, misure, obiettivo, nota, impostazioni; conferma: nuovo cliente, soldi, pacchetti, solleciti, azioni multiple. Schede escluse (scelta di Marco). Prossimo passo: spec.
+- **Leo fa tutto** (in pausa, Marco prima prova Leo): blocchi cliente (peso, misure, note, obiettivo, nuovo cliente con codice [Cn] dinamico), soldi (segna pagato, registra pagamento, aggiungi lezioni/rinnova, sollecito come messaggio vero), impostazioni (colore, tema, suoni, notifiche), più clienti in una volta (una scheda con spunte e "Invia a tutti"); tasto "Conferma tutte" quando Leo propone più azioni da confermare (Marco ne ha lasciate indietro alcune su 5 cancellazioni). Subito + Annulla: peso, misure, obiettivo, nota, impostazioni; conferma: nuovo cliente, soldi, pacchetti, solleciti, azioni multiple. Schede escluse (scelta di Marco). Prossimo passo: spec.
 - Fase 1, con le chiavi Supabase: schema (Task 3), RLS con test (Task 4), `getAccess` e middleware (Task 6), pannello admin (Task 7).
 - Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate).
 - Marco: chiavi Supabase (progetto UE) e Resend; email di supporto e dominio del prodotto (`config.ts`).
@@ -55,6 +55,6 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
+- 2026-10-24 (3): animazioni di Leo nel calendario più lente e visibili: la seduta cancellata diventa rossa, trema e si spezza in 6 pezzi; la seduta nuova compare verde con alone e sfuma nel suo colore.
 - 2026-10-24 (2): Leo agisce: azioni con controlli (sovrapposizioni, orari 6-22, due settimane), schede in chat con conferma/annulla, viaggio animato (seduta che atterra, vola o lascia il contorno; messaggio che si scrive da solo), memoria degli esiti; prova di 10 frasi con DeepSeek ok.
 - 2026-10-24: finale del benvenuto (coriandoli continui, riepilogo modificabile, Leo fermo con "Tutto pronto!", ingresso in dashboard con le schede che cadono come meteoriti, con fischio e impatto); push e deploy su Vercel (commit d4dba3f); sveglia di Leo più veloce (scritte subito, "Iniziamo" a ~3,7 s); icona del passo al posto dell'asterisco.
-- 2026-10-23 (3): benvenuto del trainer, primo passo (accesso, codice, sveglia di Leo), vetrina con grafiche dell'app, "Salta per ora"; Tailwind `dark:` segue la classe `.dark`.

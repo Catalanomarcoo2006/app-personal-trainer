@@ -12,7 +12,7 @@ import { estraiAzione, ripristinaNomi, type Sezione } from "@/libs/prototipo/leo
 import { eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
 import { creaFila } from "@/libs/prototipo/leo-fila";
-import { durataScrittura, sezioneDi, TEMPI } from "@/libs/prototipo/leo-viaggio";
+import { durataScrittura, sezioneDi, TEMPI, tempoAzione } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
 import { SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
 import { navigateFade, navigateWithStain, ROUTES } from "./nav";
@@ -368,7 +368,7 @@ function useCoachChat(): Chat {
           }
           playSound(SUONI[s.azione.nome]);
           cambia(msgId, s.key, { stato: "fatto", annulla: esito.annulla, fattaAlle: Date.now() });
-          await attesa(ridotto() ? TEMPI.azioneRidotta : TEMPI.azione);
+          await attesa(tempoAzione(s.azione.nome, ridotto()));
         }
         if (viaggiato) {
           await attesa(TEMPI.ritorno);
@@ -416,7 +416,7 @@ function useCoachChat(): Chat {
           playSound(s.azione.nome === "fissa_appuntamento" ? "close" : "open");
           cambia(msgId, key, { stato: "annullato", annulla: undefined });
         }
-        await attesa((ridotto() ? TEMPI.azioneRidotta : TEMPI.azione) + TEMPI.ritorno);
+        await attesa(tempoAzione(s.azione.nome, ridotto()) + TEMPI.ritorno);
         setCompatta(false);
       });
     },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { durataScrittura, sezioneDi, settimanaDi, TEMPI } from "@/libs/prototipo/leo-viaggio";
+import { durataScrittura, sezioneDi, settimanaDi, TEMPI, tempoAzione } from "@/libs/prototipo/leo-viaggio";
 
 describe("viaggio di Leo", () => {
   it("porta al calendario per le sedute e ai messaggi per scrivere", () => {
@@ -25,5 +25,14 @@ describe("viaggio di Leo", () => {
   it("con riduci movimento l'azione dura meno", () => {
     expect(TEMPI.azione).toBe(900);
     expect(TEMPI.azioneRidotta).toBe(300);
+  });
+
+  it("cancellare e fissare durano di più, per farsi vedere", () => {
+    expect(tempoAzione("cancella_appuntamento", false)).toBe(1600);
+    expect(tempoAzione("fissa_appuntamento", false)).toBe(1600);
+    expect(tempoAzione("sposta_appuntamento", false)).toBe(900);
+    expect(tempoAzione("scrivi_messaggio", false)).toBe(900);
+    expect(tempoAzione("cancella_appuntamento", true)).toBe(600);
+    expect(tempoAzione("sposta_appuntamento", true)).toBe(300);
   });
 });
