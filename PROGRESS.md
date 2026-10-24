@@ -45,7 +45,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Nota nel vault non creata: il brain è stato azzerato il 2026-10-21; aggiungerla quando la nuova struttura è pronta.
 
 ## Prossimi passi immediati
-- Benvenuto: verifica completa (Task 10 del piano: 1440/1280/375 px, chiaro/scuro, riduci movimento) e ultimare "Conosci Leo"; poi area cliente (Task 1 del suo piano), poi backend.
+- Marco prova Leo sul sito; poi benvenuto: verifica completa (Task 10 del piano: 1440/1280/375 px, chiaro/scuro, riduci movimento) e ultimare "Conosci Leo"; poi area cliente (Task 1 del suo piano), poi backend. "Leo fa tutto" quando Marco lo riprende (si parte dalla spec).
 - Marco: creare il progetto Supabase di sviluppo (UE) in parallelo, per il Task 3 subito dopo.
 
 ## Contesto tecnico utile
@@ -55,6 +55,6 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
-- 2026-10-24 (3): animazioni di Leo nel calendario più lente e visibili: la seduta cancellata diventa rossa, trema e si spezza in 6 pezzi; la seduta nuova compare verde con alone e sfuma nel suo colore; Leo vede i nomi dei clienti (via i codici [C1], capisce anche nomi scritti male), mai email e telefoni; regole, spec e testi dell'app aggiornati.
+- 2026-10-24 (3): animazioni di Leo nel calendario più lente e visibili: la seduta cancellata diventa rossa, trema e si spezza in 6 pezzi; la seduta nuova compare verde con alone e sfuma nel suo colore; Leo vede i nomi dei clienti (via i codici [C1], capisce anche nomi scritti male), mai email e telefoni; regole, spec e testi dell'app aggiornati. Chat di Leo: campo che si accende mentre scrivi, messaggio che vola su all'invio.
 - 2026-10-24 (2): Leo agisce: azioni con controlli (sovrapposizioni, orari 6-22, due settimane), schede in chat con conferma/annulla, viaggio animato (seduta che atterra, vola o lascia il contorno; messaggio che si scrive da solo), memoria degli esiti; prova di 10 frasi con DeepSeek ok.
 - 2026-10-24: finale del benvenuto (coriandoli continui, riepilogo modificabile, Leo fermo con "Tutto pronto!", ingresso in dashboard con le schede che cadono come meteoriti, con fischio e impatto); push e deploy su Vercel (commit d4dba3f); sveglia di Leo più veloce (scritte subito, "Iniziamo" a ~3,7 s); icona del passo al posto dell'asterisco.
