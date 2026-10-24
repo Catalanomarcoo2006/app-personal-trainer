@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clients } from "@/libs/prototipo/dati-finti";
-import { contestoLeo, estraiAzione, pseudonimizza, ripristinaNomi } from "@/libs/prototipo/leo-contesto";
+import { contestoLeo, estraiAzione, pseudonimizza, ripristinaNomi, SedutaContesto } from "@/libs/prototipo/leo-contesto";
+import type { Seduta } from "@/libs/prototipo/leo-azioni";
 
 const codice = (id: string) => `[C${clients.findIndex((c) => c.id === id) + 1}]`;
 
@@ -66,5 +67,41 @@ describe("tasto per aprire una sezione", () => {
   it("ignora etichette sconosciute e nasconde quella ancora a metà mentre arriva", () => {
     expect(estraiAzione("Ciao [[vai:cucina]]")).toEqual({ text: "Ciao" });
     expect(estraiAzione("Ci sono 2 pagamenti aperti. [[va")).toEqual({ text: "Ci sono 2 pagamenti aperti." });
+  });
+});
+
+describe("calendario e azioni nel contesto", () => {
+  const sedute: Seduta[] = [
+    { id: "A3", date: "2026-10-22", time: "10:00", minutes: 60, clientId: "sara-conti", type: "Workout", place: "Fit Lab, Meolo" },
+    { id: "A40", date: "2026-10-27", time: "18:30", minutes: 45, clientId: "luca-ferri", type: "Corsa", place: "Parco di Meolo" },
+  ];
+
+  it("elenca le sedute delle due settimane con id, giorno e codice del cliente", () => {
+    const testo = contestoLeo(sedute);
+    expect(testo).toContain("## Calendario (questa settimana e la prossima)");
+    expect(testo).toContain(`A3 · giovedì 22/10 · 10:00 · 60 min · workout · Fit Lab, Meolo · ${codice("sara-conti")}`);
+    expect(testo).toContain(`A40 · martedì 27/10 · 18:30 · 45 min · corsa · Parco di Meolo · ${codice("luca-ferri")}`);
+    expect(testo).not.toContain("Sara");
+  });
+
+  it("dice la data della demo e senza argomento usa il calendario iniziale", () => {
+    expect(contestoLeo(sedute)).toContain("mercoledì 21 ottobre 2026");
+    expect(contestoLeo()).toMatch(/A1 · lunedì 19\/10/);
+  });
+
+  it("spiega quando usare le azioni", () => {
+    const testo = contestoLeo(sedute);
+    expect(testo).toContain("Usa le azioni solo quando il trainer chiede di fare qualcosa");
+    expect(testo).toContain("se non è chiaro");
+  });
+
+  it("pseudonimizza anche luoghi e testi scritti nel calendario", () => {
+    expect(contestoLeo([{ ...sedute[0], place: "Casa di Luca Ferri" }])).not.toContain("Luca Ferri");
+  });
+
+  it("valida il calendario mandato dal browser", () => {
+    expect(SedutaContesto.safeParse(sedute[0]).success).toBe(true);
+    expect(SedutaContesto.safeParse({ ...sedute[0], time: "10" }).success).toBe(false);
+    expect(SedutaContesto.safeParse({ ...sedute[0], type: "Yoga" }).success).toBe(false);
   });
 });

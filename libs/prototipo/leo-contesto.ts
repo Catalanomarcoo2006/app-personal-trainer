@@ -2,7 +2,10 @@
 // Regola del progetto: mai nome o email del cliente verso l'AI. I clienti diventano codici ([C1], [C2], …)
 // sia nei dati sia nei messaggi; il browser rimette i nomi nella risposta (ripristinaNomi).
 
-import { agenda, clients, conversations, notifications, progressOf, revenue, TODAY_INDEX, trainer, urgent, week } from "./dati-finti";
+import { z } from "zod";
+import { LONG, seduteIniziali } from "./calendario";
+import { clients, conversations, notifications, progressOf, revenue, TODAY_INDEX, trainer, urgent, week } from "./dati-finti";
+import type { Seduta } from "./leo-azioni";
 
 const codici = clients.map((c, i) => ({ id: c.id, nome: c.name, primo: c.name.split(" ")[0], codice: `C${i + 1}` }));
 export const codiceDi = (id: string) => `[${codici.find((c) => c.id === id)?.codice ?? "C?"}]`;
@@ -56,7 +59,8 @@ Rispondi sempre in italiano, con tono amichevole e pratico, in 2-4 frasi brevi (
 Prima ragiona sui dati qui sotto: confronta, fai i conti, metti in ordine di urgenza e suggerisci la prossima azione concreta. Usa solo questi dati: se un'informazione non c'è, dillo e suggerisci dove guardare nell'app. Non inventare numeri, nomi, date o fatti.
 I clienti sono indicati con un codice tra parentesi quadre, per esempio [C1], seguito da (donna) o (uomo). Quando parli di un cliente scrivi sempre il codice così com'è, con le parentesi, e non provare a indovinarne il nome; accorda aggettivi e participi al genere indicato ("ferma da 8 giorni" per una donna).
 Niente diete, grammature o integratori: per l'alimentazione rimanda al nutrizionista del cliente. Per dolori o problemi di salute suggerisci di sentire il cliente e, se serve, un medico.
-Se è utile aprire una sezione dell'app, chiudi la risposta con UNA sola etichetta fra queste: [[vai:oggi]], [[vai:clienti]], [[vai:messaggi]], [[vai:schede]], [[vai:calendario]], [[vai:incassi]], [[vai:impostazioni]], oppure [[vai:cliente:C1]] per il profilo di un cliente (con il suo codice). Se non serve, non aggiungere etichette.`;
+Puoi anche agire nell'app con le azioni (fissare, spostare e cancellare sedute, scrivere un messaggio a un cliente). Usa le azioni solo quando il trainer chiede di fare qualcosa, mai per rispondere a una semplice domanda. Indica le sedute con il loro id (per esempio A12) e i clienti con il loro codice; se non è chiaro quale cliente, giorno, ora o seduta intende, chiedi in una frase invece di agire. Insieme alle azioni scrivi sempre una frase breve che dica cosa stai facendo ("Sposto [C2] a venerdì alle 10 e le preparo un messaggio"); cancellazioni e messaggi li conferma il trainer. Nei messaggi ai clienti scrivi come il trainer, in prima persona, con tono cordiale e senza firma.
+Se è utile aprire una sezione dell'app (e non stai già usando un'azione), chiudi la risposta con UNA sola etichetta fra queste: [[vai:oggi]], [[vai:clienti]], [[vai:messaggi]], [[vai:schede]], [[vai:calendario]], [[vai:incassi]], [[vai:impostazioni]], oppure [[vai:cliente:C1]] per il profilo di un cliente (con il suo codice). Se non serve, non aggiungere etichette.`;
 
 const GUIDA = `- Schede: si costruiscono dalla libreria esercizi. Sotto ogni esercizio c'è "Collega video" (link YouTube, Instagram o Drive); salvato in libreria, il video si collega da solo in tutte le schede. "Importa da PDF" legge giorni ed esercizi da un PDF e crea la scheda, modificabile prima dell'invio. "Invia" manda al cliente la scheda nell'app e il PDF in chat, con il link al video sotto ogni esercizio.
 - Clienti: elenco con filtri (tutti, in scadenza, da seguire, pagamenti mancanti) e ricerca; ogni scheda apre il profilo con obiettivo, peso, misure, pacchetto, pagamenti, note e domande fatte all'assistente.
@@ -84,25 +88,38 @@ function cliente(c: (typeof clients)[number]): string {
   return `- ${codiceDi(c.id)} (${c.gender}): ${parti.join(" · ")}`;
 }
 
-function giorno(i: number): string {
-  const d = week[i];
-  const sedute = agenda[i].map((a) => `${a.time} ${a.type.toLowerCase()} con ${codiceDi(a.clientId)} (${a.minutes} min, ${a.place})`);
-  return `- ${d.long} ${d.n}${i === TODAY_INDEX ? " (OGGI)" : ""}: ${sedute.length ? sedute.join("; ") : "nessuna seduta"}`;
+// Il calendario mandato dal browser (lo stato vive lì): forma controllata prima di finire nel contesto.
+export const SedutaContesto = z.object({
+  id: z.string().max(12),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  time: z.string().regex(/^\d{2}:\d{2}$/),
+  minutes: z.number().int().min(1).max(600),
+  clientId: z.string().max(60),
+  type: z.enum(["Workout", "Valutazione", "Online", "Corsa"]),
+  place: z.string().max(80),
+});
+
+function seduta(s: Seduta): string {
+  const [y, m, d] = s.date.split("-").map(Number);
+  const giornoSett = LONG[(new Date(y, m - 1, d).getDay() + 6) % 7].toLowerCase();
+  const oggi = s.date === "2026-10-21" ? " (OGGI)" : "";
+  return `- ${s.id} · ${giornoSett} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}${oggi} · ${s.time} · ${s.minutes} min · ${s.type.toLowerCase()} · ${s.place} · ${codiceDi(s.clientId)}`;
 }
 
-export function contestoLeo(): string {
+export function contestoLeo(sedute: Seduta[] = seduteIniziali()): string {
   const oggi = week[TODAY_INDEX];
   const mesi = revenue.months.map((m) => `${m.label} ${euro(m.value)}`).join(", ");
   const righe = [
     ISTRUZIONI,
     "",
-    `Oggi è ${oggi.long.toLowerCase()} ${trainer.today.toLowerCase()} 2026, sono le ${trainer.now}.`,
+    `Oggi è ${oggi.long.toLowerCase()} ${trainer.today.toLowerCase()} 2026, sono le ${trainer.now}. Le date nelle azioni vanno scritte AAAA-MM-GG (oggi è 2026-10-21).`,
     "",
     `## Clienti (${clients.length})`,
     ...clients.map(cliente),
     "",
-    "## Agenda della settimana",
-    ...week.map((_, i) => giorno(i)),
+    "## Calendario (questa settimana e la prossima)",
+    "Settimane: questa da lunedì 19 a domenica 25 ottobre, la prossima da lunedì 26 ottobre a domenica 1 novembre. Puoi agire solo su questi giorni. Giorni senza righe = nessuna seduta.",
+    ...[...sedute].sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time)).map(seduta),
     "",
     "## Incassi",
     `${revenue.month}: incassato ${euro(revenue.collected)} (+${revenue.delta}% sul mese prima), da incassare ${euro(revenue.outstanding)}, previsto a fine mese ${euro(revenue.forecast)}. Ultimi 6 mesi: ${mesi}.`,
