@@ -5,7 +5,13 @@
 import { agenda, clients, conversations, notifications, progressOf, revenue, TODAY_INDEX, trainer, urgent, week } from "./dati-finti";
 
 const codici = clients.map((c, i) => ({ id: c.id, nome: c.name, primo: c.name.split(" ")[0], codice: `C${i + 1}` }));
-const codiceDi = (id: string) => `[${codici.find((c) => c.id === id)?.codice ?? "C?"}]`;
+export const codiceDi = (id: string) => `[${codici.find((c) => c.id === id)?.codice ?? "C?"}]`;
+
+// "[C3]", "C3" o "c3" → id del cliente; undefined se il codice non esiste.
+export function clienteDaCodice(codice: string): string | undefined {
+  const n = /^\[?\s*c(\d+)\s*\]?$/i.exec(codice.trim())?.[1];
+  return n ? codici[Number(n) - 1]?.id : undefined;
+}
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
