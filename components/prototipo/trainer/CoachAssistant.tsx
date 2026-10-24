@@ -470,7 +470,8 @@ function useCoachChat(): Chat {
         if (!raw.trim() && !azioni.length) throw new Error("risposta vuota");
         stopAttesa();
         const { text: final, vai } = estraiAzione(raw);
-        const testo = ripristinaNomi(final);
+        // a volte l'AI propone le azioni senza scrivere niente: una frase di riserva, le schede dicono il resto
+        const testo = ripristinaNomi(final) || (azioni.length ? "Ecco cosa preparo:" : "");
         // con un'azione il tasto per aprire la sezione non serve: ci pensa l'azione
         show(testo, azioni.length ? undefined : actionFor(vai));
         finish(testo);

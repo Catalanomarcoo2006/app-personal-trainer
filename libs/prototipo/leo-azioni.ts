@@ -229,7 +229,7 @@ export const LEO_TOOLS = [
     function: {
       name: "scrivi_messaggio",
       description:
-        "Prepara un messaggio dal trainer a un cliente, nella chat dell'app. Il trainer lo legge e conferma prima dell'invio. Scrivi come se fossi il trainer, in prima persona, tono cordiale, senza firma; per il cliente usa il suo codice.",
+        "Prepara un messaggio dal trainer a un cliente, nella chat dell'app. Il trainer lo legge e conferma prima dell'invio. Scrivi come se fossi il trainer, in prima persona, tono cordiale, breve, senza firma; per il cliente usa il suo codice. Scrivi solo quello che il trainer ti ha chiesto di dire: niente consigli di allenamento, salute o alimentazione aggiunti da te.",
       parameters: { type: "object", properties: { cliente, testo: { type: "string", description: "testo del messaggio, massimo 1000 caratteri" } }, required: ["cliente", "testo"] },
     },
   },
