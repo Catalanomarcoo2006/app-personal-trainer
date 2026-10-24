@@ -8,6 +8,9 @@ import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
 import { Appointment, appointmentColors, AppointmentType, clientById, clients, trainer } from "@/libs/prototipo/dati-finti";
+import { giornoDi, isoDi, SETTIMANE_LEO } from "@/libs/prototipo/calendario";
+import type { Seduta } from "@/libs/prototipo/leo-azioni";
+import { stato, useStato } from "@/libs/prototipo/stato";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { useFitDensity } from "./fit";
@@ -343,7 +346,7 @@ function Cell({
         {items.flatMap((a, i) => {
           const out = [];
           if (i === nowAt) out.push(<NowMark key="adesso" />);
-          out.push(<SessionCard key={`${a.time}-${a.clientId}`} day={day} a={a} i={i} density={density} onOpen={() => onOpen(a)} />);
+          out.push(<SessionCard key={"id" in a ? (a as Seduta).id : `${a.time}-${a.clientId}`} day={day} a={a} i={i} density={density} onOpen={() => onOpen(a)} />);
           return out;
         })}
       </AnimatePresence>
@@ -358,13 +361,15 @@ export function WeekCalendar() {
   const [offset, setOffset] = useState(0);
   const [direction, setDirection] = useState(0);
   const [hidden, setHidden] = useState<AppointmentType[]>([]);
-  // modifiche della settimana (sedute nuove, spostate, annullate): partono dalla settimana della demo
+  // questa settimana e la prossima vivono nello store (le modifica anche Leo); le altre hanno modifiche locali
+  const sedute = useStato((s) => s.sedute);
   const [edits, setEdits] = useState<Record<number, Appointment[][]>>({});
   const [draft, setDraft] = useState<Draft | null>(null);
   const [open, setOpen] = useState<{ day: number; a: Appointment } | null>(null);
 
-  const week = weekOf(offset);
-  const items = edits[offset] ?? week.days.map((d) => d.items);
+  const week = weekOf(offset, sedute);
+  const inStore = SETTIMANE_LEO.includes(offset);
+  const items = (!inStore && edits[offset]) || week.days.map((d) => d.items);
   const days: WeekDay[] = week.days.map((d, i) => ({ ...d, items: [...items[i]].sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) }));
   const total = days.reduce((s, d) => s + d.items.length, 0);
   const todayIndex = days.findIndex((d) => d.isToday);
@@ -464,7 +469,7 @@ export function WeekCalendar() {
                     day={d}
                     band={bi}
                     items={d.items.filter((a) => !hidden.includes(a.type) && bandOf(a) === bi)}
-                    deps={[offset, hidden, edits]}
+                    deps={[offset, hidden, edits, sedute]}
                     onAdd={() => setDraft({ day: di, time: band.start })}
                     onOpen={(a) => setOpen({ day: di, a })}
                   />
@@ -488,7 +493,8 @@ export function WeekCalendar() {
             }}
             onCancel={() => {
               const { day, a } = open;
-              update((w) => w.map((items, i) => (i === day ? items.filter((x) => x !== a) : items)));
+              if (inStore) stato.removeSeduta((a as Seduta).id);
+              else update((w) => w.map((items, i) => (i === day ? items.filter((x) => x !== a) : items)));
               setOpen(null);
               playSound("confirm");
               toast.success(`Seduta annullata: ${clientById(a.clientId)?.name.split(" ")[0]}, ${days[day].long} alle ${a.time}`);
@@ -503,7 +509,10 @@ export function WeekCalendar() {
             onClose={() => setDraft(null)}
             onSave={(day, a) => {
               const old = draft.replacing;
-              update((w) => w.map((items, i) => [...items.filter((x) => x !== old), ...(i === day ? [a] : [])]));
+              const date = isoDi(giornoDi(offset, day));
+              if (inStore && old) stato.updateSeduta((old as Seduta).id, { ...a, date });
+              else if (inStore) stato.addSeduta({ ...a, date });
+              else update((w) => w.map((items, i) => [...items.filter((x) => x !== old), ...(i === day ? [a] : [])]));
               setDraft(null);
               playSound("confirm");
               toast.success(old ? `Seduta spostata a ${days[day].long} ${days[day].n} alle ${a.time}` : `Seduta fissata: ${days[day].long} ${days[day].n} alle ${a.time}`);

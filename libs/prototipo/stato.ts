@@ -1,8 +1,12 @@
 // Stato condiviso del prototipo, in memoria: resta mentre si cambia pagina, si azzera ricaricando.
-// Tiene i video degli esercizi, le schede in modifica e quelle inviate ai clienti.
+// Tiene i video degli esercizi, le schede in modifica e quelle inviate ai clienti, il calendario di questa
+// settimana e della prossima (anche Leo lo modifica) e le conversazioni con i clienti.
 
 import { useEffect, useSyncExternalStore } from "react";
-import { clients, defaultPlan, exerciseById, library, plans, trainer, type PlanDay } from "./dati-finti";
+import { conta } from "@/libs/ui/testo";
+import { seduteIniziali } from "./calendario";
+import { clients, conversations, defaultPlan, exerciseById, library, plans, trainer, type ChatMessage, type PlanDay } from "./dati-finti";
+import type { Seduta } from "./leo-azioni";
 
 // ——— Tipi della scheda ———
 
@@ -32,12 +36,29 @@ const fromPlan = (days: PlanDay[]): Day[] => days.map((d) => ({ ...d, rows: d.ro
 const withoutVideo = new Set(["abductor", "pallof", "ripetute", "french"]);
 export const demoVideo = (name: string) => `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} esecuzione corretta`)}`;
 
+// Dove guardare dopo un'azione di Leo: il calendario o la chat la usano per evidenziare e animare.
+// seq cresce a ogni azione, così la stessa seduta si può evidenziare due volte di fila.
+export type FocusLeo = { seq: number; tipo: "fissa" | "sposta" | "cancella" | "messaggio"; id?: string; clientId?: string; da?: { date: string; time: string }; testo?: string };
+
+export const planReply = "Grazie! La guardo subito, i video sono comodissimi 💪";
+
+// Il messaggio con il PDF della scheda inviata da Schede.
+export const sentMessage = (p: SentPlan): ChatMessage => ({
+  from: "trainer",
+  text: "Ecco la tua nuova scheda! Sotto ogni esercizio trovi il video dell’esecuzione.",
+  time: p.time,
+  attachment: { name: p.fileName, url: p.url, detail: `${conta(p.days.length, "giorno", "giorni")} · ${conta(p.exercises, "esercizio", "esercizi")} · ${p.withVideo} video` },
+});
+
 type State = {
   videos: Record<string, string>; // exId → link
   plans: Record<string, Day[]>; // clientId → scheda in modifica
   sent: SentPlan[];
   replied: string[]; // schede a cui il cliente ha già risposto in chat
   trainerPhoto: string | null; // foto scelta dal trainer (data URL), null = quella della demo
+  sedute: Seduta[]; // settimane 0 e 1 del calendario
+  threads: Record<string, ChatMessage[]>; // clientId → messaggi
+  focus: FocusLeo | null;
 };
 
 let state: State = {
@@ -46,7 +67,13 @@ let state: State = {
   sent: [],
   replied: [],
   trainerPhoto: null,
+  sedute: seduteIniziali(),
+  threads: Object.fromEntries(conversations.map((c) => [c.clientId, c.messages])),
+  focus: null,
 };
+
+let idSeduta = state.sedute.length;
+let seqFocus = 0;
 
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -80,10 +107,39 @@ export const stato = {
   },
   addSent(plan: SentPlan) {
     state = { ...state, sent: [...state.sent, plan] };
-    emit();
+    stato.addMessage(plan.clientId, sentMessage(plan));
   },
   markReplied(id: string) {
+    const plan = state.sent.find((p) => p.id === id);
     state = { ...state, replied: [...state.replied, id] };
+    if (plan) stato.addMessage(plan.clientId, { from: "client", text: planReply, time: "Adesso" });
+    else emit();
+  },
+  addSeduta(s: Omit<Seduta, "id">): Seduta {
+    const nuova = { ...s, id: `A${++idSeduta}` };
+    state = { ...state, sedute: [...state.sedute, nuova] };
+    emit();
+    return nuova;
+  },
+  updateSeduta(id: string, patch: Partial<Omit<Seduta, "id">>) {
+    state = { ...state, sedute: state.sedute.map((s) => (s.id === id ? { ...s, ...patch } : s)) };
+    emit();
+  },
+  removeSeduta(id: string) {
+    state = { ...state, sedute: state.sedute.filter((s) => s.id !== id) };
+    emit();
+  },
+  // rimette una seduta tolta (annulla), al suo posto nell'elenco se c'era già
+  putSeduta(s: Seduta) {
+    state = { ...state, sedute: state.sedute.some((x) => x.id === s.id) ? state.sedute.map((x) => (x.id === s.id ? s : x)) : [...state.sedute, s] };
+    emit();
+  },
+  addMessage(clientId: string, m: ChatMessage) {
+    state = { ...state, threads: { ...state.threads, [clientId]: [...(state.threads[clientId] ?? []), m] } };
+    emit();
+  },
+  setFocus(f: Omit<FocusLeo, "seq"> | null) {
+    state = { ...state, focus: f ? { ...f, seq: ++seqFocus } : null };
     emit();
   },
   setTrainerPhoto(url: string | null) {

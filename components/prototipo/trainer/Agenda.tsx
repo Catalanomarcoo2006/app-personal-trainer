@@ -7,7 +7,10 @@ import { CalendarDays, CalendarPlus, Check, ChevronLeft, ChevronRight, Clipboard
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
-import { agenda, Appointment, appointmentColors, AppointmentType, clientById, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
+import { Appointment, appointmentColors, AppointmentType, clientById, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
+import { giornoDi, isoDi, LONG, MONTHS, seduteDemo, SETTIMANE_LEO, SHORT } from "@/libs/prototipo/calendario";
+import type { Seduta } from "@/libs/prototipo/leo-azioni";
+import { useStato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { useFitDensity } from "./fit";
@@ -28,17 +31,13 @@ export const duration = (minutes: number) => (minutes >= 60 ? `${Math.floor(minu
 
 // ——— Settimane: quella del prototipo (19–25 ottobre) e, spostandosi, settimane credibili prima e dopo ———
 
-const MONTHS = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
-const SHORT = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
-const LONG = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
-
 export type WeekDay = { short: string; long: string; n: number; month: string; items: Appointment[]; isToday: boolean; isPast: boolean };
 
-export function weekOf(offset: number): { label: string; days: WeekDay[] } {
+// sedute: quelle dello store (settimane 0 e 1, che Leo può modificare); senza, le sedute della demo.
+export function weekOf(offset: number, sedute?: Seduta[]): { label: string; days: WeekDay[] } {
   const days = SHORT.map((short, i) => {
-    const date = new Date(2026, 9, 19 + offset * 7 + i);
-    // le altre settimane riusano i giorni feriali di questa, mescolati; la domenica resta libera
-    const items = offset === 0 ? agenda[i] : i === 6 ? [] : agenda[(((i + offset * 2) % 6) + 6) % 6];
+    const date = giornoDi(offset, i);
+    const items = sedute && SETTIMANE_LEO.includes(offset) ? sedute.filter((s) => s.date === isoDi(date)).sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) : seduteDemo(offset, i);
     return {
       short,
       long: LONG[i],
@@ -256,14 +255,15 @@ export function AgendaCard() {
   const [offset, setOffset] = useState(0);
   const [direction, setDirection] = useState(0);
   const [selected, setSelected] = useState(TODAY_INDEX);
-  const { label, days } = weekOf(offset);
+  const sedute = useStato((s) => s.sedute);
+  const { label, days } = weekOf(offset, sedute);
   const day = days[selected];
   const total = day.items.reduce((s, a) => s + a.minutes, 0);
   const now = toMinutes(trainer.now);
   const nowAt = day.isToday ? day.items.findIndex((a) => toMinutes(a.time) + a.minutes > now) : -1;
   // se gli appuntamenti del giorno non entrano, le righe si fanno più basse (senza tipo e luogo)
   const list = useRef<HTMLDivElement>(null);
-  const density = useFitDensity(list, 1, [offset, selected]);
+  const density = useFitDensity(list, 1, [offset, selected, sedute]);
 
   const move = (step: number) => {
     const next = offset + step;

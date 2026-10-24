@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { clientById, trainer, type Appointment, type AppointmentType } from "./dati-finti";
+import { giornoDi, isoDi } from "./calendario";
 import { clienteDaCodice, codiceDi, pseudonimizza, ripristinaNomi } from "./leo-contesto";
 
 // Una seduta del calendario con id stabile (A1, A2, …) e data vera.
@@ -20,8 +21,7 @@ export const TIPI: AppointmentType[] = ["Workout", "Valutazione", "Online", "Cor
 
 // La demo è ferma a mercoledì 21 ottobre 2026; Leo agisce su questa settimana (19–25) e sulla prossima.
 export const ADESSO = { data: "2026-10-21", ora: trainer.now } as const;
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-export const GIORNI_LEO: string[] = Array.from({ length: 14 }, (_, i) => iso(new Date(2026, 9, 19 + i)));
+export const GIORNI_LEO: string[] = Array.from({ length: 14 }, (_, i) => isoDi(giornoDi(0, i)));
 
 const ORA_INIZIO = 6 * 60;
 const ORA_FINE = 22 * 60;

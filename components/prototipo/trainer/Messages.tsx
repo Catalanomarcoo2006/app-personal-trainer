@@ -7,34 +7,13 @@ import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, Use
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { conta } from "@/libs/ui/testo";
-import { Attachment, ChatMessage, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
-import { SentPlan, stato } from "@/libs/prototipo/stato";
+import { Attachment, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
+import { stato, useStato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 const quickReplies = ["Perfetto, ci vediamo venerdì!", "Ti sposto la seduta, ti confermo a breve", "Riposa oggi e fammi sapere domani", "Bravissimo, continua così 💪"];
 const autoReplies = ["Grazie mille! 🙏", "Perfetto, a presto!", "Ok, ti aggiorno domani", "Fantastico, grazie!"];
-const planReply = "Grazie! La guardo subito, i video sono comodissimi 💪";
-
-// Il messaggio con il PDF della scheda inviata da Schede.
-const sentMessage = (p: SentPlan): ChatMessage => ({
-  from: "trainer",
-  text: "Ecco la tua nuova scheda! Sotto ogni esercizio trovi il video dell’esecuzione.",
-  time: p.time,
-  attachment: { name: p.fileName, url: p.url, detail: `${conta(p.days.length, "giorno", "giorni")} · ${conta(p.exercises, "esercizio", "esercizi")} · ${p.withVideo} video` },
-});
-
-function initialThreads(): Record<string, ChatMessage[]> {
-  const threads = Object.fromEntries(conversations.map((c) => [c.clientId, c.messages])) as Record<string, ChatMessage[]>;
-  const { sent, replied } = stato.get();
-  for (const p of sent) {
-    threads[p.clientId] = [...(threads[p.clientId] ?? []), sentMessage(p)];
-    if (replied.includes(p.id)) threads[p.clientId].push({ from: "client", text: planReply, time: "Adesso" });
-  }
-  return threads;
-}
-
 function PdfMessage({ a }: { a: Attachment }) {
   return (
     <div className="mb-[6px] flex w-[340px] items-center gap-[10px] rounded-[12px] bg-white/20 p-[8px]">
@@ -63,7 +42,7 @@ export function MessagesView({ search }: { search: string }) {
   const params = new URLSearchParams(search);
   const target = params.get("cliente");
   const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : conversations[0].clientId));
-  const [threads, setThreads] = useState(initialThreads);
+  const threads = useStato((s) => s.threads);
   const [unread, setUnread] = useState(() => {
     const u = Object.fromEntries(conversations.map((c) => [c.clientId, c.unread])) as Record<string, number>;
     if (target) u[target] = 0;
@@ -86,10 +65,9 @@ export function MessagesView({ search }: { search: string }) {
       local.push(window.setTimeout(() => p.clientId === activeId && setTyping(true), 900 + i * 400));
       local.push(
         window.setTimeout(() => {
-          stato.markReplied(p.id);
           setTyping(false);
           playSound("tap");
-          setThreads((th) => ({ ...th, [p.clientId]: [...(th[p.clientId] ?? []), { from: "client", text: planReply, time: "Adesso" }] }));
+          stato.markReplied(p.id);
         }, 2600 + i * 400),
       );
     });
@@ -134,13 +112,13 @@ export function MessagesView({ search }: { search: string }) {
     playSound("confirm");
     setDraft("");
     const id = activeId;
-    setThreads((th) => ({ ...th, [id]: [...(th[id] ?? []), { from: "trainer", text: t, time: "Adesso" }] }));
+    stato.addMessage(id, { from: "trainer", text: t, time: "Adesso" });
     timers.current.push(window.setTimeout(() => setTyping(true), 700));
     timers.current.push(
       window.setTimeout(() => {
         setTyping(false);
         playSound("tap");
-        setThreads((th) => ({ ...th, [id]: [...(th[id] ?? []), { from: "client", text: autoReplies[(th[id] ?? []).length % autoReplies.length], time: "Adesso" }] }));
+        stato.addMessage(id, { from: "client", text: autoReplies[(stato.get().threads[id] ?? []).length % autoReplies.length], time: "Adesso" });
       }, 2300),
     );
   };
