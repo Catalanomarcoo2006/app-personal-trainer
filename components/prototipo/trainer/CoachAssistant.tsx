@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
@@ -534,6 +534,31 @@ function useCoachChat(): Chat {
   return { messages, typing, thinking, ask, conferma, rifiuta, annulla, torna, partenza, compatta };
 }
 
+// Il messaggio appena inviato dal trainer: parte dall'altezza del campo di scrittura (daY, in px dello schermo),
+// vola su fino al suo posto nella chat e rimbalza.
+function VolaSu({ daY, children }: { daY: number; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const y = useMotionValue(0);
+  const scale = useMotionValue(1);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    // lo schermo può essere rimpicciolito (tela adattata): la distanza va riportata in px della tela
+    const fattore = el.offsetHeight ? el.getBoundingClientRect().height / el.offsetHeight : 1;
+    const distanza = (daY - el.getBoundingClientRect().top) / (fattore || 1);
+    if (distanza <= 0) return;
+    y.set(distanza);
+    scale.set(0.9);
+    const a = [animate(y, 0, { type: "spring", duration: 0.8, bounce: 0.28 }), animate(scale, 1, { type: "spring", duration: 0.8, bounce: 0.4 })];
+    return () => a.forEach((x) => x.stop());
+  }, [daY, y, scale]);
+  return (
+    <motion.div ref={box} style={{ y, scale, transformOrigin: "100% 100%" }}>
+      {children}
+    </motion.div>
+  );
+}
+
 // Leo che si sporge dal bordo destro della chat, aggrappato con le mani: esce da dietro la chat quando si apre.
 function SidePeek() {
   return (
@@ -572,6 +597,8 @@ function ChatPanel({
 }) {
   const { messages, typing, thinking, ask: askChat, conferma, rifiuta, annulla, torna, partenza, compatta } = chat;
   const [draft, setDraft] = useState("");
+  const scrive = draft.trim().length > 0;
+  const reduce = useReducedMotion();
   const scroller = useRef<HTMLDivElement>(null);
   // la prima volta Leo si presenta; scrivere una domanda vale come "salta"
   const [intro, setIntro] = useState(() => !introSeen());
@@ -595,8 +622,12 @@ function ChatPanel({
     return () => window.clearTimeout(t);
   }, []);
 
+  // da dove parte il volo del messaggio appena inviato: l'altezza del campo di scrittura
+  const campo = useRef<HTMLFormElement>(null);
+  const [volo, setVolo] = useState<{ daY: number; dopo: number } | null>(null);
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (draft.trim() && campo.current) setVolo({ daY: campo.current.getBoundingClientRect().top, dopo: messages.length });
     ask(draft);
     setDraft("");
   };
@@ -679,12 +710,19 @@ function ChatPanel({
           {!intro && messages.map((m) => (
             <motion.div
               key={m.id}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: reduce ? 0 : 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: EASE_OUT }}
               className={`flex max-w-[86%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
             >
-              {m.text && <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>}
+              {m.text &&
+                (m.from === "trainer" && volo && !reduce && messages.indexOf(m) === volo.dopo ? (
+                  <VolaSu daY={volo.daY}>
+                    <p className="rounded-[16px] rounded-br-[6px] bubble-trainer px-[12px] py-[8px] text-[12.5px] leading-relaxed">{m.text}</p>
+                  </VolaSu>
+                ) : (
+                  <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
+                ))}
               {m.schede && (
                 <div className="mt-[6px] flex w-[300px] max-w-full flex-col gap-[6px]">
                   {m.schede.map((sc) => (
@@ -744,10 +782,39 @@ function ChatPanel({
             </motion.button>
           ))}
         </div>
-        <form onSubmit={submit} className="mx-[14px] mb-[14px] flex items-center gap-[8px] rounded-full border border-line py-[5px] pr-[5px] pl-[14px] focus-within:border-[color-mix(in_srgb,var(--trainer)_55%,transparent)]">
+        {/* mentre scrivi il campo si accende col colore del trainer e il tasto di invio si sveglia */}
+        <form
+          ref={campo}
+          onSubmit={submit}
+          className="mx-[14px] mb-[14px] flex items-center gap-[8px] rounded-full border py-[5px] pr-[5px] pl-[14px] transition-[border-color,box-shadow] duration-300 focus-within:border-[color-mix(in_srgb,var(--trainer)_55%,transparent)]"
+          style={
+            scrive
+              ? { borderColor: "color-mix(in srgb, var(--trainer) 70%, transparent)", boxShadow: "0 0 0 4px color-mix(in srgb, var(--trainer) 14%, transparent), 0 6px 18px color-mix(in srgb, var(--trainer) 18%, transparent)" }
+              : { borderColor: "var(--color-line)" }
+          }
+        >
           <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
-          <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full btn-trainer">
-            <ArrowUp size={15} />
+          <motion.button
+            type="submit"
+            aria-label="Invia"
+            whileTap={{ scale: 0.9 }}
+            animate={{ scale: scrive && !reduce ? 1.08 : 1, opacity: scrive ? 1 : 0.55 }}
+            transition={{ type: "spring", duration: 0.35, bounce: 0.4 }}
+            className="relative grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full btn-trainer"
+          >
+            {scrive && !reduce && (
+              <motion.span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{ background: "var(--trainer)" }}
+                initial={{ scale: 1, opacity: 0.45 }}
+                animate={{ scale: 1.7, opacity: 0 }}
+                transition={{ duration: 1.3, repeat: Infinity, ease: "easeOut" }}
+              />
+            )}
+            <motion.span animate={{ y: scrive && !reduce ? [0, -2, 0] : 0 }} transition={{ duration: 0.4 }} className="relative">
+              <ArrowUp size={15} />
+            </motion.span>
           </motion.button>
         </form>
       </div>
