@@ -44,10 +44,10 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Informativa, DPA e termini da far rivedere a un professionista; l'informativa deve dire che l'assistente (fornitore UE) tratta nomi e dati dei clienti. Anche la voce dei vocali: **niente vocali con clienti veri finché non c'è il trascrittore UE** (la dettatura del browser manda l'audio a Google).
 
 ## Prossimi passi immediati (da qui si riparte)
-1. Leo, rifiniture rimaste (punto 1 della lista di "Maxare Leo 4"): suggerimenti sotto l'elenco con più schede, testa di Leo in basso a sinistra, dividere `CoachAssistant.tsx`.
-2. Area cliente (spec e piano pronti, 10 task, inline): serve il via di Marco. Poi backend: Marco crea il progetto Supabase UE → schema, RLS con test, accessi, admin → aree su database → assistente, account demo → landing vera → area trainer da telefono.
+1. Area cliente (spec e piano pronti, 10 task, inline): serve il via di Marco. Leo lato trainer è chiuso per il prototipo: resta solo quello che chiede fornitore UE o backend.
+2. Poi backend: Marco crea il progetto Supabase UE → schema, RLS con test, accessi, admin → aree su database → assistente, account demo → landing vera → area trainer da telefono.
 3. Prima del primo cliente vero: ricerca e scelta fornitore AI + trascrizione in UE (la fa Claude se Marco la chiede), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto, chiavi Resend, dominio.
-4. Rifiniture quando c'è tempo: voci aperte in `docs/DA-CAMBIARE.md` (dividere `CoachAssistant.tsx`, tema scuro, fluidità, macchie d'olio, import clienti, foto e scansioni, testa di Leo).
+4. Rifiniture quando c'è tempo: voci aperte in `docs/DA-CAMBIARE.md` (tema scuro, fluidità, macchie d'olio, import clienti, foto e scansioni).
 
 ## Contesto tecnico utile
 - Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: `git push` sul ramo `setup-iniziale`, Vercel pubblica da solo. Chiavi: elenco senza valori in `docs/chiavi.md`.
@@ -56,4 +56,4 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
-- 2026-10-25: vocali provati da Marco (ok); rifiniture della revisione del 24/10 fatte (flusso del fornitore più robusto, sezioni che non ripetono l'ultima azione di Leo, Esc bloccato durante il viaggio, 293 test). Leo legge anche Excel; dettagli della revisione sistemati; vocali a Leo (tocco, casella che cresce mentre detti, dettatura del browser); con più azioni la chat porta alla prima e "Conferma tutte" va in fondo; Leo fa tutto (soldi, dati dei clienti, file allegati, aspetto e notifiche, messaggi a più clienti); costo di Leo ~0,04 cent di dollaro a domanda.
+- 2026-10-25: Leo diviso in `trainer/leo/` (CoachAssistant da 1.380 a ~300 righe), testa di Leo centrata e più grande, suggerimenti nascosti con le schede; vocali provati da Marco (ok); rifiniture della revisione del 24/10 fatte (flusso del fornitore più robusto, sezioni che non ripetono l'ultima azione di Leo, Esc bloccato durante il viaggio, 293 test). Leo legge anche Excel; dettagli della revisione sistemati; vocali a Leo (tocco, casella che cresce mentre detti, dettatura del browser); con più azioni la chat porta alla prima e "Conferma tutte" va in fondo; Leo fa tutto (soldi, dati dei clienti, file allegati, aspetto e notifiche, messaggi a più clienti); costo di Leo ~0,04 cent di dollaro a domanda.
