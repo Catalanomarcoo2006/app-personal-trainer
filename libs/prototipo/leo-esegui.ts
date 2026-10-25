@@ -2,10 +2,11 @@
 // Prima ricontrolla sullo stato attuale: nel frattempo il trainer può aver cambiato qualcosa a mano.
 // Asincrona come lo sportello dei dati (libs/dati/sportello.ts): con Supabase le scritture vanno al server.
 
-import { inviaMessaggio, registraPagamento, rinnovaPacchetto, segnaPagato, type Esito as EsitoSportello } from "@/libs/dati/sportello";
+import { aggiornaObiettivo, aggiungiMisura, aggiungiNota, creaCliente, inviaMessaggio, registraPagamento, rinnovaPacchetto, segnaPagato, type Esito as EsitoSportello } from "@/libs/dati/sportello";
 import { testoSollecito } from "@/libs/dati/testi";
 import { OGGI } from "@/libs/dati/iniziali";
 import { cent } from "./leo-azioni-soldi";
+import { misuraDa } from "./leo-azioni-clienti";
 import { luogoPredefinito, personalizza, verificaAzione, type AzioneLeo, type DatiLeo, type Verifica } from "./leo-azioni";
 import { stato } from "./stato";
 
@@ -112,6 +113,16 @@ export async function eseguiAzione(a: AzioneLeo): Promise<Esito> {
     case "rinnova_pacchetto": {
       const esito = await rinnovaPacchetto({ clientId: a.dati.cliente, lezioni: a.dati.lezioni, mesi: a.dati.mesi, amountCents: cent(a.dati.importo) });
       return conFocus(esito, { tipo: "rinnovo", pagamentoId: "id" in esito ? esito.id : undefined, clientId: a.dati.cliente });
+    }
+    case "aggiorna_misure":
+      return conFocus(await aggiungiMisura(misuraDa(a)), { tipo: "misure", clientId: a.dati.cliente });
+    case "aggiorna_obiettivo":
+      return conFocus(await aggiornaObiettivo(a.dati.cliente, { goalLabel: a.dati.descrizione, goalTarget: a.dati.traguardo, goalUnit: a.dati.unita }), { tipo: "obiettivo", clientId: a.dati.cliente });
+    case "aggiungi_nota":
+      return conFocus(await aggiungiNota(a.dati.cliente, a.dati.testo), { tipo: "nota", clientId: a.dati.cliente });
+    case "nuovo_cliente": {
+      const esito = await creaCliente({ name: a.dati.nome, gender: a.dati.genere, email: a.dati.email, goalLabel: a.dati.obiettivo });
+      return conFocus(esito, { tipo: "cliente", clientId: "id" in esito ? esito.id : undefined });
     }
     case "sollecita": {
       const { pagamenti, clienti } = stato.get().dati;

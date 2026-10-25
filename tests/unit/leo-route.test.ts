@@ -124,6 +124,10 @@ describe("POST /prototipo/api/leo", () => {
       "registra_pagamento",
       "rinnova_pacchetto",
       "sollecita",
+      "aggiorna_misure",
+      "aggiorna_obiettivo",
+      "aggiungi_nota",
+      "nuovo_cliente",
     ]);
   });
 

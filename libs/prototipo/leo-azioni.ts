@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { clientById, trainer, type Appointment, type AppointmentType } from "./dati-finti";
 import type { DatiClienti } from "@/libs/dati/tipi";
+import { cosaClienti, eClienti, inChiaroClienti, primaDopoClienti, riassuntoClienti, SchemiClienti, suDatiCliente, TOOLS_CLIENTI, verificaClienti, type AzioneClienti } from "./leo-azioni-clienti";
 import { cosaSoldi, eSoldi, inChiaroSoldi, riassuntoSoldi, SchemiSoldi, TOOLS_SOLDI, verificaSoldi, type AzioneSoldi } from "./leo-azioni-soldi";
 import { giornoDi, isoDi } from "./calendario";
 import { clienteDa } from "./leo-contesto";
@@ -19,7 +20,8 @@ export type AzioneLeo =
   | { nome: "cancella_appuntamento"; dati: { id: string } }
   | { nome: "scrivi_messaggio"; dati: { cliente: string; testo: string } }
   | { nome: "scrivi_a_piu"; dati: { clienti: string[]; testo: string } }
-  | AzioneSoldi;
+  | AzioneSoldi
+  | AzioneClienti;
 
 // Quello che i controlli guardano: il calendario e i dati dei clienti di adesso.
 export type DatiLeo = { sedute: Seduta[]; dati: DatiClienti };
@@ -74,6 +76,7 @@ const Schemi = {
   scrivi_messaggio: z.object({ cliente: z.string().min(1), testo: z.string().trim().min(1).max(MAX_TESTO) }),
   scrivi_a_piu: z.object({ clienti: z.array(z.string().min(1)).max(60), testo: z.string().trim().min(1).max(MAX_TESTO) }),
   ...SchemiSoldi,
+  ...SchemiClienti,
 };
 
 // Il nome e gli argomenti arrivati dall'AI diventano un'azione, oppure null se la forma è sbagliata.
@@ -87,6 +90,7 @@ export function leggiAzione(nome: string, argomenti: unknown): AzioneLeo | null 
 // elenco: i clienti di adesso (anche quelli creati nell'app); senza, quelli della demo.
 export function inChiaro(a: AzioneLeo, elenco?: { id: string; name: string }[]): AzioneLeo | null {
   if (eSoldi(a.nome)) return inChiaroSoldi(a as AzioneSoldi, (v) => clienteDa(v, elenco));
+  if (eClienti(a.nome)) return inChiaroClienti(a as AzioneClienti, (v) => clienteDa(v, elenco));
   if (a.nome === "scrivi_a_piu") {
     const clienti = a.dati.clienti.map((c) => clienteDa(c, elenco));
     if (clienti.some((c) => !c)) return null;
@@ -147,6 +151,11 @@ export function verificaAzione(a: AzioneLeo, d: DatiLeo, adesso: { data: string;
     case "rinnova_pacchetto":
     case "sollecita":
       return verificaSoldi(a, d.dati);
+    case "aggiorna_misure":
+    case "aggiorna_obiettivo":
+    case "aggiungi_nota":
+    case "nuovo_cliente":
+      return verificaClienti(a, d.dati);
     case "scrivi_a_piu": {
       if (!a.dati.clienti.length) return no("Scegli almeno un cliente");
       if (a.dati.clienti.length > MAX_DESTINATARI) return no(`Al massimo ${MAX_DESTINATARI} clienti`);
@@ -158,8 +167,12 @@ export function verificaAzione(a: AzioneLeo, d: DatiLeo, adesso: { data: string;
 }
 
 // Cancellare e scrivere al cliente solo dopo il tocco del trainer; fissare e spostare subito, con "Annulla".
-// I soldi si confermano sempre.
-export const daConfermare = (a: AzioneLeo) => a.nome === "cancella_appuntamento" || a.nome === "scrivi_messaggio" || a.nome === "scrivi_a_piu" || eSoldi(a.nome);
+// I soldi e il nuovo cliente si confermano sempre; misure, obiettivo e note solo se arrivano da un file allegato.
+export const daConfermare = (a: AzioneLeo, conAllegato = false) =>
+  a.nome === "cancella_appuntamento" || a.nome === "scrivi_messaggio" || a.nome === "scrivi_a_piu" || a.nome === "nuovo_cliente" || eSoldi(a.nome) || (conAllegato && suDatiCliente(a.nome));
+
+// Le righe "prima → dopo" della scheda (misure e obiettivo); vuoto per le altre azioni.
+export const primaDopo = (a: AzioneLeo, d: DatiLeo) => (eClienti(a.nome) ? primaDopoClienti(a as AzioneClienti, d.dati) : []);
 
 export function luogoPredefinito(tipo: AppointmentType): string {
   return tipo === "Online" ? "Videochiamata" : tipo === "Corsa" ? "Parco di Meolo" : "Fit Lab, Meolo";
@@ -198,6 +211,11 @@ export function riassunto(a: AzioneLeo, d: DatiLeo): string {
     case "rinnova_pacchetto":
     case "sollecita":
       return riassuntoSoldi(a, d.dati, nomeDi);
+    case "aggiorna_misure":
+    case "aggiorna_obiettivo":
+    case "aggiungi_nota":
+    case "nuovo_cliente":
+      return riassuntoClienti(a, nomeDi);
   }
 }
 
@@ -220,6 +238,11 @@ function cosa(a: AzioneLeo): string {
     case "rinnova_pacchetto":
     case "sollecita":
       return cosaSoldi(a, nomeDi);
+    case "aggiorna_misure":
+    case "aggiorna_obiettivo":
+    case "aggiungi_nota":
+    case "nuovo_cliente":
+      return cosaClienti(a, nomeDi);
   }
 }
 
@@ -306,4 +329,5 @@ export const LEO_TOOLS = [
     },
   },
   ...TOOLS_SOLDI,
+  ...TOOLS_CLIENTI,
 ];

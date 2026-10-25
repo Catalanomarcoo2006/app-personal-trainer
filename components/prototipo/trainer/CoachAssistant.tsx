@@ -81,6 +81,10 @@ const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "compl
   registra_pagamento: "complete",
   rinnova_pacchetto: "confirm",
   sollecita: "confirm",
+  aggiorna_misure: "complete",
+  aggiorna_obiettivo: "confirm",
+  aggiungi_nota: "confirm",
+  nuovo_cliente: "complete",
 };
 // la chat durante il viaggio: un riquadro piccolo in basso, Leo resta aggrappato al bordo
 const COMPATTA = { w: 168, h: 150 };

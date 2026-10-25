@@ -17,7 +17,9 @@ const semplice = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 export function clienteDa(valore: string, elenco: { id: string; name: string }[] = clients): string | undefined {
   const v = semplice(valore);
   if (!v) return undefined;
-  const esatto = elenco.find((c) => c.id === v || semplice(c.name) === v);
+  // anche "cognome nome" (come negli elenchi e nei file: "CONTI SARA")
+  const alContrario = (nome: string) => semplice(nome).split(" ").reverse().join(" ");
+  const esatto = elenco.find((c) => c.id === v || semplice(c.name) === v || alContrario(c.name) === v);
   if (esatto) return esatto.id;
   const perNome = elenco.filter((c) => semplice(c.name.split(" ")[0]) === v);
   return perNome.length === 1 ? perNome[0].id : undefined;
