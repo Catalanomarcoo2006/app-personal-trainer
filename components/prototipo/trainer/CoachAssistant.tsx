@@ -18,6 +18,7 @@ import { clientiAttuali } from "@/libs/dati/selettori";
 import { durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
 import { ConfermaTutte, SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
+import { TastoMicrofono, useVoceLeo, VoceStato } from "./MicrofonoLeo";
 import { conModifica, daConfermareTutte, titoloModificato, type Modifica } from "@/libs/prototipo/leo-modifica";
 import { dipendeDaNuovo, ordinaNuoviPrima, risolviDipendenza, sulNuovoCliente, type NuovoCliente } from "@/libs/prototipo/leo-dipendenze";
 import { navigateFade, navigateWithStain, ROUTES } from "./nav";
@@ -712,6 +713,7 @@ function ChatPanel({
 
   // da dove parte il volo del messaggio appena inviato: l'altezza del campo di scrittura
   const campo = useRef<HTMLFormElement>(null);
+  const voce = useVoceLeo({ bloccato: thinking, draft, setDraft, invia: (t) => ask(t) });
   const [volo, setVolo] = useState<{ daY: number; dopo: number } | null>(null);
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -887,6 +889,7 @@ function ChatPanel({
             </motion.button>
           ))}
         </div>
+        <VoceStato voce={voce} />
         {(file || erroreFile) && (
           <div className="mx-[14px] mb-[6px] flex items-center gap-[6px] text-[11.5px]">
             {file ? (
@@ -917,6 +920,7 @@ function ChatPanel({
           <button type="button" aria-label="Allega un file (PDF, Excel, CSV, TXT)" title="Allega un file (PDF, Excel, CSV, TXT)" onClick={() => sceltaFile.current?.click()} className="-ml-[6px] grid size-[26px] shrink-0 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink">
             <Paperclip size={14} />
           </button>
+          <TastoMicrofono voce={voce} />
           <input
             autoFocus
             value={draft}
