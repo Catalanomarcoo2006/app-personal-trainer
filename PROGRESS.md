@@ -42,12 +42,12 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Partita IVA da aprire prima del primo incasso.
 - Fornitore AI in UE da scegliere prima del primo cliente vero: strade possibili DeepSeek ospitato in UE da un provider europeo (modello aperto: stesso Leo, dati in UE; verificare versione, DPA e tool calling), Mistral, o i grandi modelli su server UE. Cambiano solo le variabili AI_*.
 - Informativa, DPA e termini da far rivedere a un professionista; l'informativa deve dire che l'assistente (fornitore UE) tratta nomi e dati dei clienti. Anche la voce dei vocali: **niente vocali con clienti veri finché non c'è il trascrittore UE** (la dettatura del browser manda l'audio a Google).
-- Nome del prodotto da scegliere.
 
-## Prossimi passi immediati
-1. Marco prova i vocali con la voce vera (Chrome o Edge) e dice cosa non va; poi parte l'area cliente.
-2. Area cliente (spec e piano pronti, 10 task): serve il via di Marco. Poi backend: progetto Supabase UE (Marco) → schema, RLS, accessi, pannello admin → aree su database → landing vera.
-3. Prima del primo cliente vero: scegliere fornitore AI e trascrizione in UE (ricerca e confronto), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto.
+## Prossimi passi immediati (da qui si riparte)
+1. Marco prova i vocali con la voce vera (Chrome o Edge) e dice cosa non va; si sistema.
+2. Area cliente (spec e piano pronti, 10 task, inline): serve il via di Marco. Poi backend: Marco crea il progetto Supabase UE → schema, RLS con test, accessi, admin → aree su database → assistente, account demo → landing vera → area trainer da telefono.
+3. Prima del primo cliente vero: ricerca e scelta fornitore AI + trascrizione in UE (la fa Claude se Marco la chiede), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto, chiavi Resend, dominio.
+4. Rifiniture quando c'è tempo: voci aperte in `docs/DA-CAMBIARE.md` (dividere `CoachAssistant.tsx`, tema scuro, fluidità, macchie d'olio, import clienti, foto e scansioni, testa di Leo).
 
 ## Contesto tecnico utile
 - Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: `git push` sul ramo `setup-iniziale`, Vercel pubblica da solo. Chiavi: elenco senza valori in `docs/chiavi.md`.
