@@ -4,16 +4,17 @@ Data: 2026-10-25. Stato: approvata, realizzata il 2026-10-25 (piano `docs/plans/
 
 ## Obiettivo
 
-Il trainer parla a Leo invece di scrivere. Tiene premuto il microfono nella chat, dice quello che deve fare ("Luca ha pagato, segna 77 kg a Sara, sposta Davide a domani alle 18"), lascia, e Leo prepara le schede delle azioni da confermare, come con un messaggio scritto.
+Il trainer parla a Leo invece di scrivere. Tocca il microfono nella chat, dice quello che deve fare ("Luca ha pagato, segna 77 kg a Sara, sposta Davide a domani alle 18"), tocca di nuovo per finire, e Leo prepara le schede delle azioni da confermare, come con un messaggio scritto.
 
 Fuori da questa funzione: Leo che risponde a voce, vocali dei clienti, note vocali salvate. L'audio non si conserva: si trascrive e basta.
 
 ## Come funziona per il trainer
 
-- **Il microfono** sta nella barra della chat di Leo, accanto al tasto per allegare i file. Funziona col dito e col mouse (eventi `pointer`).
-- **Tieni premuto e parli.** Mentre parli il testo compare nella barra, dal vivo, e il microfono pulsa (fermo con "riduci movimento"). Massimo 60 secondi: allo scadere si ferma da solo come se avesse lasciato.
-- **Annulla**: se prima di lasciare trascini via dal tasto (o premi Esc), il vocale si butta e la barra torna com'era.
-- **Quando lasci**, dipende dalla scelta del trainer:
+- **Il microfono** sta nella barra della chat di Leo, accanto al tasto per allegare i file. Funziona col dito e col mouse (un semplice `click`).
+- **Tocchi una volta e parli, senza tenere premuto.** Il microfono passa da grigio a "sto accendendo" (rotellina) ad acceso (pieno, con onde, bordo della barra illuminato, scritta "Ti ascolto"; fermo con "riduci movimento"). Mentre parli il testo compare nella barra, dal vivo. Massimo 60 secondi: allo scadere si ferma da solo come se avesse toccato per finire.
+- **Per finire** si tocca di nuovo il microfono.
+- **Annulla**: il tasto "Annulla" sopra la barra o Esc buttano il vocale e la barra torna com'era.
+- **Quando finisci**, dipende dalla scelta del trainer:
   - **"Invia subito"**: il testo parte da solo verso Leo, come se l'avesse scritto e premuto Invio. Non c'è una conferma sul vocale.
   - **"Rivedi prima"**: il testo resta nella barra, modificabile, e lo manda il trainer.
 - **La scelta si fa la prima volta.** Subito dopo il primo vocale compare una scheda con il testo trascritto e due tasti: "Mandalo subito a Leo (da ora sempre così)" e "Fammelo rivedere (da ora sempre così)". Il vocale in corso segue quello che sceglie. Dopo non chiede più.

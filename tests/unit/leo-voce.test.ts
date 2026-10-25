@@ -69,7 +69,7 @@ describe("sessione del vocale", () => {
     expect(onFine).toHaveBeenCalledWith(null);
   });
 
-  it("lascia mentre il microfono si sta ancora accendendo: si annulla e dice di tenere premuto", async () => {
+  it("si finisce mentre il microfono si sta ancora accendendo: si annulla e dice di aspettare", async () => {
     let ok!: () => void;
     const { t } = finto({ avvia: new Promise<void>((r) => (ok = r)) });
     const { s, onFine, ultimo } = sessione(t);
@@ -173,8 +173,8 @@ describe("testi", () => {
   it("messaggi d'errore", () => {
     expect(messaggioErrore("permesso")).toBe("Serve il permesso del microfono: abilitalo dal lucchetto vicino all'indirizzo");
     expect(messaggioErrore("nessun-microfono")).toBe("Non trovo un microfono");
-    expect(messaggioErrore("nessuna-voce")).toBe("Non ho sentito niente: aspetta che il microfono sia acceso e parla tenendo premuto");
-    expect(messaggioErrore("troppo-presto")).toBe("Tieni premuto finché il microfono si accende, poi parla");
+    expect(messaggioErrore("nessuna-voce")).toBe("Non ho sentito niente: aspetta che il microfono sia acceso, poi parla");
+    expect(messaggioErrore("troppo-presto")).toBe("Aspetta che il microfono si accenda, poi parla");
     expect(messaggioErrore("non-supportato")).toBe("Questo browser non ascolta la voce: prova con Chrome o Edge");
     expect(messaggioErrore("interrotto")).toBe("Il vocale si è interrotto: controlla il testo prima di mandarlo");
   });

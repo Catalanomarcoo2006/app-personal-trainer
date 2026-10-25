@@ -1,10 +1,10 @@
 "use client";
 
-// Il microfono nella chat di Leo: tieni premuto e parla, lascia e il testo va a Leo (o resta nella barra da rileggere).
+// Il microfono nella chat di Leo: tocca e parla, tocca di nuovo per finire e il testo va a Leo (o resta nella barra da rileggere).
 // La logica del gesto sta in libs/prototipo/leo-voce.ts; qui ci sono l'aggancio alla barra e l'aspetto.
 // Spec: docs/specs/2026-10-25-vocali-leo-design.md.
 
-import { PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Loader2, Mic } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
@@ -12,20 +12,15 @@ import { cosaFare, creaSessioneVoce, messaggioErrore, unisciTesto, type StatoVoc
 import { dettaturaDisponibile, trascrittoreBrowser } from "@/libs/prototipo/leo-voce-browser";
 import { useSceltaVocali } from "@/libs/prototipo/leo-voce-scelta";
 
-const MARGINE_PX = 8; // rilasciare un po' fuori dal tasto vale ancora come "lascia"
-
 export type VoceLeo = {
   disponibile: boolean;
   bloccato: boolean;
-  fase: StatoVoce["fase"]; // fermo, preparazione (premuto, microfono non ancora acceso), in-ascolto
+  fase: StatoVoce["fase"]; // fermo, preparazione (toccato, microfono non ancora acceso), in-ascolto
   errore: string | null;
   inAttesa: string | null; // il vocale della prima volta, in attesa della scelta
   scegli(s: "subito" | "rivedi"): void;
-  tasto: {
-    onPointerDown(e: ReactPointerEvent<HTMLButtonElement>): void;
-    onPointerUp(e: ReactPointerEvent<HTMLButtonElement>): void;
-    onPointerCancel(): void;
-  };
+  annulla(): void; // butta il vocale in corso
+  tasto: { onClick(): void }; // un tocco inizia, il tocco dopo finisce
 };
 
 export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: string): void; invia(testo: string): void }): VoceLeo {
@@ -129,23 +124,13 @@ export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: st
       if (s === "subito") o.invia(testo);
       else o.setDraft(unisciTesto(base.current, testo));
     },
+    annulla: annullaTutto,
     tasto: {
-      onPointerDown(e) {
-        if (e.pointerType === "mouse" && e.button !== 0) return;
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId); // il rilascio arriva al tasto anche se il dito scivola fuori
-        } catch {
-          // senza cattura vale comunque il rilascio sul tasto
-        }
-        premi();
+      onClick() {
+        if (o.bloccato) return;
+        if (fase === "fermo") premi();
+        else if (fase === "in-ascolto") void sessione.current?.lascia(); // durante la preparazione il tocco non fa niente
       },
-      onPointerUp(e) {
-        const r = e.currentTarget.getBoundingClientRect();
-        const dentro = e.clientX >= r.left - MARGINE_PX && e.clientX <= r.right + MARGINE_PX && e.clientY >= r.top - MARGINE_PX && e.clientY <= r.bottom + MARGINE_PX;
-        if (dentro) void sessione.current?.lascia();
-        else annullaTutto();
-      },
-      onPointerCancel: annullaTutto,
     },
   };
 }
@@ -160,15 +145,15 @@ export function TastoMicrofono({ voce }: { voce: VoceLeo }) {
   return (
     <button
       type="button"
-      aria-label="Tieni premuto per parlare a Leo"
-      title="Tieni premuto per parlare a Leo"
+      aria-label={acceso ? "Tocca per finire il vocale" : "Tocca per parlare a Leo"}
+      title={acceso ? "Tocca per finire il vocale" : "Tocca per parlare a Leo"}
       aria-pressed={voce.fase !== "fermo"}
       aria-busy={preparo}
       aria-disabled={voce.bloccato}
       {...voce.tasto}
       onContextMenu={(e) => e.preventDefault()}
       style={acceso ? { background: "var(--trainer)", color: "#fff", boxShadow: "0 4px 14px color-mix(in srgb, var(--trainer) 45%, transparent)" } : preparo ? { background: "color-mix(in srgb, var(--trainer) 14%, transparent)", color: "var(--trainer)" } : undefined}
-      className={`relative grid size-[32px] shrink-0 touch-none select-none place-items-center rounded-full transition-[background-color,color,box-shadow] duration-200 ${voce.bloccato ? "cursor-default opacity-40" : "cursor-pointer"} ${voce.fase === "fermo" ? "text-muted hover:bg-soft hover:text-ink" : ""}`}
+      className={`relative grid size-[32px] shrink-0 select-none place-items-center rounded-full transition-[background-color,color,box-shadow] duration-200 ${voce.bloccato ? "cursor-default opacity-40" : "cursor-pointer"} ${voce.fase === "fermo" ? "text-muted hover:bg-soft hover:text-ink" : ""}`}
     >
       {acceso && !reduce && (
         <>
@@ -199,11 +184,14 @@ export function VoceStato({ voce }: { voce: VoceLeo }) {
           {voce.fase === "in-ascolto" ? (
             <>
               <span aria-hidden className="size-[8px] shrink-0 animate-pulse rounded-full" style={{ background: "var(--trainer)" }} />
-              Ti ascolto: parla, lascia il tasto quando hai finito
+              Ti ascolto: parla, poi tocca il microfono per finire
             </>
           ) : (
             <span className="text-muted">Accendo il microfono… aspetta un attimo</span>
           )}
+          <button type="button" onClick={voce.annulla} className="ml-auto cursor-pointer rounded-full px-[8px] py-[2px] text-[11px] font-semibold text-muted transition-colors hover:bg-soft hover:text-ink">
+            Annulla
+          </button>
         </p>
       )}
       {voce.errore && <p className="mx-[14px] mb-[6px] text-[11.5px] text-[#d43b4f]">{voce.errore}</p>}

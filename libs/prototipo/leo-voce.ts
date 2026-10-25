@@ -1,5 +1,5 @@
 // I vocali a Leo: la parte senza schermo. Un "trascrittore" trasforma la voce in testo (oggi la dettatura del browser,
-// più avanti un server UE); la sessione gestisce il gesto (tieni premuto, lascia, annulla), il limite di tempo e gli errori.
+// più avanti un server UE); la sessione gestisce il gesto (tocca per iniziare, tocca per finire, annulla), il limite di tempo e gli errori.
 // Il testo dettato va a Leo come uno scritto: nessun canale in più. Spec: docs/specs/2026-10-25-vocali-leo-design.md.
 
 export type ErroreVoce = "permesso" | "nessun-microfono" | "nessuna-voce" | "non-supportato" | "interrotto" | "troppo-presto";
@@ -145,9 +145,9 @@ export function messaggioErrore(e: ErroreVoce): string {
     case "nessun-microfono":
       return "Non trovo un microfono";
     case "nessuna-voce":
-      return "Non ho sentito niente: aspetta che il microfono sia acceso e parla tenendo premuto";
+      return "Non ho sentito niente: aspetta che il microfono sia acceso, poi parla";
     case "troppo-presto":
-      return "Tieni premuto finché il microfono si accende, poi parla";
+      return "Aspetta che il microfono si accenda, poi parla";
     case "non-supportato":
       return "Questo browser non ascolta la voce: prova con Chrome o Edge";
     case "interrotto":
