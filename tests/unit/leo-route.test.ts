@@ -120,6 +120,10 @@ describe("POST /prototipo/api/leo", () => {
       "cancella_appuntamento",
       "scrivi_messaggio",
       "scrivi_a_piu",
+      "segna_pagato",
+      "registra_pagamento",
+      "rinnova_pacchetto",
+      "sollecita",
     ]);
   });
 

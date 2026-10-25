@@ -7,6 +7,7 @@
 import { controllaMisura } from "@/libs/domain/measurements";
 import { controllaNuovoCliente, idDaNome } from "@/libs/domain/clients";
 import { controllaImporto, controllaPagabile } from "@/libs/domain/payments";
+import { controllaRinnovo } from "@/libs/domain/rinnovi";
 import { no, OK, type Verifica } from "@/libs/domain/verifica";
 import type { Tone } from "@/libs/prototipo/dati-finti";
 import { stato } from "@/libs/prototipo/stato";
@@ -17,8 +18,6 @@ export type Esito = { ok: true; annulla?: () => Promise<Verifica>; id?: string }
 
 const MAX_MESSAGGIO = 1000;
 const MAX_NOTA = 500;
-const LEZIONI = { min: 1, max: 50 };
-const MESI_RINNOVO = { min: 1, max: 12 };
 const TONI: Tone[] = ["peach", "sky", "rose", "violet", "mint"];
 
 const dati = () => stato.get().dati;
@@ -78,35 +77,25 @@ export async function rinnovaPacchetto(r: { clientId: string; lezioni?: number; 
   const c = cliente(r.clientId);
   if (!c) return { ok: false, motivo: "Cliente non trovato" };
   const prima = dati().pacchetti.find((p) => p.clientId === r.clientId);
-  if (!prima) return { ok: false, motivo: `${c.name} non ha ancora un pacchetto` };
-  if ((r.lezioni === undefined) === (r.mesi === undefined)) return { ok: false, motivo: "Indica lezioni oppure mesi" };
+  const vr = controllaRinnovo(prima, c.name, r);
+  if (!vr.ok) return fallito(vr);
   const v = controllaImporto(r.amountCents);
   if (!v.ok) return fallito(v);
 
-  let dopo: Pacchetto;
-  if (r.lezioni !== undefined) {
-    if (prima.kind !== "lessons") return { ok: false, motivo: `Il pacchetto di ${c.name} è a tempo: si rinnova a mesi` };
-    if (!(Number.isInteger(r.lezioni) && r.lezioni >= LEZIONI.min && r.lezioni <= LEZIONI.max)) return { ok: false, motivo: `Le lezioni vanno da ${LEZIONI.min} a ${LEZIONI.max}` };
-    dopo = { ...prima, lessonsTotal: (prima.lessonsTotal ?? 0) + r.lezioni };
-  } else {
-    const mesi = r.mesi!;
-    if (prima.kind !== "time") return { ok: false, motivo: `Il pacchetto di ${c.name} è a lezioni: si rinnova a lezioni` };
-    if (!(Number.isInteger(mesi) && mesi >= MESI_RINNOVO.min && mesi <= MESI_RINNOVO.max)) return { ok: false, motivo: `I mesi vanno da ${MESI_RINNOVO.min} a ${MESI_RINNOVO.max}` };
-    const da = prima.endsOn && prima.endsOn > oggi ? prima.endsOn : oggi;
-    dopo = { ...prima, endsOn: aggiungiMesi(da, mesi) };
-  }
+  const da = prima!.endsOn && prima!.endsOn > oggi ? prima!.endsOn : oggi;
+  const dopo: Pacchetto = r.lezioni !== undefined ? { ...prima!, lessonsTotal: (prima!.lessonsTotal ?? 0) + r.lezioni } : { ...prima!, endsOn: aggiungiMesi(da, r.mesi!) };
 
   const id = nuovoId("P", dati().pagamenti.map((p) => p.id));
-  const pagamento: Pagamento = { id, clientId: c.id, packageId: prima.id, description: `Rinnovo ${prima.label}`, amountCents: r.amountCents, dueOn: oggi, paidOn: null };
-  scrivi((d) => ({ ...d, pacchetti: d.pacchetti.map((p) => (p.id === prima.id ? dopo : p)), pagamenti: [...d.pagamenti, pagamento] }));
+  const pagamento: Pagamento = { id, clientId: c.id, packageId: prima!.id, description: `Rinnovo ${prima!.label}`, amountCents: r.amountCents, dueOn: oggi, paidOn: null };
+  scrivi((d) => ({ ...d, pacchetti: d.pacchetti.map((p) => (p.id === prima!.id ? dopo : p)), pagamenti: [...d.pagamenti, pagamento] }));
   return {
     ok: true,
     id,
     annulla: async () => {
-      const ora = dati().pacchetti.find((p) => p.id === prima.id);
+      const ora = dati().pacchetti.find((p) => p.id === prima!.id);
       if (JSON.stringify(ora) !== JSON.stringify(dopo)) return no("Il pacchetto è cambiato nel frattempo");
       if (dati().pagamenti.find((p) => p.id === id)?.paidOn) return no("Il rinnovo è già stato pagato");
-      cambiaPacchetto(prima.id, prima);
+      cambiaPacchetto(prima!.id, prima!);
       togliPagamento(id);
       return OK;
     },

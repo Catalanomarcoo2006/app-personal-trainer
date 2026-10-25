@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { clientById, trainer, type Appointment, type AppointmentType } from "./dati-finti";
 import type { DatiClienti } from "@/libs/dati/tipi";
+import { cosaSoldi, eSoldi, inChiaroSoldi, riassuntoSoldi, SchemiSoldi, TOOLS_SOLDI, verificaSoldi, type AzioneSoldi } from "./leo-azioni-soldi";
 import { giornoDi, isoDi } from "./calendario";
 import { clienteDa } from "./leo-contesto";
 import { no, type Verifica } from "@/libs/domain/verifica";
@@ -17,7 +18,8 @@ export type AzioneLeo =
   | { nome: "sposta_appuntamento"; dati: { id: string; data: string; ora: string; durata?: number } }
   | { nome: "cancella_appuntamento"; dati: { id: string } }
   | { nome: "scrivi_messaggio"; dati: { cliente: string; testo: string } }
-  | { nome: "scrivi_a_piu"; dati: { clienti: string[]; testo: string } };
+  | { nome: "scrivi_a_piu"; dati: { clienti: string[]; testo: string } }
+  | AzioneSoldi;
 
 // Quello che i controlli guardano: il calendario e i dati dei clienti di adesso.
 export type DatiLeo = { sedute: Seduta[]; dati: DatiClienti };
@@ -71,6 +73,7 @@ const Schemi = {
   cancella_appuntamento: z.object({ id: z.string().min(1) }),
   scrivi_messaggio: z.object({ cliente: z.string().min(1), testo: z.string().trim().min(1).max(MAX_TESTO) }),
   scrivi_a_piu: z.object({ clienti: z.array(z.string().min(1)).max(60), testo: z.string().trim().min(1).max(MAX_TESTO) }),
+  ...SchemiSoldi,
 };
 
 // Il nome e gli argomenti arrivati dall'AI diventano un'azione, oppure null se la forma è sbagliata.
@@ -83,6 +86,7 @@ export function leggiAzione(nome: string, argomenti: unknown): AzioneLeo | null 
 // Dal cliente indicato dall'AI (id, nome completo o nome) all'id vero. null se il cliente non esiste.
 // elenco: i clienti di adesso (anche quelli creati nell'app); senza, quelli della demo.
 export function inChiaro(a: AzioneLeo, elenco?: { id: string; name: string }[]): AzioneLeo | null {
+  if (eSoldi(a.nome)) return inChiaroSoldi(a as AzioneSoldi, (v) => clienteDa(v, elenco));
   if (a.nome === "scrivi_a_piu") {
     const clienti = a.dati.clienti.map((c) => clienteDa(c, elenco));
     if (clienti.some((c) => !c)) return null;
@@ -138,6 +142,11 @@ export function verificaAzione(a: AzioneLeo, d: DatiLeo, adesso: { data: string;
     case "scrivi_messaggio":
       if (!esiste(d, a.dati.cliente)) return no("Cliente non trovato");
       return a.dati.testo.trim() && a.dati.testo.length <= MAX_TESTO ? { ok: true } : no("Il messaggio è vuoto o troppo lungo");
+    case "segna_pagato":
+    case "registra_pagamento":
+    case "rinnova_pacchetto":
+    case "sollecita":
+      return verificaSoldi(a, d.dati);
     case "scrivi_a_piu": {
       if (!a.dati.clienti.length) return no("Scegli almeno un cliente");
       if (a.dati.clienti.length > MAX_DESTINATARI) return no(`Al massimo ${MAX_DESTINATARI} clienti`);
@@ -149,7 +158,8 @@ export function verificaAzione(a: AzioneLeo, d: DatiLeo, adesso: { data: string;
 }
 
 // Cancellare e scrivere al cliente solo dopo il tocco del trainer; fissare e spostare subito, con "Annulla".
-export const daConfermare = (a: AzioneLeo) => a.nome === "cancella_appuntamento" || a.nome === "scrivi_messaggio" || a.nome === "scrivi_a_piu";
+// I soldi si confermano sempre.
+export const daConfermare = (a: AzioneLeo) => a.nome === "cancella_appuntamento" || a.nome === "scrivi_messaggio" || a.nome === "scrivi_a_piu" || eSoldi(a.nome);
 
 export function luogoPredefinito(tipo: AppointmentType): string {
   return tipo === "Online" ? "Videochiamata" : tipo === "Corsa" ? "Parco di Meolo" : "Fit Lab, Meolo";
@@ -183,6 +193,11 @@ export function riassunto(a: AzioneLeo, d: DatiLeo): string {
       return `Messaggio a ${nomeDi(a.dati.cliente)}`;
     case "scrivi_a_piu":
       return a.dati.clienti.length === 1 ? `Messaggio a ${nomeDi(a.dati.clienti[0])}` : `Messaggio a ${a.dati.clienti.length} clienti`;
+    case "segna_pagato":
+    case "registra_pagamento":
+    case "rinnova_pacchetto":
+    case "sollecita":
+      return riassuntoSoldi(a, d.dati, nomeDi);
   }
 }
 
@@ -200,6 +215,11 @@ function cosa(a: AzioneLeo): string {
       return `messaggio a ${nomeDi(a.dati.cliente)}`;
     case "scrivi_a_piu":
       return `messaggio a ${a.dati.clienti.map(nomeDi).join(", ")}`;
+    case "segna_pagato":
+    case "registra_pagamento":
+    case "rinnova_pacchetto":
+    case "sollecita":
+      return cosaSoldi(a, nomeDi);
   }
 }
 
@@ -285,4 +305,5 @@ export const LEO_TOOLS = [
       },
     },
   },
+  ...TOOLS_SOLDI,
 ];

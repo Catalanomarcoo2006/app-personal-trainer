@@ -75,7 +75,13 @@ export function CoachFace({ size }: { size: number }) {
 
 const attesa = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 const ridotto = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "complete", sposta_appuntamento: "open", cancella_appuntamento: "close", scrivi_messaggio: "confirm", scrivi_a_piu: "confirm" };
+const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "complete", sposta_appuntamento: "open", cancella_appuntamento: "close", scrivi_messaggio: "confirm",
+  scrivi_a_piu: "confirm",
+  segna_pagato: "complete",
+  registra_pagamento: "complete",
+  rinnova_pacchetto: "confirm",
+  sollecita: "confirm",
+};
 // la chat durante il viaggio: un riquadro piccolo in basso, Leo resta aggrappato al bordo
 const COMPATTA = { w: 168, h: 150 };
 
