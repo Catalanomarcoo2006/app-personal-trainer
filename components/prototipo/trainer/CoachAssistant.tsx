@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
-import { playSound, type SoundKind } from "@/libs/ui/sound";
+import { playSound, suonoTasto, type SoundKind } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
 import { daConfermare, inChiaro, notaPerLeo, riassunto, verificaAzione, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
 import { estraiAzione, type Sezione } from "@/libs/prototipo/leo-contesto";
@@ -793,7 +793,18 @@ function ChatPanel({
               : { borderColor: "var(--color-line)" }
           }
         >
-          <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            // ogni tasto fa il suo clic di tastiera (lettere, spazio, cancella; non le scorciatoie)
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey || e.altKey) return;
+              if (e.key === " ") suonoTasto("spazio");
+              else if (e.key === "Backspace" || e.key === "Delete") suonoTasto("cancella");
+              else if (e.key.length === 1) suonoTasto("lettera");
+            }}
+            placeholder={`Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
           <motion.button
             type="submit"
             aria-label="Invia"
