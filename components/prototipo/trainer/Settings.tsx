@@ -10,6 +10,9 @@ import { ACCENTS, useAppearance } from "@/components/ui/appearance";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled, type SoundKind } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { shrinkPhoto, stato, useTrainerPhoto } from "@/libs/prototipo/stato";
+import { useNotifiche } from "@/libs/dati/selettori";
+import { impostaNotifica } from "@/libs/dati/sportello";
+import type { Notifiche } from "@/libs/dati/tipi";
 import { aggiornaBenvenuto, azzeraBenvenuto, useBenvenuto } from "@/libs/prototipo/benvenuto";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 
@@ -42,8 +45,9 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Row({ label, hint, initial = true }: { label: string; hint: string; initial?: boolean }) {
-  const [on, setOn] = useState(initial);
+// Un interruttore delle notifiche: il valore sta nello store (lo cambiano anche Leo e l'annulla).
+function Row({ label, hint, tipo }: { label: string; hint: string; tipo: keyof Notifiche }) {
+  const on = useNotifiche()[tipo];
   return (
     <div className="flex items-center gap-[12px] rounded-[13px] border border-line px-[12px] py-[10px]">
       <div className="min-w-0 flex-1 leading-snug">
@@ -55,7 +59,7 @@ function Row({ label, hint, initial = true }: { label: string; hint: string; ini
         label={label}
         onChange={(next) => {
           playSound(next ? "confirm" : "tap");
-          setOn(next);
+          void impostaNotifica(tipo, next);
         }}
       />
     </div>
@@ -307,10 +311,10 @@ export function SettingsView() {
           <Appear i={3}>
             <Card title="Notifiche">
               <div className="mt-[12px] flex flex-col gap-[8px]">
-                <Row label="Dolore segnalato" hint="Email subito quando l’assistente rileva un fastidio" />
-                <Row label="Richiesta di spostamento" hint="Email quando un cliente chiede di cambiare seduta" />
-                <Row label="Pacchetti in scadenza" hint="Avviso quando restano 2 lezioni o 7 giorni" />
-                <Row label="Riepilogo del lunedì" hint="Incassi e sedute della settimana via email" initial={false} />
+                <Row tipo="dolore" label="Dolore segnalato" hint="Email subito quando l’assistente rileva un fastidio" />
+                <Row tipo="spostamento" label="Richiesta di spostamento" hint="Email quando un cliente chiede di cambiare seduta" />
+                <Row tipo="pacchetti" label="Pacchetti in scadenza" hint="Avviso quando restano 2 lezioni o 7 giorni" />
+                <Row tipo="riepilogo" label="Riepilogo del lunedì" hint="Incassi e sedute della settimana via email" />
               </div>
             </Card>
           </Appear>
@@ -334,7 +338,7 @@ export function SettingsView() {
                 />
               </div>
               <div className="mt-[12px] flex flex-col gap-[8px]">
-                <Row label="Avvisami sui dolori" hint="L’assistente propone un’alternativa prudente e ti avvisa" />
+                <Row tipo="avvisoDolori" label="Avvisami sui dolori" hint="L’assistente propone un’alternativa prudente e ti avvisa" />
               </div>
               <p className="mt-auto rounded-[12px] bg-soft px-[12px] py-[9px] text-[11px] text-ink/70">
                 Rete di sicurezza: fino a <b>300 domande al mese</b> per cliente.

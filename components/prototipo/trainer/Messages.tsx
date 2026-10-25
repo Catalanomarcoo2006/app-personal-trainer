@@ -7,7 +7,8 @@ import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, Use
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { Attachment, clientById, conversations, progressOf } from "@/libs/prototipo/dati-finti";
+import { Attachment, conversations, progressOf } from "@/libs/prototipo/dati-finti";
+import { useTrovaCliente } from "@/libs/dati/selettori";
 import { durataScrittura, TEMPI } from "@/libs/prototipo/leo-viaggio";
 import { stato, useStato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
@@ -40,6 +41,7 @@ function PdfMessage({ a }: { a: Attachment }) {
 
 // search: i parametri dell'indirizzo (?cliente=), passati da TrainerApp.
 export function MessagesView({ search }: { search: string }) {
+  const clientById = useTrovaCliente();
   const params = new URLSearchParams(search);
   const target = params.get("cliente");
   const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : conversations[0].clientId));

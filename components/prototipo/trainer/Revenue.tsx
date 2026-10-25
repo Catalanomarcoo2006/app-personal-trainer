@@ -6,11 +6,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, ChevronRight, TrendingUp } from "lucide-react";
 import { CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { clientById, revenue, urgent } from "@/libs/prototipo/dati-finti";
+import { revenue } from "@/libs/prototipo/dati-finti";
+import { useClienti, useIncassi, usePagamenti } from "@/libs/dati/selettori";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 type Month = { label: string; value: number };
+
+// L'ultimo mese del grafico è quello in corso: segue l'incassato vero (pagamenti segnati nell'app e da Leo).
+export const mesiConOggi = (collected: number): Month[] => revenue.months.map((m, i, all) => (i === all.length - 1 ? { ...m, value: collected } : m));
 
 const FULL: Record<string, string> = {
   Gen: "Gennaio",
@@ -115,15 +119,19 @@ export function RevenueChart({ months = revenue.months }: { months?: Month[] }) 
   );
 }
 
-// Pagamenti ancora da ricevere (dalle urgenze di tipo "pagamento").
-const pending = urgent
-  .filter((u) => u.kind === "pagamento")
-  .map((u) => ({ clientId: u.clientId, amount: Number(u.title.replace(/\D/g, "")), detail: u.detail.split("·")[1]?.trim() ?? "" }));
-
 export function RevenueCard() {
-  const collectedPct = (revenue.collected / revenue.forecast) * 100;
-  const outstandingPct = (revenue.outstanding / revenue.forecast) * 100;
-  const missing = Math.max(0, revenue.forecast - revenue.collected - revenue.outstanding);
+  // incassato e da incassare dallo store: seguono i pagamenti segnati nell'app e da Leo
+  const incassi = useIncassi();
+  const clients = useClienti();
+  const pending = usePagamenti()
+    .filter((p) => !p.paidOn)
+    .map((p) => ({ id: p.id, clientId: p.clientId, amount: p.amountCents / 100, detail: p.description.toLowerCase() }));
+  const collected = incassi.collectedCents / 100;
+  const outstanding = incassi.outstandingCents / 100;
+  const clientById = (id: string) => clients.find((c) => c.id === id);
+  const collectedPct = (collected / revenue.forecast) * 100;
+  const outstandingPct = (outstanding / revenue.forecast) * 100;
+  const missing = Math.max(0, revenue.forecast - collected - outstanding);
 
   return (
     <section className="panel flex h-full flex-col rounded-[18px] px-[16px] pt-[13px] pb-[13px]">
@@ -141,7 +149,7 @@ export function RevenueCard() {
 
       <div className="mt-[4px] flex items-end justify-between gap-[8px]">
         <p className="text-[34px] leading-none font-extrabold tracking-[-0.04em]">
-          <CountUp value={revenue.collected} format={formatEuro} delay={0.15} duration={0.9} />
+          <CountUp value={collected} format={formatEuro} delay={0.15} duration={0.9} />
         </p>
         <span className="mb-[4px] flex shrink-0 items-center gap-[4px] rounded-full bg-ok-soft px-[8px] py-[3px] text-[10.5px] font-bold text-ok">
           <TrendingUp size={11} strokeWidth={2.6} /> +{revenue.delta}% su settembre
@@ -178,7 +186,7 @@ export function RevenueCard() {
 
       <p className="mt-[14px] text-[11px] font-semibold text-ink/60">Ultimi 6 mesi</p>
       <div className="mt-[18px] min-h-[90px] flex-1">
-        <RevenueChart />
+        <RevenueChart months={mesiConOggi(collected)} />
       </div>
 
       {/* chi deve ancora pagare: un clic e si apre il profilo */}
@@ -187,7 +195,7 @@ export function RevenueCard() {
           <p className="flex items-center gap-[6px] text-[11px] font-semibold text-ink/60">
             <span className="size-[6px] rounded-full bg-[#f5a524]" /> Da incassare
           </p>
-          <span className="text-[11px] font-bold tabular-nums">{formatEuro(revenue.outstanding)}</span>
+          <span className="text-[11px] font-bold tabular-nums">{formatEuro(outstanding)}</span>
         </div>
         <div className="mt-[6px] flex flex-col gap-[5px]">
           {pending.map((p) => {
@@ -195,7 +203,7 @@ export function RevenueCard() {
             if (!c) return null;
             return (
               <Link
-                key={p.clientId + p.amount}
+                key={p.id}
                 href={ROUTES.cliente(p.clientId)}
                 onClick={() => playSound("tap")}
                 className="glass-row group flex items-center gap-[9px] rounded-[12px] px-[9px] py-[6px]"

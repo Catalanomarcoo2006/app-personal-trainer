@@ -6,7 +6,8 @@ import { CalendarDays, ChevronDown, ChevronRight, MessageSquare } from "lucide-r
 import { Avatar, Pill } from "@/components/ui/basics";
 import { CountUp, EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { alerts, clientById, pathCards, progressOf, toneColors, trainer } from "@/libs/prototipo/dati-finti";
+import { alerts, pathCards, progressOf, toneColors, trainer } from "@/libs/prototipo/dati-finti";
+import { useTrovaCliente } from "@/libs/dati/selettori";
 import { seduteDelGiorno } from "@/libs/prototipo/calendario";
 import { ADESSO } from "@/libs/prototipo/leo-azioni";
 import { useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
@@ -54,6 +55,7 @@ export function ClientsHeader() {
 }
 
 export function PathCards() {
+  const clientById = useTrovaCliente();
   return (
     <div className="mt-[8px] grid grid-cols-3 gap-[10px]">
       {pathCards.map((id, i) => {
@@ -103,6 +105,7 @@ export function PathCards() {
 
 // Messaggi dei clienti: il nome porta al profilo; quello urgente è evidenziato.
 export function MessagesCard() {
+  const clientById = useTrovaCliente();
   return (
     <section className={`${card} flex min-h-0 flex-1 flex-col px-[15px] pt-[12px] pb-[12px]`}>
       <div className="flex items-center justify-between">

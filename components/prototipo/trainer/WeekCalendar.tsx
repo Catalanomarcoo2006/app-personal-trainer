@@ -7,7 +7,8 @@ import { CalendarClock, CalendarPlus, Check, MapPin, MessageCircle, Plus, Trash2
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
-import { Appointment, appointmentColors, AppointmentType, clientById, clients, trainer } from "@/libs/prototipo/dati-finti";
+import { Appointment, appointmentColors, AppointmentType, trainer } from "@/libs/prototipo/dati-finti";
+import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { giornoDi, isoDi, SETTIMANE_LEO } from "@/libs/prototipo/calendario";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
 import { settimanaDi } from "@/libs/prototipo/leo-viaggio";
@@ -32,6 +33,7 @@ const placeFor = (type: AppointmentType) => (type === "Online" ? "Videochiamata"
 // Una seduta nella cella (il tipo lo dicono icona e colore). density: 0 completa, 1 senza luogo, 2 una riga sola. Al clic apre il dettaglio.
 // layoutId: la stessa seduta in un'altra cella vola fin lì (spostamento di Leo). atterra: appena fissata da Leo.
 function SessionCard({ day, a, i, density, onOpen, layoutId, atterra }: { day: WeekDay; a: Appointment; i: number; density: number; onOpen: () => void; layoutId?: string; atterra?: boolean }) {
+  const clientById = useTrovaCliente();
   const c = clientById(a.clientId);
   const colors = appointmentColors[a.type];
   const Icon = typeIcons[a.type];
@@ -118,6 +120,7 @@ const PEZZI = [0, 1, 2, 3, 4, 5].map((n) => {
 // Dove c'era la seduta appena cancellata da Leo: la seduta diventa rossa e trema, poi si spezza in 6 pezzi che volano
 // via; resta un attimo il contorno tratteggiato rosso. Con "riduci movimento" diventa rossa e sbiadisce.
 function Fantasma({ a }: { a: Appointment }) {
+  const clientById = useTrovaCliente();
   const reduce = useReducedMotion();
   const contenuto = (
     <span className="block rounded-[11px] border-2 px-[9px] py-[7px] text-[10px] leading-tight font-bold text-white" style={{ background: ROSSO, borderColor: ROSSO }}>
@@ -212,6 +215,8 @@ type Draft = { day: number; time: string; clientId?: string; type?: AppointmentT
 
 // Modulo per fissare una seduta nuova o spostarne una (replacing).
 function SessionForm({ days, draft, onClose, onSave }: { days: WeekDay[]; draft: Draft; onClose: () => void; onSave: (day: number, a: Appointment) => void }) {
+  const clientById = useTrovaCliente();
+  const clients = useClienti();
   const [day, setDay] = useState(draft.day);
   const [clientId, setClientId] = useState(draft.clientId ?? clients[0].id);
   const [time, setTime] = useState(draft.time);
@@ -294,6 +299,7 @@ function SessionForm({ days, draft, onClose, onSave }: { days: WeekDay[]; draft:
 
 // Dettaglio di una seduta: chi, quando, dove, e cosa farci.
 function SessionDetail({ day, a, onClose, onMove, onCancel }: { day: WeekDay; a: Appointment; onClose: () => void; onMove: () => void; onCancel: () => void }) {
+  const clientById = useTrovaCliente();
   const [confirming, setConfirming] = useState(false);
   const c = clientById(a.clientId);
   const colors = appointmentColors[a.type];
@@ -472,6 +478,7 @@ function Cell({
 // Calendario della settimana: griglia 7 giorni × 3 fasce (mattina, pomeriggio, sera), tutto in vista senza scorrere.
 // Si clicca una seduta per il dettaglio, una cella vuota per fissarne una in quel giorno e in quella fascia.
 export function WeekCalendar() {
+  const clientById = useTrovaCliente();
   const [offset, setOffset] = useState(0);
   const [direction, setDirection] = useState(0);
   const [hidden, setHidden] = useState<AppointmentType[]>([]);

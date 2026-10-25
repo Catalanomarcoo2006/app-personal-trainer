@@ -7,7 +7,8 @@ import { CalendarDays, CalendarPlus, Check, ChevronLeft, ChevronRight, Clipboard
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
-import { Appointment, appointmentColors, AppointmentType, clientById, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
+import { Appointment, appointmentColors, AppointmentType, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
+import { useTrovaCliente } from "@/libs/dati/selettori";
 import { giornoDi, isoDi, LONG, MONTHS, seduteDemo, SETTIMANE_LEO, SHORT } from "@/libs/prototipo/calendario";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
 import { useStato } from "@/libs/prototipo/stato";
@@ -178,6 +179,7 @@ export function GlassDays({
 
 // Una riga dell'agenda: orario grande, cliente, tipo e luogo. Il prossimo appuntamento ha un bordo che gira.
 function AppointmentRow({ day, a, i, compact }: { day: WeekDay; a: Appointment; i: number; compact: boolean }) {
+  const clientById = useTrovaCliente();
   const c = clientById(a.clientId);
   const colors = appointmentColors[a.type];
   const Icon = typeIcons[a.type];

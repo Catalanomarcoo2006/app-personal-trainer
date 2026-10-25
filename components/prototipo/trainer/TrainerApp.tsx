@@ -7,7 +7,8 @@ import { Appear } from "@/components/ui/motion";
 import { Pill } from "@/components/ui/basics";
 import { suonoConteggio } from "@/libs/ui/sound";
 import { ingressoConMeteoriti, meteoritiFatti } from "@/libs/prototipo/ingresso";
-import { clientById, trainer } from "@/libs/prototipo/dati-finti";
+import { trainer } from "@/libs/prototipo/dati-finti";
+import { useCliente } from "@/libs/dati/selettori";
 import { TrainerShell } from "./Chrome";
 import { BASE, ROUTES } from "./nav";
 import { ClientsHeader, MessagesCard, PathCards, ProfileCard } from "./Cards";
@@ -58,6 +59,16 @@ export function TrainerApp() {
   );
 }
 
+// Il profilo legge il cliente dallo store: segue le modifiche di Leo e dei tasti (pagamenti, misure, note).
+function ClienteSection({ id }: { id: string }) {
+  const c = useCliente(id);
+  return (
+    <TrainerShell title={c ? c.name : "Cliente"} back={ROUTES.clienti} titleRight={<UrgentBell />}>
+      {c ? <ClientProfile key={c.id} c={c} /> : <ClientNotFound />}
+    </TrainerShell>
+  );
+}
+
 // memo: cambiando indirizzo si ridisegna solo la sezione che compare, non quelle nascoste.
 const Section = memo(function Section({ path }: { path: string }) {
   const [section, id] = path.slice(BASE.length).split("/").filter(Boolean);
@@ -65,12 +76,7 @@ const Section = memo(function Section({ path }: { path: string }) {
   switch (section) {
     case "clienti": {
       if (id) {
-        const c = clientById(id);
-        return (
-          <TrainerShell title={c ? c.name : "Cliente"} back={ROUTES.clienti} titleRight={<UrgentBell />}>
-            {c ? <ClientProfile key={c.id} c={c} /> : <ClientNotFound />}
-          </TrainerShell>
-        );
+        return <ClienteSection id={id} />;
       }
       return (
         <TrainerShell title="I tuoi clienti" back={ROUTES.oggi} titleRight={<UrgentBell />}>

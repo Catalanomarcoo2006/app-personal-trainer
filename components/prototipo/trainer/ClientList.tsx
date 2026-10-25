@@ -8,7 +8,8 @@ import toast from "react-hot-toast";
 import { EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
-import { Client, clients, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
+import { Client, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
+import { useClienti } from "@/libs/dati/selettori";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -29,12 +30,13 @@ export function ClientList({ search }: { search: string }) {
   const initial = (filters.find((f) => f.key === params.get("filtro"))?.key ?? "tutti") as FilterKey;
   const [filter, setFilter] = useState<FilterKey>(initial);
   const [query, setQuery] = useState("");
+  const clients = useClienti();
 
   const shown = useMemo(() => {
     const test = filters.find((f) => f.key === filter)!.test;
     const q = query.trim().toLowerCase();
     return clients.filter((c) => test(c) && (!q || c.name.toLowerCase().includes(q) || c.goal.toLowerCase().includes(q)));
-  }, [filter, query]);
+  }, [clients, filter, query]);
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] flex flex-col pr-[18px] pl-[80px]">

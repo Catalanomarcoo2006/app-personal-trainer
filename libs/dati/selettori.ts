@@ -114,3 +114,12 @@ export function useIncassi() {
 // Fuori da React (Leo, i controlli): la situazione di adesso.
 export const clientiAttuali = (): ClienteVista[] => vistaClienti(stato.get().dati);
 export const clienteAttuale = (id: string): ClienteVista | undefined => vistaCliente(stato.get().dati, id);
+
+// Per le pagine che cercano un cliente per id (nome, foto): segue anche i clienti creati nell'app.
+export function useTrovaCliente(): (id: string) => ClienteVista | undefined {
+  const clienti = useClienti();
+  return useMemo(() => {
+    const perId = new Map(clienti.map((c) => [c.id, c]));
+    return (id: string) => perId.get(id);
+  }, [clienti]);
+}

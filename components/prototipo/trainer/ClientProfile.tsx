@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
@@ -28,9 +27,11 @@ import { IconCircle } from "@/components/ui/basics";
 import { Appear, CountUp, EASE_OUT, formatEuro, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
-import { appointmentColors, Client, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
+import { appointmentColors, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
 import { settimanaDelCliente } from "@/libs/prototipo/calendario";
 import { useStato } from "@/libs/prototipo/stato";
+import { segnaPagato } from "@/libs/dati/sportello";
+import type { ClienteVista } from "@/libs/dati/selettori";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -72,14 +73,15 @@ function SideRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string
   );
 }
 
-export function ClientProfile({ c }: { c: Client }) {
+export function ClientProfile({ c }: { c: ClienteVista }) {
   const tone = toneColors[c.tone];
   const percent = progressOf(c);
-  const first = c.weights[0];
-  const last = c.weights[c.weights.length - 1];
+  // un cliente appena creato non ha ancora pesi: niente variazione
+  const first = c.weights[0] ?? 0;
+  const last = c.weights[c.weights.length - 1] ?? first;
   const delta = +(last - first).toFixed(1);
   const goalLeft = c.unit === "%" ? `Al ${percent}%` : `Mancano ${kg(Math.abs(c.target - c.current))} ${c.unit}`;
-  const [payments, setPayments] = useState(c.payments);
+  const payments = c.payments;
   const outstanding = payments.filter((p) => !p.paid).reduce((s, p) => s + p.amount, 0);
 
   // questa settimana del cliente, dallo store: segue le modifiche fatte da Leo e dal calendario
@@ -301,8 +303,8 @@ export function ClientProfile({ c }: { c: Client }) {
                 )}
               </div>
               <div className="mt-[9px] flex min-h-0 flex-1 flex-col gap-[6px] overflow-y-auto [scrollbar-width:none]">
-                {payments.map((p, i) => (
-                  <div key={p.label + p.date} className="flex items-center gap-[8px] rounded-[11px] border border-line px-[9px] py-[7px]">
+                {payments.map((p) => (
+                  <div key={p.id} className="flex items-center gap-[8px] rounded-[11px] border border-line px-[9px] py-[7px]">
                     <div className="min-w-0 flex-1 leading-none">
                       <p className="truncate text-[11.5px] font-semibold">{p.label}</p>
                       <p className="mt-[3px] text-[9.5px] text-muted">
@@ -317,9 +319,10 @@ export function ClientProfile({ c }: { c: Client }) {
                       <motion.button
                         type="button"
                         whileTap={{ scale: 0.92 }}
-                        onClick={() => {
+                        onClick={async (): Promise<void> => {
+                          const esito = await segnaPagato(p.id);
+                          if ("motivo" in esito) return void toast.error(esito.motivo);
                           playSound("confirm");
-                          setPayments((ps) => ps.map((x, k) => (k === i ? { ...x, paid: true } : x)));
                           toast.success(`${formatEuro(p.amount)} segnati come incassati`);
                         }}
                         className="cursor-pointer rounded-full btn-trainer px-[9px] py-[4px] text-[9.5px] font-bold"

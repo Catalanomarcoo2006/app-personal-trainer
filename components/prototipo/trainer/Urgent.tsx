@@ -6,7 +6,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { Bell, ChevronRight, Clock, Package, TriangleAlert, Users, Wallet, X, type LucideIcon } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { clientById, clients, urgent, UrgentKind } from "@/libs/prototipo/dati-finti";
+import { UrgentKind } from "@/libs/prototipo/dati-finti";
+import { useClienti } from "@/libs/dati/selettori";
+import { useUrgenti } from "@/libs/dati/testi";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -21,6 +23,7 @@ const order: UrgentKind[] = ["imminente", "pagamento", "dolore", "pacchetto"];
 
 // Tasto "Clienti" accanto al titolo: porta alla lista dei clienti.
 export function ClientsButton() {
+  const clients = useClienti();
   return (
     <Link href={ROUTES.clienti} onClick={() => playSound("tap")}>
       <motion.span
@@ -38,6 +41,10 @@ export function ClientsButton() {
 // Campanello delle urgenze: oscilla ogni pochi secondi; al clic apre l'elenco di tutto ciò che va fatto subito.
 export function UrgentBell() {
   const [open, setOpen] = useState(false);
+  // pagamenti aperti e pacchetti in scadenza dallo store: si aggiornano quando si segna un pagamento
+  const urgent = useUrgenti();
+  const clients = useClienti();
+  const clientById = (id: string) => clients.find((c) => c.id === id);
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

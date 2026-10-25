@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { clientById, clients, notifications, NotificationKind } from "@/libs/prototipo/dati-finti";
+import { notifications, NotificationKind } from "@/libs/prototipo/dati-finti";
+import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -32,6 +33,7 @@ const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { 
 const kindIcon: Record<NotificationKind, LucideIcon> = { allenamento: Dumbbell, messaggio: MessageSquare, pagamento: Wallet, misure: Ruler, scheda: SquarePen };
 
 export function NotificationsButton() {
+  const clientById = useTrovaCliente();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(3);
   const box = useRef<HTMLDivElement>(null);
@@ -192,12 +194,14 @@ const actions: Result[] = [
   { group: "Azioni", label: "Registra un pagamento", detail: "Segna un incasso", href: ROUTES.incassi, icon: Wallet },
 ];
 
-const clientResults: Result[] = clients.map((c) => ({ group: "Clienti", label: c.name, detail: `${c.goal} · ${c.pkg.left}`, href: ROUTES.cliente(c.id), clientId: c.id }));
 
 // minuscole e senza accenti: "lunedi" trova "Lunedì"
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 export function SearchPalette() {
+  const clientById = useTrovaCliente();
+  const clients = useClienti();
+  const clientResults: Result[] = useMemo(() => clients.map((c) => ({ group: "Clienti", label: c.name, detail: `${c.goal} · ${c.pkg.left}`, href: ROUTES.cliente(c.id), clientId: c.id })), [clients]);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -231,7 +235,7 @@ export function SearchPalette() {
     const q = norm(query.trim());
     if (!q) return [...clientResults.slice(0, 4), ...sections.slice(1, 6)];
     return [...clientResults, ...sections, ...actions].filter((r) => norm(`${r.label} ${r.detail}`).includes(q));
-  }, [query]);
+  }, [query, clientResults]);
 
   const choose = (r: Result | undefined) => {
     if (!r) return;

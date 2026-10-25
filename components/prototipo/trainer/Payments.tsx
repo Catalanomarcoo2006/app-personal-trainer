@@ -8,14 +8,16 @@ import { BellRing, Check, CircleDollarSign, Hourglass, TrendingUp, Users, Wallet
 import { Appear, CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
-import { clientById, clients, revenue } from "@/libs/prototipo/dati-finti";
+import { revenue } from "@/libs/prototipo/dati-finti";
+import { dataBreve, useClienti, useIncassi, usePagamenti } from "@/libs/dati/selettori";
+import { inviaMessaggio, segnaPagato } from "@/libs/dati/sportello";
+import { testoSollecito } from "@/libs/dati/testi";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
-import { RevenueChart } from "./Revenue";
+import { mesiConOggi, RevenueChart } from "./Revenue";
 
 type Movement = { key: string; clientId: string; date: string; label: string; amount: number; paid: boolean };
 
-const initialMovements: Movement[] = clients.flatMap((c) => c.payments.map((p, i) => ({ key: `${c.id}-${i}`, clientId: c.id, date: p.date, label: p.label, amount: p.amount, paid: p.paid })));
 
 function Kpi({ icon: Icon, label, children, note, i }: { icon: LucideIcon; label: string; children: ReactNode; note?: ReactNode; i: number }) {
   return (
@@ -35,23 +37,42 @@ function Kpi({ icon: Icon, label, children, note, i }: { icon: LucideIcon; label
 }
 
 export function PaymentsView() {
-  const [moves, setMoves] = useState(initialMovements);
+  const pagamenti = usePagamenti();
+  const clients = useClienti();
+  const incassi = useIncassi();
   const [filter, setFilter] = useState<"tutti" | "pagati" | "aperti">("tutti");
 
+  // i movimenti dallo store: seguono "Segna pagato" qui, nel profilo e da Leo
+  const moves: Movement[] = useMemo(
+    () => pagamenti.map((p) => ({ key: p.id, clientId: p.clientId, date: dataBreve(p.paidOn ?? p.dueOn), label: p.description, amount: p.amountCents / 100, paid: !!p.paidOn })),
+    [pagamenti],
+  );
+  const clientById = (id: string) => clients.find((c) => c.id === id);
   const open = moves.filter((m) => !m.paid);
-  const outstanding = open.reduce((s, m) => s + m.amount, 0);
-  const extra = initialMovements.filter((m) => !m.paid).reduce((s, m) => s + m.amount, 0) - outstanding;
-  const collected = revenue.collected + extra;
+  const outstanding = incassi.outstandingCents / 100;
+  const collected = incassi.collectedCents / 100;
   const paying = new Set(moves.filter((m) => m.paid).map((m) => m.clientId)).size;
 
   const shown = useMemo(() => moves.filter((m) => (filter === "tutti" ? true : filter === "pagati" ? m.paid : !m.paid)), [moves, filter]);
 
-  const markPaid = (key: string) => {
+  const markPaid = async (key: string): Promise<void> => {
     const m = moves.find((x) => x.key === key);
     if (!m) return;
+    const esito = await segnaPagato(key);
+    if ("motivo" in esito) return void toast.error(esito.motivo);
     playSound("complete");
-    setMoves((ms) => ms.map((x) => (x.key === key ? { ...x, paid: true } : x)));
     toast.success(`${formatEuro(m.amount)} incassati da ${clientById(m.clientId)?.name.split(" ")[0]}`);
+  };
+
+  // il sollecito è un messaggio vero nella chat del cliente
+  const sollecita = async (key: string): Promise<void> => {
+    const p = pagamenti.find((x) => x.id === key);
+    const c = p && clientById(p.clientId);
+    if (!p || !c) return;
+    const esito = await inviaMessaggio(c.id, testoSollecito(p, c.name));
+    if ("motivo" in esito) return void toast.error(esito.motivo);
+    playSound("tap");
+    toast(`Promemoria inviato a ${c.name.split(" ")[0]} in chat`, { icon: "🔔" });
   };
 
   return (
@@ -79,7 +100,7 @@ export function PaymentsView() {
               <span className="rounded-full bg-soft px-[9px] py-[3px] text-[10.5px] font-semibold">mag – ott 2026</span>
             </div>
             <div className="mt-[6px] min-h-0 flex-1">
-              <RevenueChart />
+              <RevenueChart months={mesiConOggi(collected)} />
             </div>
           </section>
         </Appear>
@@ -92,7 +113,8 @@ export function PaymentsView() {
             <div className="mt-[10px] flex min-h-0 flex-1 flex-col gap-[8px] overflow-y-auto [scrollbar-width:none]">
               <AnimatePresence initial={false}>
                 {open.map((m) => {
-                  const c = clientById(m.clientId)!;
+                  const c = clientById(m.clientId);
+                  if (!c) return null;
                   return (
                     <motion.div
                       key={m.key}
@@ -116,10 +138,7 @@ export function PaymentsView() {
                         aria-label="Sollecita"
                         title="Sollecita"
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => {
-                          playSound("tap");
-                          toast(`Promemoria inviato a ${c.name.split(" ")[0]}`, { icon: "🔔" });
-                        }}
+                        onClick={() => void sollecita(m.key)}
                         className="grid size-[30px] shrink-0 cursor-pointer place-items-center rounded-full border border-line hover:bg-soft"
                       >
                         <BellRing size={13} />
@@ -184,7 +203,8 @@ export function PaymentsView() {
           </div>
           <div className="mt-[4px] min-h-0 flex-1 overflow-y-auto [scrollbar-width:none]">
             {shown.map((m, i) => {
-              const c = clientById(m.clientId)!;
+              const c = clientById(m.clientId);
+              if (!c) return null;
               return (
                 <motion.div
                   key={m.key}
