@@ -1,6 +1,6 @@
 # Vocali a Leo: design
 
-Data: 2026-10-25. Stato: da approvare da Marco.
+Data: 2026-10-25. Stato: approvata, realizzata il 2026-10-25 (piano `docs/plans/2026-10-25-vocali-leo.md`).
 
 ## Obiettivo
 
@@ -40,7 +40,7 @@ Fuori da questa funzione: Leo che risponde a voce, vocali dei clienti, note voca
 | Caso | Cosa succede |
 |---|---|
 | Il browser non ha la dettatura (per esempio Firefox) | Il microfono non compare |
-| Permesso del microfono negato | Leo scrive in chat "Serve il permesso del microfono: abilitalo dal lucchetto vicino all'indirizzo" |
+| Permesso del microfono negato | Una riga rossa sopra la barra (come per i file): "Serve il permesso del microfono: abilitalo dal lucchetto vicino all'indirizzo" |
 | Non sente voce | "Non ho sentito niente, riprova" e il vocale si butta |
 | Il riconoscimento si interrompe a metà (rete) | Resta il testo arrivato fino a lì, con "Rivedi prima" forzato per quella volta |
 | Più di 60 secondi | Si ferma da solo e prosegue come un rilascio |

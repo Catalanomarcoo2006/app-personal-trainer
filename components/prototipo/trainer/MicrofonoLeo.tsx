@@ -42,6 +42,15 @@ export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: st
 
   useEffect(() => setDisponibile(dettaturaDisponibile()), []);
 
+  // se la chat si chiude mentre si registra, il microfono si spegne subito (non resta acceso fino ai 60 secondi)
+  useEffect(
+    () => () => {
+      sessione.current?.annulla();
+      sessione.current = null;
+    },
+    [],
+  );
+
   const annullaTutto = () => {
     const s = sessione.current;
     if (!s) return;
