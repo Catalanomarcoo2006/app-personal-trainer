@@ -14,7 +14,7 @@ import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
 import { creaFila } from "@/libs/prototipo/leo-fila";
 import { aspettoAttuale, corpoRichiesta } from "@/libs/prototipo/leo-richiesta";
 import { clientiAttuali } from "@/libs/dati/selettori";
-import { durataScrittura, sezioneDi, TEMPI, tempoAzione } from "@/libs/prototipo/leo-viaggio";
+import { durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
 import { ConfermaTutte, SchedaAzioneView, type Modifica, type SchedaAzione } from "./LeoAzioni";
 import { navigateFade, navigateWithStain, ROUTES } from "./nav";
@@ -88,7 +88,7 @@ const COMPATTA = { w: 168, h: 150 };
 // Le modifiche fatte nella scheda prima di confermare: il testo del messaggio, i destinatari.
 function conModifica(a: AzioneLeo, m?: Modifica): AzioneLeo {
   if (!m) return a;
-  if (a.nome === "scrivi_messaggio" && m.testo !== undefined) return { ...a, dati: { ...a.dati, testo: m.testo.trim() } };
+  if ((a.nome === "scrivi_messaggio" || a.nome === "sollecita") && m.testo !== undefined) return { ...a, dati: { ...a.dati, testo: m.testo.trim() } } as AzioneLeo;
   if (a.nome === "scrivi_a_piu") return { ...a, dati: { clienti: m.clienti ?? a.dati.clienti, testo: (m.testo ?? a.dati.testo).trim() } };
   return a;
 }
@@ -355,7 +355,7 @@ function useCoachChat(): Chat {
     if (!partenze.current.has(msgId)) partenze.current.set(msgId, window.location.pathname + window.location.search);
     setCompatta(true);
     await attesa(TEMPI.compatta);
-    await navigateFade(sezioneDi(azione));
+    await navigateFade(sezioneDi(azione, datiLeo()));
     await attesa(TEMPI.arrivo);
   }, []);
 
@@ -375,9 +375,11 @@ function useCoachChat(): Chat {
           }
           await viaggia(msgId, s.azione);
           viaggiato = true;
-          if (s.azione.nome === "scrivi_messaggio") {
-            stato.setFocus({ tipo: "messaggio", clientId: s.azione.dati.cliente, testo: s.azione.dati.testo, daScrivere: true });
-            await attesa(durataScrittura(s.azione.dati.testo, ridotto()) + 250);
+          // messaggi e solleciti: il testo si scrive da solo nella barra della chat, poi parte
+          const scrive = testoDaScrivere(s.azione, datiLeo());
+          if (scrive) {
+            stato.setFocus({ tipo: "messaggio", clientId: scrive.clientId, testo: scrive.testo, daScrivere: true });
+            await attesa(durataScrittura(scrive.testo, ridotto()) + 250);
           }
           const esito = await eseguiAzione(s.azione);
           if ("motivo" in esito) {
@@ -537,6 +539,11 @@ function useCoachChat(): Chat {
               const chiara = inChiaro(a, clientiAttuali());
               const key = `${id}-${i}`;
               if (!chiara) return { key, azione: a, titolo: "Azione su un cliente che non conosco", stato: "errore", motivo: "Cliente non trovato" };
+              // il sollecito si legge e si può cambiare prima dell'invio: se Leo non l'ha scritto, quello standard
+              if (chiara.nome === "sollecita" && !chiara.dati.testo) {
+                const testo = testoDaScrivere(chiara, dati)?.testo;
+                if (testo) return { key, azione: { ...chiara, dati: { ...chiara.dati, testo } }, titolo: riassunto(chiara, dati), stato: "da-confermare" };
+              }
               return { key, azione: chiara, titolo: riassunto(chiara, dati), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
             }),
           );

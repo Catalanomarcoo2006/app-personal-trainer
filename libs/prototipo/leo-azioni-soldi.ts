@@ -1,6 +1,7 @@
 // Le azioni di Leo sui soldi: segnare un pagamento, registrarne uno nuovo, rinnovare un pacchetto, sollecitare.
 // Stessa struttura delle azioni del calendario (leo-azioni.ts, che le riunisce): schema, controllo, riassunto,
-// voce del menu per l'AI. Si confermano tutte prima di partire. Gli importi arrivano in euro e diventano centesimi.
+// voce del menu per l'AI. Si confermano tutte prima di partire. Nell'azione l'importo resta in euro (server e browser
+// la leggono entrambi: rileggerla non deve cambiarlo); diventa centesimi quando si scrive nei dati (cent()).
 
 import { z } from "zod";
 import { controllaImporto, controllaPagabile, euroInCentesimi } from "@/libs/domain/payments";
@@ -20,7 +21,11 @@ export const eSoldi = (nome: string): nome is AzioneSoldi["nome"] => (NOMI_SOLDI
 
 const MAX_TESTO = 1000;
 const vuotoComeAssente = (v: unknown) => (v === null || (typeof v === "string" && v.trim() === "") ? undefined : v);
-const Importo = z.preprocess((v) => euroInCentesimi(v) ?? v, z.number().int());
+const Importo = z.preprocess((v) => {
+  const c = euroInCentesimi(v);
+  return c === null ? v : c / 100;
+}, z.number());
+export const cent = (euro: number) => Math.round(euro * 100);
 const IdPagamento = z.string().trim().min(1).max(12);
 const Intero = z.preprocess(vuotoComeAssente, z.coerce.number().int().optional());
 
@@ -59,7 +64,7 @@ export function verificaSoldi(a: AzioneSoldi, d: DatiClienti): Verifica {
     }
     case "registra_pagamento":
       if (!clienteDi(d, a.dati.cliente)) return no("Cliente non trovato");
-      return controllaImporto(a.dati.importo);
+      return controllaImporto(cent(a.dati.importo));
     case "rinnova_pacchetto": {
       const c = clienteDi(d, a.dati.cliente);
       if (!c) return no("Cliente non trovato");
@@ -68,7 +73,7 @@ export function verificaSoldi(a: AzioneSoldi, d: DatiClienti): Verifica {
         c.name,
         a.dati,
       );
-      return v.ok ? controllaImporto(a.dati.importo) : v;
+      return v.ok ? controllaImporto(cent(a.dati.importo)) : v;
     }
   }
 }
@@ -83,10 +88,10 @@ export function riassuntoSoldi(a: AzioneSoldi, d: DatiClienti, nomeDi: (id: stri
       return p ? `Segno pagato · ${nomeDi(p.clientId)} · ${euroDa(p.amountCents)} (${p.description.toLowerCase()})` : "Segno pagato un pagamento";
     }
     case "registra_pagamento":
-      return `Registro ${euroDa(a.dati.importo)} da ${nomeDi(a.dati.cliente)} · ${a.dati.descrizione}`;
+      return `Registro ${euroDa(cent(a.dati.importo))} da ${nomeDi(a.dati.cliente)} · ${a.dati.descrizione}`;
     case "rinnova_pacchetto": {
       const quanto = a.dati.lezioni !== undefined ? `+${a.dati.lezioni} ${a.dati.lezioni === 1 ? "lezione" : "lezioni"}` : `+${a.dati.mesi} ${a.dati.mesi === 1 ? "mese" : "mesi"}`;
-      return `Rinnovo ${nomeDi(a.dati.cliente)} · ${quanto} · ${euroDa(a.dati.importo)} da incassare`;
+      return `Rinnovo ${nomeDi(a.dati.cliente)} · ${quanto} · ${euroDa(cent(a.dati.importo))} da incassare`;
     }
     case "sollecita": {
       const p = pagamentoDi(d, a.dati.pagamento);
@@ -101,7 +106,7 @@ export function cosaSoldi(a: AzioneSoldi, nomeDi: (id: string) => string): strin
     case "segna_pagato":
       return `segnato pagato ${a.dati.pagamento}`;
     case "registra_pagamento":
-      return `registrato pagamento di ${euroDa(a.dati.importo)} da ${nomeDi(a.dati.cliente)}`;
+      return `registrato pagamento di ${euroDa(cent(a.dati.importo))} da ${nomeDi(a.dati.cliente)}`;
     case "rinnova_pacchetto":
       return `rinnovato il pacchetto di ${nomeDi(a.dati.cliente)}`;
     case "sollecita":

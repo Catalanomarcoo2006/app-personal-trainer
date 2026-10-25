@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { animate, motion, MotionConfig, useReducedMotion } from "motion/react";
 
 export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
@@ -34,7 +34,7 @@ const plain = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 });
 export const formatEuro = (n: number) => `€ ${euroNumber.format(Math.round(n))}`;
 export const formatNumber = (n: number) => plain.format(n);
 
-// Numero che sale contando fino al valore (900 ms).
+// Numero che sale contando fino al valore (900 ms). Se il valore cambia, conta da quello di prima al nuovo.
 export function CountUp({
   value,
   format = (n) => plain.format(Math.round(n)),
@@ -48,13 +48,23 @@ export function CountUp({
 }) {
   const reduce = useReducedMotion();
   const [current, setCurrent] = useState(reduce ? value : 0);
+  const ultimo = useRef(reduce ? value : 0);
 
   useEffect(() => {
     if (reduce) {
+      ultimo.current = value;
       setCurrent(value);
       return;
     }
-    const controls = animate(0, value, { delay, duration, ease: EASE_OUT, onUpdate: setCurrent });
+    const controls = animate(ultimo.current, value, {
+      delay: ultimo.current ? 0 : delay,
+      duration,
+      ease: EASE_OUT,
+      onUpdate: (n) => {
+        ultimo.current = n;
+        setCurrent(n);
+      },
+    });
     return () => controls.stop();
   }, [value, reduce, delay, duration]);
 

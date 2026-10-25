@@ -5,6 +5,7 @@
 import { inviaMessaggio, registraPagamento, rinnovaPacchetto, segnaPagato, type Esito as EsitoSportello } from "@/libs/dati/sportello";
 import { testoSollecito } from "@/libs/dati/testi";
 import { OGGI } from "@/libs/dati/iniziali";
+import { cent } from "./leo-azioni-soldi";
 import { luogoPredefinito, personalizza, verificaAzione, type AzioneLeo, type DatiLeo, type Verifica } from "./leo-azioni";
 import { stato } from "./stato";
 
@@ -105,11 +106,11 @@ export async function eseguiAzione(a: AzioneLeo): Promise<Esito> {
       return conFocus(await segnaPagato(a.dati.pagamento), { tipo: "pagato", pagamentoId: a.dati.pagamento, clientId: p?.clientId });
     }
     case "registra_pagamento": {
-      const esito = await registraPagamento({ clientId: a.dati.cliente, amountCents: a.dati.importo, description: a.dati.descrizione, paidOn: a.dati.data ?? OGGI });
+      const esito = await registraPagamento({ clientId: a.dati.cliente, amountCents: cent(a.dati.importo), description: a.dati.descrizione, paidOn: a.dati.data ?? OGGI });
       return conFocus(esito, { tipo: "pagamento", pagamentoId: "id" in esito ? esito.id : undefined, clientId: a.dati.cliente });
     }
     case "rinnova_pacchetto": {
-      const esito = await rinnovaPacchetto({ clientId: a.dati.cliente, lezioni: a.dati.lezioni, mesi: a.dati.mesi, amountCents: a.dati.importo });
+      const esito = await rinnovaPacchetto({ clientId: a.dati.cliente, lezioni: a.dati.lezioni, mesi: a.dati.mesi, amountCents: cent(a.dati.importo) });
       return conFocus(esito, { tipo: "rinnovo", pagamentoId: "id" in esito ? esito.id : undefined, clientId: a.dati.cliente });
     }
     case "sollecita": {

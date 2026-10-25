@@ -2,7 +2,7 @@
 
 import { ReactNode, useMemo, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import toast from "react-hot-toast";
 import { BellRing, Check, CircleDollarSign, Hourglass, TrendingUp, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Appear, CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
@@ -12,6 +12,7 @@ import { revenue } from "@/libs/prototipo/dati-finti";
 import { dataBreve, useClienti, useIncassi, usePagamenti } from "@/libs/dati/selettori";
 import { inviaMessaggio, segnaPagato } from "@/libs/dati/sportello";
 import { testoSollecito } from "@/libs/dati/testi";
+import { useStato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { mesiConOggi, RevenueChart } from "./Revenue";
@@ -36,10 +37,27 @@ function Kpi({ icon: Icon, label, children, note, i }: { icon: LucideIcon; label
   );
 }
 
+// Leo ha appena toccato questo pagamento: la riga si illumina col colore del trainer e poi si spegne.
+function Bagliore() {
+  const reduce = useReducedMotion();
+  return (
+    <motion.span
+      aria-hidden
+      className="pointer-events-none absolute inset-0 rounded-[inherit]"
+      style={{ background: "color-mix(in srgb, var(--trainer) 20%, transparent)", boxShadow: "inset 0 0 0 1.5px var(--trainer)" }}
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{ delay: reduce ? 0.6 : 0.5, duration: reduce ? 0.2 : 1.4, ease: EASE_OUT }}
+    />
+  );
+}
+
 export function PaymentsView() {
   const pagamenti = usePagamenti();
   const clients = useClienti();
   const incassi = useIncassi();
+  const focus = useStato((s) => s.focus);
+  const evidenza = focus && (focus.tipo === "pagato" || focus.tipo === "pagamento" || focus.tipo === "rinnovo") ? focus.pagamentoId : undefined;
   const [filter, setFilter] = useState<"tutti" | "pagati" | "aperti">("tutti");
 
   // i movimenti dallo store: seguono "Segna pagato" qui, nel profilo e da Leo
@@ -79,7 +97,7 @@ export function PaymentsView() {
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] flex flex-col gap-[10px] pr-[18px] pl-[80px]">
       <div className="grid grid-cols-4 gap-[10px]">
         <Kpi icon={Wallet} label="Incassato a ottobre" i={0} note={<span className="inline-flex items-center gap-[3px] rounded-full bg-ok-soft px-[6px] py-[2px] font-bold text-ok"><TrendingUp size={10} /> +{revenue.delta}% su settembre</span>}>
-          <CountUp key={collected} value={collected} format={formatEuro} />
+          <CountUp value={collected} format={formatEuro} />
         </Kpi>
         <Kpi icon={Hourglass} label="Da incassare" i={1} note={<span className="text-muted">{conta(open.length, "pagamento aperto", "pagamenti aperti")}</span>}>
           <span className={outstanding > 0 ? "text-[#d43b4f]" : "text-ok"}>{formatEuro(outstanding)}</span>
@@ -121,8 +139,9 @@ export function PaymentsView() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: 40, transition: { duration: 0.25 } }}
-                      className="flex items-center gap-[10px] rounded-[14px] border border-line px-[10px] py-[8px]"
+                      className="relative flex items-center gap-[10px] rounded-[14px] border border-line px-[10px] py-[8px]"
                     >
+                      {evidenza === m.key && <Bagliore key={focus?.seq} />}
                       <ClientAvatar c={c} size={32} />
                       <div className="min-w-0 flex-1 leading-none">
                         <Link href={ROUTES.cliente(c.id)} onClick={() => playSound("tap")} className="text-[12px] font-bold hover:underline">
@@ -211,8 +230,12 @@ export function PaymentsView() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.03 * i, duration: 0.3, ease: EASE_OUT }}
-                  className="grid grid-cols-[90px_1.3fr_1.6fr_100px_120px] items-center border-b border-line px-[10px] py-[7px] text-[12px] last:border-b-0"
+                  ref={(el) => {
+                    if (el && evidenza === m.key) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                  }}
+                  className="relative grid grid-cols-[90px_1.3fr_1.6fr_100px_120px] items-center rounded-[10px] border-b border-line px-[10px] py-[7px] text-[12px] last:border-b-0"
                 >
+                  {evidenza === m.key && <Bagliore key={focus?.seq} />}
                   <span className="text-muted">{m.date}</span>
                   <span className="flex items-center gap-[7px] font-semibold">
                     <ClientAvatar c={c} size={22} /> {c.name}
@@ -221,9 +244,15 @@ export function PaymentsView() {
                   <span className="text-right font-bold tabular-nums">{formatEuro(m.amount)}</span>
                   <span className="text-right">
                     {m.paid ? (
-                      <span className="inline-flex items-center gap-[3px] rounded-full bg-ok-soft px-[8px] py-[3px] text-[10px] font-bold text-ok">
+                      <motion.span
+                        key="pagato"
+                        initial={evidenza === m.key ? { scale: 0.6, opacity: 0 } : false}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 420, damping: 20, delay: 0.35 }}
+                        className="inline-flex items-center gap-[3px] rounded-full bg-ok-soft px-[8px] py-[3px] text-[10px] font-bold text-ok"
+                      >
                         <Check size={10} strokeWidth={3} /> Pagato
-                      </span>
+                      </motion.span>
                     ) : (
                       <span className="rounded-full bg-[rgba(212,59,79,0.14)] px-[8px] py-[3px] text-[10px] font-bold text-[#d43b4f]">Da incassare</span>
                     )}

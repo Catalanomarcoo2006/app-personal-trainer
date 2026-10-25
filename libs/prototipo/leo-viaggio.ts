@@ -2,7 +2,8 @@
 // La chat si fa piccola, l'app va alla sezione, l'azione si vede accadere, poi la chat torna grande.
 
 import { ROUTES } from "@/components/prototipo/trainer/nav";
-import type { AzioneLeo } from "./leo-azioni";
+import type { AzioneLeo, DatiLeo } from "./leo-azioni";
+import { testoSollecito } from "@/libs/dati/testi";
 
 export const TEMPI = {
   compatta: 350, // la chat si rimpicciolisce
@@ -16,9 +17,13 @@ export const TEMPI = {
   scritturaMax: 3000,
 };
 
-export function sezioneDi(a: AzioneLeo): string {
+// d: i dati di adesso, per sapere di chi è un pagamento (sollecito).
+export function sezioneDi(a: AzioneLeo, d?: DatiLeo): string {
+  const scrive = d ? testoDaScrivere(a, d) : null;
+  if (scrive) return `${ROUTES.messaggi}?cliente=${scrive.clientId}`;
   if (a.nome === "scrivi_messaggio") return `${ROUTES.messaggi}?cliente=${a.dati.cliente}`;
   if (a.nome === "scrivi_a_piu") return `${ROUTES.messaggi}?cliente=${a.dati.clienti[0]}`;
+  if (a.nome === "segna_pagato" || a.nome === "registra_pagamento" || a.nome === "rinnova_pacchetto") return ROUTES.incassi;
   return ROUTES.calendario;
 }
 
@@ -32,4 +37,13 @@ export function tempoAzione(nome: AzioneLeo["nome"], ridotto: boolean): number {
   const vistosa = nome === "cancella_appuntamento" || nome === "fissa_appuntamento";
   if (ridotto) return vistosa ? TEMPI.vistosaRidotta : TEMPI.azioneRidotta;
   return vistosa ? TEMPI.vistosa : TEMPI.azione;
+}
+
+// Il testo che la chat dei messaggi scrive da sola prima che parta: un messaggio o un sollecito. null per le altre.
+export function testoDaScrivere(a: AzioneLeo, d: DatiLeo): { clientId: string; testo: string } | null {
+  if (a.nome === "scrivi_messaggio") return { clientId: a.dati.cliente, testo: a.dati.testo };
+  if (a.nome !== "sollecita") return null;
+  const p = d.dati.pagamenti.find((x) => x.id === a.dati.pagamento);
+  const c = p && d.dati.clienti.find((x) => x.id === p.clientId);
+  return p && c ? { clientId: c.id, testo: a.dati.testo?.trim() || testoSollecito(p, c.name) } : null;
 }

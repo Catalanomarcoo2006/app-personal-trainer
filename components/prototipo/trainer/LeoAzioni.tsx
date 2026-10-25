@@ -71,8 +71,8 @@ export function SchedaAzioneView({
   const { azione, stato } = scheda;
   const Icon = icone[azione.nome];
   const multiplo = azione.nome === "scrivi_a_piu";
-  const messaggio = azione.nome === "scrivi_messaggio" || multiplo;
-  const [testo, setTesto] = useState(messaggio ? azione.dati.testo : "");
+  const messaggio = azione.nome === "scrivi_messaggio" || azione.nome === "sollecita" || multiplo;
+  const [testo, setTesto] = useState(messaggio ? (azione.dati.testo ?? "") : "");
   const [scelti, setScelti] = useState<string[]>(multiplo ? azione.dati.clienti : []);
   const trova = useTrovaCliente();
   const pronto = !!testo.trim() && (!multiplo || scelti.length > 0);

@@ -21,13 +21,19 @@ const dati = () => m.stato.get().dati;
 const aperto = (clientId: string) => dati().pagamenti.find((p) => p.clientId === clientId && !p.paidOn)!;
 
 describe("forma delle azioni dei soldi", () => {
-  it("l'importo arriva in euro e diventa centesimi", () => {
+  it("l'importo arriva in euro, anche scritto con la virgola o come testo", () => {
     expect(m.az.leggiAzione("registra_pagamento", { cliente: "luca", importo: "120,00", descrizione: "Mensile novembre" })).toEqual({
       nome: "registra_pagamento",
-      dati: { cliente: "luca", importo: 12000, descrizione: "Mensile novembre" },
+      dati: { cliente: "luca", importo: 120, descrizione: "Mensile novembre" },
     });
-    expect(m.az.leggiAzione("rinnova_pacchetto", { cliente: "giulia", lezioni: 10, importo: 450 })).toMatchObject({ dati: { importo: 45000, lezioni: 10 } });
+    expect(m.az.leggiAzione("rinnova_pacchetto", { cliente: "giulia", lezioni: 10, importo: 450 })).toMatchObject({ dati: { importo: 450, lezioni: 10 } });
     expect(m.az.leggiAzione("registra_pagamento", { cliente: "luca", importo: "tanto", descrizione: "x" })).toBeNull();
+  });
+
+  it("rileggere un'azione già letta non cambia l'importo (server e browser la leggono entrambi)", () => {
+    const una = m.az.leggiAzione("rinnova_pacchetto", { cliente: "giulia", lezioni: 10, importo: "450" })!;
+    const due = m.az.leggiAzione(una.nome, una.dati);
+    expect(due).toEqual(una);
   });
 
   it("il rinnovo vuole lezioni oppure mesi, non tutti e due né nessuno", () => {
@@ -36,15 +42,15 @@ describe("forma delle azioni dei soldi", () => {
   });
 
   it("inChiaro trova il cliente e scrive l'id del pagamento in maiuscolo", () => {
-    expect(m.az.inChiaro({ nome: "registra_pagamento", dati: { cliente: "Luca", importo: 12000, descrizione: "x" } })).toMatchObject({ dati: { cliente: "luca-ferri" } });
+    expect(m.az.inChiaro({ nome: "registra_pagamento", dati: { cliente: "Luca", importo: 120, descrizione: "x" } })).toMatchObject({ dati: { cliente: "luca-ferri" } });
     expect(m.az.inChiaro({ nome: "segna_pagato", dati: { pagamento: "p2" } })).toEqual({ nome: "segna_pagato", dati: { pagamento: "P2" } });
   });
 
   it("si confermano tutte", () => {
     for (const a of [
       { nome: "segna_pagato", dati: { pagamento: "P2" } },
-      { nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 12000, descrizione: "x" } },
-      { nome: "rinnova_pacchetto", dati: { cliente: "giulia-bianchi", lezioni: 10, importo: 45000 } },
+      { nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 120, descrizione: "x" } },
+      { nome: "rinnova_pacchetto", dati: { cliente: "giulia-bianchi", lezioni: 10, importo: 450 } },
       { nome: "sollecita", dati: { pagamento: "P2" } },
     ] as AzioneLeo[])
       expect(m.az.daConfermare(a)).toBe(true);
@@ -64,15 +70,15 @@ describe("controlli e riassunti", () => {
   });
 
   it("rinnova_pacchetto: il tipo di pacchetto deve combaciare", () => {
-    expect(m.az.verificaAzione({ nome: "rinnova_pacchetto", dati: { cliente: "luca-ferri", lezioni: 10, importo: 12000 } }, m.datiLeo())).toEqual({
+    expect(m.az.verificaAzione({ nome: "rinnova_pacchetto", dati: { cliente: "luca-ferri", lezioni: 10, importo: 120 } }, m.datiLeo())).toEqual({
       ok: false,
       motivo: "Il pacchetto di Luca Ferri è a tempo: si rinnova a mesi",
     });
-    expect(m.az.verificaAzione({ nome: "rinnova_pacchetto", dati: { cliente: "luca-ferri", mesi: 1, importo: 12000 } }, m.datiLeo())).toEqual({ ok: true });
+    expect(m.az.verificaAzione({ nome: "rinnova_pacchetto", dati: { cliente: "luca-ferri", mesi: 1, importo: 120 } }, m.datiLeo())).toEqual({ ok: true });
   });
 
   it("registra_pagamento: importo nei limiti", () => {
-    expect(m.az.verificaAzione({ nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 50, descrizione: "x" } }, m.datiLeo())).toEqual({
+    expect(m.az.verificaAzione({ nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 0.5, descrizione: "x" } }, m.datiLeo())).toEqual({
       ok: false,
       motivo: "L'importo va da 1 € a 5.000 €",
     });
@@ -82,9 +88,9 @@ describe("controlli e riassunti", () => {
     const d = m.datiLeo();
     const p = aperto("antonella-russo").id;
     expect(m.az.riassunto({ nome: "segna_pagato", dati: { pagamento: p } }, d)).toBe("Segno pagato · Antonella Russo · € 40 (valutazione posturale)");
-    expect(m.az.riassunto({ nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 12000, descrizione: "Mensile novembre" } }, d)).toBe("Registro € 120 da Luca Ferri · Mensile novembre");
-    expect(m.az.riassunto({ nome: "rinnova_pacchetto", dati: { cliente: "giulia-bianchi", lezioni: 10, importo: 45000 } }, d)).toBe("Rinnovo Giulia Bianchi · +10 lezioni · € 450 da incassare");
-    expect(m.az.riassunto({ nome: "rinnova_pacchetto", dati: { cliente: "luca-ferri", mesi: 1, importo: 12000 } }, d)).toBe("Rinnovo Luca Ferri · +1 mese · € 120 da incassare");
+    expect(m.az.riassunto({ nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 120, descrizione: "Mensile novembre" } }, d)).toBe("Registro € 120 da Luca Ferri · Mensile novembre");
+    expect(m.az.riassunto({ nome: "rinnova_pacchetto", dati: { cliente: "giulia-bianchi", lezioni: 10, importo: 450 } }, d)).toBe("Rinnovo Giulia Bianchi · +10 lezioni · € 450 da incassare");
+    expect(m.az.riassunto({ nome: "rinnova_pacchetto", dati: { cliente: "luca-ferri", mesi: 1, importo: 120 } }, d)).toBe("Rinnovo Luca Ferri · +1 mese · € 120 da incassare");
     expect(m.az.riassunto({ nome: "sollecita", dati: { pagamento: p } }, d)).toBe("Sollecito ad Antonella Russo · € 40");
   });
 });
@@ -102,7 +108,7 @@ describe("esecuzione", () => {
 
   it("rinnova_pacchetto aggiunge lezioni e pagamento da incassare; annulla toglie tutto", async () => {
     const prima = structuredClone(dati());
-    const esito = await m.eseguiAzione({ nome: "rinnova_pacchetto", dati: { cliente: "giulia-bianchi", lezioni: 10, importo: 45000 } });
+    const esito = await m.eseguiAzione({ nome: "rinnova_pacchetto", dati: { cliente: "giulia-bianchi", lezioni: 10, importo: 450 } });
     expect(esito.ok).toBe(true);
     expect(dati().pacchetti.find((p) => p.clientId === "giulia-bianchi")?.lessonsTotal).toBe(20);
     expect(m.stato.get().focus).toMatchObject({ tipo: "rinnovo", clientId: "giulia-bianchi" });
@@ -111,7 +117,7 @@ describe("esecuzione", () => {
   });
 
   it("registra_pagamento entra già incassato", async () => {
-    await m.eseguiAzione({ nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 12000, descrizione: "Mensile novembre" } });
+    await m.eseguiAzione({ nome: "registra_pagamento", dati: { cliente: "luca-ferri", importo: 120, descrizione: "Mensile novembre" } });
     expect(m.calcolaIncassi(dati()).collectedCents).toBe(296000);
     expect(m.stato.get().focus).toMatchObject({ tipo: "pagamento", clientId: "luca-ferri" });
   });
