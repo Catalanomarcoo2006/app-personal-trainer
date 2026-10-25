@@ -30,11 +30,12 @@ afterEach(() => {
 });
 
 describe("sessione del vocale", () => {
-  it("premi: si ascolta e il testo arriva dal vivo", async () => {
+  it("premi: prima il microfono si accende, poi si ascolta e il testo arriva dal vivo", async () => {
     const { t, scrivi } = finto();
     const { s, stati, ultimo } = sessione(t);
     await s.premi();
-    expect(stati[0]).toEqual({ fase: "in-ascolto", testo: "", errore: null });
+    expect(stati[0]).toEqual({ fase: "preparazione", testo: "", errore: null });
+    expect(stati[1]).toEqual({ fase: "in-ascolto", testo: "", errore: null });
     scrivi("Luca ha pagato");
     expect(ultimo()).toEqual({ fase: "in-ascolto", testo: "Luca ha pagato", errore: null });
   });
@@ -68,32 +69,34 @@ describe("sessione del vocale", () => {
     expect(onFine).toHaveBeenCalledWith(null);
   });
 
-  it("lascia prima che il browser abbia finito di chiedere il permesso: aspetta, poi ferma", async () => {
+  it("lascia mentre il microfono si sta ancora accendendo: si annulla e dice di tenere premuto", async () => {
     let ok!: () => void;
     const { t } = finto({ avvia: new Promise<void>((r) => (ok = r)) });
-    const { s, onFine } = sessione(t);
+    const { s, onFine, ultimo } = sessione(t);
     const premuto = s.premi();
-    const lasciato = s.lascia();
+    expect(ultimo().fase).toBe("preparazione");
+    await s.lascia();
+    expect(t.annulla).toHaveBeenCalledTimes(1);
     expect(t.ferma).not.toHaveBeenCalled();
-    ok();
+    expect(onFine).toHaveBeenCalledWith(null);
+    expect(ultimo()).toEqual({ fase: "fermo", testo: "", errore: "troppo-presto" });
+    ok(); // il microfono si accende dopo: non cambia più niente
     await premuto;
-    await lasciato;
-    expect(t.ferma).toHaveBeenCalledTimes(1);
-    expect(onFine).toHaveBeenCalledWith({ testo: "Luca ha pagato", parziale: false });
+    expect(ultimo()).toEqual({ fase: "fermo", testo: "", errore: "troppo-presto" });
+    expect(onFine).toHaveBeenCalledTimes(1);
   });
 
-  it("lascia prima che il permesso arrivi, e poi il permesso è negato: nessun blocco in ascolto", async () => {
+  it("lascia presto e poi il permesso risulta negato: nessun blocco in ascolto, l'esito resta 'troppo presto'", async () => {
     let no!: (e: unknown) => void;
     const { t } = finto({ avvia: new Promise<void>((_, r) => (no = r)) });
     const { s, onFine, ultimo } = sessione(t);
     const premuto = s.premi();
-    const lasciato = s.lascia();
+    await s.lascia();
     no(new VoceErrore("permesso"));
     await premuto;
-    await lasciato;
     expect(t.ferma).not.toHaveBeenCalled();
-    expect(onFine).toHaveBeenCalledWith(null);
-    expect(ultimo()).toMatchObject({ fase: "fermo", errore: "permesso" });
+    expect(onFine).toHaveBeenCalledTimes(1);
+    expect(ultimo()).toMatchObject({ fase: "fermo", errore: "troppo-presto" });
   });
 
   it("annulla: butta tutto, ignora il testo che arriva dopo e lascia non fa niente", async () => {
@@ -170,7 +173,8 @@ describe("testi", () => {
   it("messaggi d'errore", () => {
     expect(messaggioErrore("permesso")).toBe("Serve il permesso del microfono: abilitalo dal lucchetto vicino all'indirizzo");
     expect(messaggioErrore("nessun-microfono")).toBe("Non trovo un microfono");
-    expect(messaggioErrore("nessuna-voce")).toBe("Non ho sentito niente, riprova");
+    expect(messaggioErrore("nessuna-voce")).toBe("Non ho sentito niente: aspetta che il microfono sia acceso e parla tenendo premuto");
+    expect(messaggioErrore("troppo-presto")).toBe("Tieni premuto finché il microfono si accende, poi parla");
     expect(messaggioErrore("non-supportato")).toBe("Questo browser non ascolta la voce: prova con Chrome o Edge");
     expect(messaggioErrore("interrotto")).toBe("Il vocale si è interrotto: controlla il testo prima di mandarlo");
   });

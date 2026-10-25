@@ -14,6 +14,8 @@ type Riconoscitore = {
   stop(): void;
   abort(): void;
   onstart: (() => void) | null;
+  onaudiostart: (() => void) | null;
+  onspeechstart: (() => void) | null;
   onresult: ((e: { results: Risultati }) => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
@@ -50,6 +52,7 @@ export function testoDaRisultati(r: Risultati): string {
     .trim();
 }
 
+const ATTESA_AUDIO_MS = 1500; // se il browser non manda l'evento dell'audio, dopo l'avvio si considera pronto lo stesso
 const ATTESA_FINE_MS = 3000; // alcuni browser non mandano mai la fine dopo stop(): si chiude comunque
 
 export function trascrittoreBrowser(): Trascrittore {
@@ -74,10 +77,17 @@ export function trascrittoreBrowser(): Trascrittore {
       errore = null;
       return new Promise<void>((ok, no) => {
         let partito = false;
+        // pronto = il microfono sta davvero catturando l'audio (dopo il permesso), non solo il riconoscimento avviato
         r.onstart = () => {
           partito = true;
+          setTimeout(ok, ATTESA_AUDIO_MS);
+        };
+        r.onaudiostart = () => {
+          partito = true;
+          console.debug("[voce] audio acceso");
           ok();
         };
+        r.onspeechstart = () => console.debug("[voce] sento una voce");
         r.onresult = (e) => {
           if (!attivo) return;
           ultimo = testoDaRisultati(e.results);
@@ -86,6 +96,7 @@ export function trascrittoreBrowser(): Trascrittore {
         r.onerror = (e) => {
           if (!attivo) return;
           errore = e.error;
+          console.debug("[voce] errore del browser:", e.error);
           if (!partito) {
             attivo = false;
             no(new VoceErrore(erroreDaBrowser(e.error)));

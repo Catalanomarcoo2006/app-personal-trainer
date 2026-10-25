@@ -911,7 +911,7 @@ function ChatPanel({
           onSubmit={submit}
           className="mx-[14px] mb-[14px] flex items-center gap-[8px] rounded-full border py-[5px] pr-[5px] pl-[14px] transition-[border-color,box-shadow] duration-300 focus-within:border-[color-mix(in_srgb,var(--trainer)_55%,transparent)]"
           style={
-            scrive
+            scrive || voce.fase === "in-ascolto"
               ? { borderColor: "color-mix(in srgb, var(--trainer) 70%, transparent)", boxShadow: "0 0 0 4px color-mix(in srgb, var(--trainer) 14%, transparent), 0 6px 18px color-mix(in srgb, var(--trainer) 18%, transparent)" }
               : { borderColor: "var(--color-line)" }
           }
@@ -932,7 +932,7 @@ function ChatPanel({
               else if (e.key === "Backspace" || e.key === "Delete") suonoTasto("cancella");
               else if (e.key.length === 1) suonoTasto("lettera");
             }}
-            placeholder={`Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
+            placeholder={voce.fase === "in-ascolto" ? "Parla adesso…" : voce.fase === "preparazione" ? "Accendo il microfono…" : `Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
           <motion.button
             type="submit"
             aria-label="Invia"

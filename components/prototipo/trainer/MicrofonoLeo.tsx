@@ -6,9 +6,9 @@
 
 import { PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Mic } from "lucide-react";
+import { Loader2, Mic } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
-import { cosaFare, creaSessioneVoce, messaggioErrore, unisciTesto } from "@/libs/prototipo/leo-voce";
+import { cosaFare, creaSessioneVoce, messaggioErrore, unisciTesto, type StatoVoce } from "@/libs/prototipo/leo-voce";
 import { dettaturaDisponibile, trascrittoreBrowser } from "@/libs/prototipo/leo-voce-browser";
 import { useSceltaVocali } from "@/libs/prototipo/leo-voce-scelta";
 
@@ -17,7 +17,7 @@ const MARGINE_PX = 8; // rilasciare un po' fuori dal tasto vale ancora come "las
 export type VoceLeo = {
   disponibile: boolean;
   bloccato: boolean;
-  inAscolto: boolean;
+  fase: StatoVoce["fase"]; // fermo, preparazione (premuto, microfono non ancora acceso), in-ascolto
   errore: string | null;
   inAttesa: string | null; // il vocale della prima volta, in attesa della scelta
   scegli(s: "subito" | "rivedi"): void;
@@ -31,7 +31,7 @@ export type VoceLeo = {
 export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: string): void; invia(testo: string): void }): VoceLeo {
   const [scelta, salvaScelta] = useSceltaVocali();
   const [disponibile, setDisponibile] = useState(false);
-  const [inAscolto, setInAscolto] = useState(false);
+  const [fase, setFase] = useState<StatoVoce["fase"]>("fermo");
   const [errore, setErrore] = useState<string | null>(null);
   const [inAttesa, setInAttesa] = useState<string | null>(null);
   const sessione = useRef<ReturnType<typeof creaSessioneVoce> | null>(null);
@@ -67,7 +67,7 @@ export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: st
     setInAttesa(null);
     const s = creaSessioneVoce(trascrittoreBrowser(), {
       onStato: (x) => {
-        setInAscolto(x.fase === "in-ascolto");
+        setFase(x.fase);
         setErrore(x.errore ? messaggioErrore(x.errore) : null);
         if (x.fase === "in-ascolto" && x.testo) ultimi.current.setDraft(unisciTesto(base.current, x.testo));
       },
@@ -92,9 +92,15 @@ export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: st
     void s.premi();
   }
 
-  // finché si ascolta: Esc e il cambio di finestra annullano il vocale
+  // un suono quando il microfono è davvero acceso: da lì si può parlare
   useEffect(() => {
-    if (!inAscolto) return;
+    if (fase === "in-ascolto") playSound("confirm");
+  }, [fase]);
+
+  // finché c'è un vocale in corso Esc lo annulla; il cambio di finestra solo a microfono acceso
+  // (il riquadro del permesso, la prima volta, toglie il fuoco alla pagina: non è un annullamento)
+  useEffect(() => {
+    if (fase === "fermo") return;
     // Esc in ascolto annulla solo il vocale: senza fermare l'evento chiuderebbe anche la chat
     const esc = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -102,17 +108,17 @@ export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: st
       annullaTutto();
     };
     window.addEventListener("keydown", esc, true);
-    window.addEventListener("blur", annullaTutto);
+    if (fase === "in-ascolto") window.addEventListener("blur", annullaTutto);
     return () => {
       window.removeEventListener("keydown", esc, true);
       window.removeEventListener("blur", annullaTutto);
     };
-  }, [inAscolto]);
+  }, [fase]);
 
   return {
     disponibile,
     bloccato: o.bloccato,
-    inAscolto,
+    fase,
     errore,
     inAttesa,
     scegli(s) {
@@ -145,32 +151,41 @@ export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: st
 }
 
 // Il tasto accanto a "Allega": non compare se il browser non ha la dettatura (per esempio Firefox).
+// Tre aspetti ben distinti: spento, "sto accendendo" (rotellina: non parlare ancora) e acceso (pieno, con onde).
 export function TastoMicrofono({ voce }: { voce: VoceLeo }) {
   const reduce = useReducedMotion();
   if (!voce.disponibile) return null;
+  const acceso = voce.fase === "in-ascolto";
+  const preparo = voce.fase === "preparazione";
   return (
     <button
       type="button"
       aria-label="Tieni premuto per parlare a Leo"
       title="Tieni premuto per parlare a Leo"
-      aria-pressed={voce.inAscolto}
+      aria-pressed={voce.fase !== "fermo"}
+      aria-busy={preparo}
       aria-disabled={voce.bloccato}
       {...voce.tasto}
       onContextMenu={(e) => e.preventDefault()}
-      style={voce.inAscolto ? { background: "color-mix(in srgb, var(--trainer) 16%, transparent)", color: "var(--trainer)" } : undefined}
-      className={`relative grid size-[26px] shrink-0 touch-none select-none place-items-center rounded-full transition-colors ${voce.bloccato ? "cursor-default opacity-40" : "cursor-pointer"} ${voce.inAscolto ? "" : "text-muted hover:bg-soft hover:text-ink"}`}
+      style={acceso ? { background: "var(--trainer)", color: "#fff", boxShadow: "0 4px 14px color-mix(in srgb, var(--trainer) 45%, transparent)" } : preparo ? { background: "color-mix(in srgb, var(--trainer) 14%, transparent)", color: "var(--trainer)" } : undefined}
+      className={`relative grid size-[32px] shrink-0 touch-none select-none place-items-center rounded-full transition-[background-color,color,box-shadow] duration-200 ${voce.bloccato ? "cursor-default opacity-40" : "cursor-pointer"} ${voce.fase === "fermo" ? "text-muted hover:bg-soft hover:text-ink" : ""}`}
     >
-      {voce.inAscolto && !reduce && (
-        <motion.span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full"
-          style={{ background: "var(--trainer)" }}
-          initial={{ scale: 1, opacity: 0.35 }}
-          animate={{ scale: 1.8, opacity: 0 }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: "easeOut" }}
-        />
+      {acceso && !reduce && (
+        <>
+          {[0, 0.45].map((ritardo) => (
+            <motion.span
+              key={ritardo}
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full"
+              style={{ background: "var(--trainer)" }}
+              initial={{ scale: 1, opacity: 0.4 }}
+              animate={{ scale: 2.1, opacity: 0 }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: "easeOut", delay: ritardo }}
+            />
+          ))}
+        </>
       )}
-      <Mic size={14} className="relative" />
+      {preparo ? <Loader2 size={15} className={reduce ? "relative" : "relative animate-spin"} /> : <Mic size={15} className="relative" />}
     </button>
   );
 }
@@ -179,6 +194,18 @@ export function TastoMicrofono({ voce }: { voce: VoceLeo }) {
 export function VoceStato({ voce }: { voce: VoceLeo }) {
   return (
     <>
+      {voce.fase !== "fermo" && (
+        <p aria-live="polite" className="mx-[14px] mb-[6px] flex items-center gap-[7px] text-[11.5px] font-semibold" style={{ color: voce.fase === "in-ascolto" ? "var(--trainer)" : undefined }}>
+          {voce.fase === "in-ascolto" ? (
+            <>
+              <span aria-hidden className="size-[8px] shrink-0 animate-pulse rounded-full" style={{ background: "var(--trainer)" }} />
+              Ti ascolto: parla, lascia il tasto quando hai finito
+            </>
+          ) : (
+            <span className="text-muted">Accendo il microfono… aspetta un attimo</span>
+          )}
+        </p>
+      )}
       {voce.errore && <p className="mx-[14px] mb-[6px] text-[11.5px] text-[#d43b4f]">{voce.errore}</p>}
       {voce.inAttesa && (
         <div className="mx-[14px] mb-[8px] rounded-[14px] border border-line bg-soft p-[10px] text-[12px]">

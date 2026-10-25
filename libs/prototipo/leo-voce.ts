@@ -2,7 +2,7 @@
 // più avanti un server UE); la sessione gestisce il gesto (tieni premuto, lascia, annulla), il limite di tempo e gli errori.
 // Il testo dettato va a Leo come uno scritto: nessun canale in più. Spec: docs/specs/2026-10-25-vocali-leo-design.md.
 
-export type ErroreVoce = "permesso" | "nessun-microfono" | "nessuna-voce" | "non-supportato" | "interrotto";
+export type ErroreVoce = "permesso" | "nessun-microfono" | "nessuna-voce" | "non-supportato" | "interrotto" | "troppo-presto";
 
 export class VoceErrore extends Error {
   constructor(readonly codice: ErroreVoce) {
@@ -22,7 +22,8 @@ export type Trascrittore = {
 // null: il trainer non ha ancora scelto
 export type SceltaVocali = "subito" | "rivedi" | null;
 
-export type StatoVoce = { fase: "fermo" | "in-ascolto"; testo: string; errore: ErroreVoce | null };
+// preparazione: il tasto è premuto ma il microfono non è ancora acceso (permesso, avvio): parlare adesso non serve
+export type StatoVoce = { fase: "fermo" | "preparazione" | "in-ascolto"; testo: string; errore: ErroreVoce | null };
 
 export const MAX_MS_VOCALE = 60_000;
 
@@ -42,13 +43,13 @@ export function creaSessioneVoce(t: Trascrittore, o: Opzioni): { premi(): Promis
   async function premi() {
     if (fase !== "fermo" || chiudendo) return;
     const mia = ++gen;
-    fase = "in-ascolto";
+    fase = "preparazione";
     testo = "";
     stato();
     timer = setTimeout(() => void lascia(), maxMs);
     avviata = t
       .avvia((x) => {
-        if (mia === gen && fase === "in-ascolto") {
+        if (mia === gen && fase !== "fermo") {
           testo = x;
           stato();
         }
@@ -58,7 +59,12 @@ export function creaSessioneVoce(t: Trascrittore, o: Opzioni): { premi(): Promis
         (e: unknown): VoceErrore => (e instanceof VoceErrore ? e : new VoceErrore("interrotto")),
       );
     const errore = await avviata;
-    if (mia !== gen || !errore) return;
+    if (mia !== gen) return;
+    if (!errore) {
+      fase = "in-ascolto"; // il microfono è acceso: da qui si può parlare
+      stato();
+      return;
+    }
     // non è partito (permesso negato, niente microfono…): finisce qui, senza testo
     clearTimeout(timer);
     fase = "fermo";
@@ -68,11 +74,19 @@ export function creaSessioneVoce(t: Trascrittore, o: Opzioni): { premi(): Promis
   }
 
   async function lascia() {
-    if (fase !== "in-ascolto") return;
+    if (fase === "fermo") return;
     const mia = gen;
     clearTimeout(timer);
-    const errore = await avviata; // se si lascia mentre il browser chiede il permesso, si aspetta la risposta
-    if (mia !== gen || fase !== "in-ascolto" || errore) return;
+    if (fase === "preparazione") {
+      // rilasciato prima che il microfono si accendesse: non c'è niente da ascoltare, lo si dice
+      gen++;
+      fase = "fermo";
+      testo = "";
+      t.annulla();
+      stato("troppo-presto");
+      o.onFine(null);
+      return;
+    }
     fase = "fermo";
     chiudendo = true;
     let d: Dettato;
@@ -101,7 +115,7 @@ export function creaSessioneVoce(t: Trascrittore, o: Opzioni): { premi(): Promis
   }
 
   function annulla() {
-    if (fase !== "in-ascolto" && !chiudendo) return;
+    if (fase === "fermo" && !chiudendo) return;
     gen++;
     clearTimeout(timer);
     fase = "fermo";
@@ -131,7 +145,9 @@ export function messaggioErrore(e: ErroreVoce): string {
     case "nessun-microfono":
       return "Non trovo un microfono";
     case "nessuna-voce":
-      return "Non ho sentito niente, riprova";
+      return "Non ho sentito niente: aspetta che il microfono sia acceso e parla tenendo premuto";
+    case "troppo-presto":
+      return "Tieni premuto finché il microfono si accende, poi parla";
     case "non-supportato":
       return "Questo browser non ascolta la voce: prova con Chrome o Edge";
     case "interrotto":

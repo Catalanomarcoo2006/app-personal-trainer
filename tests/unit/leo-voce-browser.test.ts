@@ -9,6 +9,7 @@ class Finto {
   interimResults = false;
   lang = "";
   onstart: (() => void) | null = null;
+  onaudiostart: (() => void) | null = null;
   onresult: ((e: { results: { transcript: string }[][] }) => void) | null = null;
   onerror: ((e: { error: string }) => void) | null = null;
   onend: (() => void) | null = null;
@@ -25,6 +26,7 @@ class Finto {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("funzioni pure", () => {
@@ -60,7 +62,7 @@ describe("trascrittore del browser", () => {
     expect(r.interimResults).toBe(true);
     expect(r.continuous).toBe(true);
     expect(r.start).toHaveBeenCalledTimes(1);
-    r.onstart?.();
+    r.onaudiostart?.();
     await partito;
     r.risultati("Luca ha pagato");
     r.risultati("Luca ha pagato", "e Sara 77 kg");
@@ -83,7 +85,7 @@ describe("trascrittore del browser", () => {
     const t = trascrittoreBrowser();
     const partito = t.avvia(() => {});
     const r = Finto.ultimo;
-    r.onstart?.();
+    r.onaudiostart?.();
     await partito;
     r.risultati("Sposta Davide a domani");
     r.onerror?.({ error: "network" });
@@ -96,7 +98,7 @@ describe("trascrittore del browser", () => {
     const t = trascrittoreBrowser();
     const partito = t.avvia(() => {});
     const r = Finto.ultimo;
-    r.onstart?.();
+    r.onaudiostart?.();
     await partito;
     r.onerror?.({ error: "network" });
     r.onend?.();
@@ -108,7 +110,7 @@ describe("trascrittore del browser", () => {
     const t = trascrittoreBrowser();
     const partito = t.avvia(() => {});
     const r = Finto.ultimo;
-    r.onstart?.();
+    r.onaudiostart?.();
     await partito;
     r.onerror?.({ error: "no-speech" });
     await expect(t.ferma()).resolves.toEqual({ testo: "", parziale: false });
@@ -120,11 +122,33 @@ describe("trascrittore del browser", () => {
     const dalVivo: string[] = [];
     const partito = t.avvia((x) => dalVivo.push(x));
     const r = Finto.ultimo;
-    r.onstart?.();
+    r.onaudiostart?.();
     await partito;
     t.annulla();
     expect(r.abort).toHaveBeenCalledTimes(1);
     r.risultati("troppo tardi");
     expect(dalVivo).toEqual([]);
+  });
+
+  it("il microfono è pronto quando parte l'audio, non appena parte il riconoscimento", async () => {
+    vi.stubGlobal("SpeechRecognition", Finto);
+    const partito = vi.fn();
+    void trascrittoreBrowser().avvia(() => {}).then(partito);
+    Finto.ultimo.onstart?.();
+    await Promise.resolve();
+    expect(partito).not.toHaveBeenCalled();
+    Finto.ultimo.onaudiostart?.();
+    await Promise.resolve();
+    expect(partito).toHaveBeenCalledTimes(1);
+  });
+
+  it("se il browser non manda mai l'evento dell'audio, dopo un attimo si considera pronto", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("SpeechRecognition", Finto);
+    const partito = vi.fn();
+    void trascrittoreBrowser().avvia(() => {}).then(partito);
+    Finto.ultimo.onstart?.();
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(partito).toHaveBeenCalledTimes(1);
   });
 });
