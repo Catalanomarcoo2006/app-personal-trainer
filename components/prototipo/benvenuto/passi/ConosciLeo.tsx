@@ -19,7 +19,7 @@ const CAPACITA = [
   { Icona: CalendarCheck, titolo: "Agenda", testo: "Fissa, sposta e cancella le sedute, e controlla che l'orario sia libero." },
   { Icona: UserRound, titolo: "Clienti", testo: "Aggiorna peso, misure, note e obiettivi; aggiunge un cliente nuovo in un attimo." },
   { Icona: Wallet, titolo: "Incassi", testo: "Segna i pagamenti, rinnova i pacchetti e manda i solleciti al posto tuo." },
-  { Icona: Mic, titolo: "Messaggi e vocali", testo: "Scrive ai clienti, anche a tanti insieme. Tieni premuto il microfono e parla: quando lo lasci, il vocale parte." },
+  { Icona: Mic, titolo: "Messaggi e vocali", testo: "Scrive ai clienti, anche a tanti insieme. Tieni premuto il microfono e parla: Leo prepara le azioni." },
 ];
 
 const DESCRIZIONI: Record<Tono, { emoji: string; titolo: string; testo: string }> = {

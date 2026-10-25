@@ -15,6 +15,7 @@ import { useNotifiche } from "@/libs/dati/selettori";
 import { impostaNotifica } from "@/libs/dati/sportello";
 import type { Notifiche } from "@/libs/dati/tipi";
 import { aggiornaBenvenuto, azzeraBenvenuto, useBenvenuto } from "@/libs/prototipo/benvenuto";
+import { useSceltaVocali } from "@/libs/prototipo/leo-voce-scelta";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 
 // I suoni dell'app, da ascoltare: nascono tutti dallo stesso "pop" con tonalità diverse.
@@ -93,6 +94,7 @@ export function SettingsView() {
   const { theme, setTheme, accent, setAccent } = useAppearance();
   const [sound, setSound] = useState(true);
   const tone = useBenvenuto().tono;
+  const [vocali, setVocali] = useSceltaVocali();
 
   useEffect(() => {
     setSound(isSoundEnabled());
@@ -340,6 +342,23 @@ export function SettingsView() {
                   ]}
                 />
               </div>
+              <p className="mt-[12px] text-[10.5px] text-muted">Vocali a Leo, il tuo assistente</p>
+              <div className="mt-[5px]">
+                <Segmented<"subito" | "rivedi" | "">
+                  id="vocali"
+                  value={vocali ?? ""}
+                  onChange={(v) => {
+                    if (!v) return;
+                    playSound("tap");
+                    setVocali(v);
+                  }}
+                  options={[
+                    { value: "subito", label: "Invia subito" },
+                    { value: "rivedi", label: "Rivedi prima" },
+                  ]}
+                />
+              </div>
+              <p className="mt-[5px] text-[10.5px] text-muted">{vocali ? "Le azioni da confermare restano da confermare." : "Da scegliere al primo vocale."}</p>
               <div className="mt-[12px] flex flex-col gap-[8px]">
                 <Row tipo="avvisoDolori" label="Avvisami sui dolori" hint="L’assistente propone un’alternativa prudente e ti avvisa" />
               </div>
