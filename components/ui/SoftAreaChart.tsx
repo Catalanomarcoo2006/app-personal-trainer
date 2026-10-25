@@ -16,6 +16,13 @@ export default function SoftAreaChart({
   height?: number;
 }) {
   const id = useId();
+  // servono almeno due punti per una curva (un cliente appena aggiunto non ne ha)
+  if (points.length < 2)
+    return (
+      <div className="grid h-full min-h-[40px] w-full place-items-center text-[11px] text-ink/45" style={height ? { height } : undefined}>
+        Ancora nessuna rilevazione
+      </div>
+    );
   const w = 300;
   const h = 100;
   const min = Math.min(...points);

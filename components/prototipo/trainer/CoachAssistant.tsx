@@ -7,7 +7,7 @@ import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet,
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound, suonoTasto, type SoundKind } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
-import { daConfermare, inChiaro, notaPerLeo, riassunto, verificaAzione, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
+import { daConfermare, inChiaro, notaPerLeo, primaDopo, riassunto, verificaAzione, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
 import { estraiAzione, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { datiLeo, eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
@@ -94,6 +94,9 @@ function conModifica(a: AzioneLeo, m?: Modifica): AzioneLeo {
   if (!m) return a;
   if ((a.nome === "scrivi_messaggio" || a.nome === "sollecita") && m.testo !== undefined) return { ...a, dati: { ...a.dati, testo: m.testo.trim() } } as AzioneLeo;
   if (a.nome === "scrivi_a_piu") return { ...a, dati: { clienti: m.clienti ?? a.dati.clienti, testo: (m.testo ?? a.dati.testo).trim() } };
+  // l'email la scrive solo il trainer, qui: non passa mai dall'AI
+  if (a.nome === "nuovo_cliente")
+    return { ...a, dati: { ...a.dati, nome: m.nome?.trim() || a.dati.nome, obiettivo: m.obiettivo?.trim() || undefined, email: m.email?.trim() || undefined } };
   return a;
 }
 
@@ -548,7 +551,7 @@ function useCoachChat(): Chat {
                 const testo = testoDaScrivere(chiara, dati)?.testo;
                 if (testo) return { key, azione: { ...chiara, dati: { ...chiara.dati, testo } }, titolo: riassunto(chiara, dati), stato: "da-confermare" };
               }
-              return { key, azione: chiara, titolo: riassunto(chiara, dati), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
+              return { key, azione: chiara, titolo: riassunto(chiara, dati), primaDopo: primaDopo(chiara, dati), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
             }),
           );
           procedi(id);

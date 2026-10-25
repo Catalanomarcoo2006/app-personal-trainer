@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
@@ -33,7 +34,7 @@ import { useStato } from "@/libs/prototipo/stato";
 import { segnaPagato } from "@/libs/dati/sportello";
 import type { ClienteVista } from "@/libs/dati/selettori";
 import { navigate, ROUTES } from "./nav";
-import { ClientAvatar } from "./shared";
+import { Bagliore, ClientAvatar } from "./shared";
 
 const card = "panel rounded-[18px]";
 const kg = (n: number) => n.toFixed(1).replace(".", ",");
@@ -84,6 +85,14 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
   const payments = c.payments;
   const outstanding = payments.filter((p) => !p.paid).reduce((s, p) => s + p.amount, 0);
 
+  // Leo ha appena cambiato qualcosa di questo cliente: quella parte del profilo si illumina
+  const focus = useStato((s) => s.focus);
+  const tocca = focus?.clientId === c.id ? focus.tipo : null;
+  const note = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (tocca === "nota") note.current?.scrollTo({ top: note.current.scrollHeight, behavior: "smooth" });
+  }, [tocca, focus?.seq]);
+
   // questa settimana del cliente, dallo store: segue le modifiche fatte da Leo e dal calendario
   const sedute = useStato((s) => s.sedute);
   const upcoming = settimanaDelCliente(sedute, c.id);
@@ -117,7 +126,8 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
             </div>
           </div>
 
-          <div className="mt-[14px] rounded-[14px] px-[12px] py-[11px]" style={{ background: tone.bg }}>
+          <div className="relative mt-[14px] rounded-[14px] px-[12px] py-[11px]" style={{ background: tone.bg }}>
+            {tocca === "obiettivo" && <Bagliore key={focus?.seq} />}
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold text-ink/70">Avanzamento verso l’obiettivo</p>
               <p className="text-[15px] font-extrabold">
@@ -137,13 +147,13 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
             <SideRow icon={Dumbbell} label="Scheda attuale" value={c.plan} />
             <SideRow icon={CalendarClock} label="Ultimo allenamento" value={c.lastWorkout} />          </div>
 
-          {/* Le note prendono solo lo spazio che resta: se sono lunghe sfumano in basso e si leggono intere al passaggio del mouse */}
-          <div title={c.notes} className="relative mt-[12px] min-h-[54px] flex-1 overflow-hidden rounded-[14px] bg-soft px-[12px] py-[10px]">
+          {/* Le note prendono solo lo spazio che resta: se sono lunghe scorrono (una riga per nota, l'ultima in fondo) */}
+          <div ref={note} title={c.notes} className="relative mt-[12px] min-h-[54px] flex-1 overflow-y-auto rounded-[14px] bg-soft px-[12px] py-[10px] [scrollbar-width:none]">
+            {tocca === "nota" && <Bagliore key={focus?.seq} />}
             <p className="flex items-center gap-[5px] text-[11px] font-semibold text-ink/70">
               <StickyNote size={12} /> Note del trainer
             </p>
-            <p className="mt-[6px] text-[12px] leading-relaxed">{c.notes}</p>
-            <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[14px] bg-gradient-to-t from-soft to-transparent" />
+            <p className="mt-[6px] text-[12px] leading-relaxed whitespace-pre-line">{c.notes || "Nessuna nota per ora."}</p>
           </div>
 
           <div className="mt-[12px] grid shrink-0 grid-cols-2 gap-[8px]">
@@ -173,11 +183,13 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
       <div className="flex min-h-0 flex-col gap-[10px]">
         <div className="grid h-[92px] grid-cols-4 gap-[10px]">
           {[
-            { icon: Scale, label: "Peso attuale", node: <><CountUp value={last} format={kg} delay={0.3} /> <span className="text-[13px] text-muted">kg</span></> },
+            { icon: Scale, label: "Peso attuale", node: c.weights.length ? <><CountUp value={last} format={kg} delay={0.3} /> <span className="text-[13px] text-muted">kg</span></> : <span className="text-muted">—</span> },
             {
               icon: delta <= 0 ? TrendingDown : TrendingUp,
               label: "Variazione",
-              node: (
+              node: c.weights.length < 2 ? (
+                <span className="text-muted">—</span>
+              ) : (
                 <span className={delta <= 0 ? "text-ok" : "text-[#2f7dac]"}>
                   {delta > 0 ? "+" : "−"}
                   <CountUp value={Math.abs(delta)} format={kg} delay={0.35} /> <span className="text-[13px]">kg</span>
@@ -210,7 +222,8 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
 
         <div className="grid min-h-0 flex-1 grid-cols-[1.75fr_1fr] gap-[10px]">
           <Appear i={3} className="min-h-0">
-            <section className={`${card} flex h-full flex-col px-[16px] pt-[13px] pb-[12px]`}>
+            <section className={`${card} relative flex h-full flex-col px-[16px] pt-[13px] pb-[12px]`}>
+              {tocca === "misure" && <Bagliore key={focus?.seq} />}
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-[6px] text-[14px] font-bold">
                   Andamento del peso <Scale size={13} className="text-ink/60" />
@@ -232,11 +245,13 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
             </section>
           </Appear>
           <Appear i={4} className="min-h-0">
-            <section className={`${card} flex h-full flex-col px-[15px] pt-[13px] pb-[12px]`}>
+            <section className={`${card} relative flex h-full flex-col px-[15px] pt-[13px] pb-[12px]`}>
+              {tocca === "misure" && <Bagliore key={focus?.seq} />}
               <h2 className="flex items-center gap-[6px] text-[14px] font-bold">
                 Misure <Ruler size={13} className="text-ink/60" />
               </h2>
               <div className="mt-[10px] flex flex-1 flex-col justify-between">
+                {!c.measures.length && <p className="my-auto text-center text-[11px] text-ink/45">Ancora nessuna misura: dille a Leo o allega un file.</p>}
                 {c.measures.map((m, i) => {
                   const d = m.current - m.start;
                   return (

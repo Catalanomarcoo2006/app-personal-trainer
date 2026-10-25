@@ -142,7 +142,7 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
 
         <div className="mt-[6px] flex items-center justify-between text-[10px]">
           <span className="text-ink/60">
-            Peso <b className="text-ink">{weight.toString().replace(".", ",")} kg</b>
+            Peso <b className="text-ink">{weight === undefined ? "—" : `${String(weight).replace(".", ",")} kg`}</b>
           </span>
           <span className="rounded-full bg-card px-[7px] py-[2.5px] leading-none">
             <b>{percent}%</b> <span className="text-ink/70">obiettivo</span>

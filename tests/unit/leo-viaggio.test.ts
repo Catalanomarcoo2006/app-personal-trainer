@@ -20,6 +20,13 @@ describe("viaggio di Leo", () => {
     expect(sezioneDi({ nome: "sollecita", dati: { pagamento: p.id } }, d)).toBe("/prototipo/trainer/messaggi?cliente=antonella-russo");
   });
 
+  it("per i dati del cliente porta al suo profilo, per il nuovo cliente all'elenco", () => {
+    expect(sezioneDi({ nome: "aggiorna_misure", dati: { cliente: "giulia-bianchi", peso: 68 } })).toBe("/prototipo/trainer/clienti/giulia-bianchi");
+    expect(sezioneDi({ nome: "aggiorna_obiettivo", dati: { cliente: "giulia-bianchi", traguardo: 62 } })).toBe("/prototipo/trainer/clienti/giulia-bianchi");
+    expect(sezioneDi({ nome: "aggiungi_nota", dati: { cliente: "luca-ferri", testo: "ok" } })).toBe("/prototipo/trainer/clienti/luca-ferri");
+    expect(sezioneDi({ nome: "nuovo_cliente", dati: { nome: "Marta Neri", genere: "donna" } })).toBe("/prototipo/trainer/clienti");
+  });
+
   it("sa quale testo scrivere da solo nella chat dei messaggi", () => {
     const d = { sedute: [] as Seduta[], dati: datiIniziali() };
     const p = d.dati.pagamenti.find((x) => x.clientId === "antonella-russo" && !x.paidOn)!;

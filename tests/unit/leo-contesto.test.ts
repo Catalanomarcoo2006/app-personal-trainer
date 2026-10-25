@@ -78,6 +78,8 @@ describe("calendario e azioni nel contesto", () => {
     const testo = contestoLeo(sedute);
     expect(testo).toContain("Usa le azioni solo quando il trainer chiede di fare qualcosa");
     expect(testo).toContain("se non è chiaro");
+    // tutte le famiglie di azioni, e una per ogni cosa chiesta
+    for (const parola of ["rinnovare un pacchetto", "nuovo cliente", "stesso a più clienti", "un'azione per ognuna"]) expect(testo).toContain(parola);
   });
 
   it("toglie email e telefoni anche da luoghi scritti nel calendario", () => {

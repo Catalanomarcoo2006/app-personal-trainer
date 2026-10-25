@@ -2,7 +2,7 @@
 
 import { ReactNode, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
 import { BellRing, Check, CircleDollarSign, Hourglass, TrendingUp, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Appear, CountUp, EASE_OUT, formatEuro } from "@/components/ui/motion";
@@ -14,7 +14,7 @@ import { inviaMessaggio, segnaPagato } from "@/libs/dati/sportello";
 import { testoSollecito } from "@/libs/dati/testi";
 import { useStato } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
-import { ClientAvatar } from "./shared";
+import { Bagliore, ClientAvatar } from "./shared";
 import { mesiConOggi, RevenueChart } from "./Revenue";
 
 type Movement = { key: string; clientId: string; date: string; label: string; amount: number; paid: boolean };
@@ -39,21 +39,6 @@ function Kpi({ icon: Icon, label, children, note, i, onClick }: { icon: LucideIc
         </div>
       </Box>
     </Appear>
-  );
-}
-
-// Leo ha appena toccato questo pagamento: la riga si illumina col colore del trainer e poi si spegne.
-function Bagliore() {
-  const reduce = useReducedMotion();
-  return (
-    <motion.span
-      aria-hidden
-      className="pointer-events-none absolute inset-0 rounded-[inherit]"
-      style={{ background: "color-mix(in srgb, var(--trainer) 20%, transparent)", boxShadow: "inset 0 0 0 1.5px var(--trainer)" }}
-      initial={{ opacity: 1 }}
-      animate={{ opacity: 0 }}
-      transition={{ delay: reduce ? 0.6 : 0.5, duration: reduce ? 0.2 : 1.4, ease: EASE_OUT }}
-    />
   );
 }
 

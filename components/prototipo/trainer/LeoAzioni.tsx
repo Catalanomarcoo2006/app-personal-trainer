@@ -18,6 +18,7 @@ export type SchedaAzione = {
   stato: StatoScheda;
   motivo?: string;
   annulla?: () => Promise<{ ok: boolean; motivo?: string }>;
+  primaDopo?: { voce: string; prima?: string; dopo: string }[]; // calcolato quando è arrivata: i valori di allora
   fattaAlle?: number;
 };
 
@@ -40,7 +41,7 @@ const icone: Record<AzioneLeo["nome"], LucideIcon> = {
 };
 
 // Cosa il trainer può cambiare in una scheda prima di confermarla.
-export type Modifica = { testo?: string; clienti?: string[] };
+export type Modifica = { testo?: string; clienti?: string[]; nome?: string; obiettivo?: string; email?: string };
 
 export function ConfermaTutte({ n, onConferma }: { n: number; onConferma: () => void }) {
   const reduce = useReducedMotion();
@@ -79,7 +80,13 @@ export function SchedaAzioneView({
   const [testo, setTesto] = useState(messaggio ? (azione.dati.testo ?? "") : "");
   const [scelti, setScelti] = useState<string[]>(multiplo ? azione.dati.clienti : []);
   const trova = useTrovaCliente();
-  const pronto = !!testo.trim() && (!multiplo || scelti.length > 0);
+  const nuovo = azione.nome === "nuovo_cliente";
+  const [nome, setNome] = useState(nuovo ? azione.dati.nome : "");
+  const [obiettivo, setObiettivo] = useState(nuovo ? (azione.dati.obiettivo ?? "") : "");
+  const [email, setEmail] = useState("");
+  const emailValida = !email.trim() || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email.trim());
+  const pronto = nuovo ? !!nome.trim() && emailValida : !!testo.trim() && (!multiplo || scelti.length > 0);
+  const campo = "w-full rounded-[10px] border border-line bg-card px-[9px] py-[6px] text-[16px] outline-none focus:border-[var(--trainer)] md:text-[12px]";
   // "Annulla" resta in evidenza per qualche secondo dopo l'esecuzione, poi diventa un link discreto
   const [evidenza, setEvidenza] = useState(() => !!scheda.fattaAlle && Date.now() - scheda.fattaAlle < ANNULLA_IN_EVIDENZA);
   useEffect(() => {
@@ -124,6 +131,33 @@ export function SchedaAzioneView({
         </div>
       </div>
 
+      {!!scheda.primaDopo?.length && (
+        <div className="mt-[8px] flex flex-col gap-[3px] rounded-[12px] bg-soft px-[10px] py-[7px]">
+          {scheda.primaDopo.map((r) => (
+            <p key={r.voce} className="flex items-baseline justify-between gap-[8px] text-[11.5px] leading-snug">
+              <span className="text-muted">{r.voce}</span>
+              <span className="tabular-nums">
+                {r.prima && <span className="text-muted">{r.prima} → </span>}
+                <b style={{ color: "var(--trainer)" }}>{r.dopo}</b>
+              </span>
+            </p>
+          ))}
+        </div>
+      )}
+      {nuovo && stato === "da-confermare" && (
+        <div className="mt-[8px] flex flex-col gap-[5px]">
+          <input value={nome} onChange={(e) => setNome(e.target.value)} aria-label="Nome e cognome" placeholder="Nome e cognome" className={campo} />
+          <input value={obiettivo} onChange={(e) => setObiettivo(e.target.value)} aria-label="Obiettivo" placeholder="Obiettivo (facoltativo)" className={campo} />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-label="Email del cliente"
+            placeholder="Email (facoltativa, non va a Leo)"
+            className={`${campo} ${emailValida ? "" : "border-[#d43b4f]"}`}
+          />
+        </div>
+      )}
       {multiplo && stato === "da-confermare" && (
         <div className="mt-[8px] flex flex-wrap gap-[5px]">
           {azione.dati.clienti.map((id) => {
@@ -166,11 +200,11 @@ export function SchedaAzioneView({
           <motion.button
             type="button"
             whileTap={{ scale: 0.95 }}
-            onClick={() => onConferma(multiplo ? { testo, clienti: scelti } : messaggio ? { testo } : undefined)}
-            disabled={messaggio && !pronto}
+            onClick={() => onConferma(nuovo ? { nome, obiettivo, email } : multiplo ? { testo, clienti: scelti } : messaggio ? { testo } : undefined)}
+            disabled={(messaggio || nuovo) && !pronto}
             className={`btn-trainer ${piccolo} disabled:cursor-not-allowed disabled:opacity-50`}
           >
-            <Check size={12} /> {multiplo ? `Invia a tutti (${scelti.length})` : messaggio ? "Invia" : "Conferma"}
+            <Check size={12} /> {multiplo ? `Invia a tutti (${scelti.length})` : messaggio ? "Invia" : nuovo ? "Aggiungi" : "Conferma"}
           </motion.button>
           <button type="button" onClick={onRifiuta} className={`${piccolo} bg-soft hover:bg-line`}>
             Annulla

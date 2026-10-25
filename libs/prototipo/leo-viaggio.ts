@@ -24,6 +24,8 @@ export function sezioneDi(a: AzioneLeo, d?: DatiLeo): string {
   if (a.nome === "scrivi_messaggio") return `${ROUTES.messaggi}?cliente=${a.dati.cliente}`;
   if (a.nome === "scrivi_a_piu") return `${ROUTES.messaggi}?cliente=${a.dati.clienti[0]}`;
   if (a.nome === "segna_pagato" || a.nome === "registra_pagamento" || a.nome === "rinnova_pacchetto") return ROUTES.incassi;
+  if (a.nome === "aggiorna_misure" || a.nome === "aggiorna_obiettivo" || a.nome === "aggiungi_nota") return ROUTES.cliente(a.dati.cliente);
+  if (a.nome === "nuovo_cliente") return ROUTES.clienti;
   return ROUTES.calendario;
 }
 
