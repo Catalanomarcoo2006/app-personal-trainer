@@ -7,6 +7,8 @@ import { conta } from "@/libs/ui/testo";
 import { seduteIniziali } from "./calendario";
 import { clients, conversations, defaultPlan, exerciseById, library, plans, trainer, type ChatMessage, type PlanDay } from "./dati-finti";
 import type { Seduta } from "./leo-azioni";
+import { datiIniziali } from "@/libs/dati/iniziali";
+import type { DatiClienti } from "@/libs/dati/tipi";
 
 // ——— Tipi della scheda ———
 
@@ -60,6 +62,7 @@ type State = {
   sedute: Seduta[]; // settimane 0 e 1 del calendario
   threads: Record<string, ChatMessage[]>; // clientId → messaggi
   focus: FocusLeo | null;
+  dati: DatiClienti; // clienti, pacchetti, pagamenti, misure, notifiche: si cambiano solo dallo sportello (libs/dati)
 };
 
 let state: State = {
@@ -71,6 +74,7 @@ let state: State = {
   sedute: seduteIniziali(),
   threads: Object.fromEntries(conversations.map((c) => [c.clientId, c.messages])),
   focus: null,
+  dati: datiIniziali(),
 };
 
 let idSeduta = state.sedute.length;
@@ -137,6 +141,11 @@ export const stato = {
   },
   addMessage(clientId: string, m: ChatMessage) {
     state = { ...state, threads: { ...state.threads, [clientId]: [...(state.threads[clientId] ?? []), m] } };
+    emit();
+  },
+  // solo per lo sportello dei dati (libs/dati/sportello.ts): le pagine e Leo passano da lì
+  setDati(fn: (d: DatiClienti) => DatiClienti) {
+    state = { ...state, dati: fn(state.dati) };
     emit();
   },
   setFocus(f: Omit<FocusLeo, "seq"> | null) {

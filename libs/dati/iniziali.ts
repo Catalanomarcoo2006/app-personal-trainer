@@ -5,9 +5,9 @@ import { clients, type Client } from "@/libs/prototipo/dati-finti";
 import type { ClienteDati, DatiClienti, Misura, Pacchetto, Pagamento } from "./tipi";
 
 const ANNO = 2026;
-const OGGI = "2026-10-21"; // la demo è ferma a mercoledì 21 ottobre
-const MESI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-const MESI_LUNGHI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+export const OGGI = "2026-10-21"; // la demo è ferma a mercoledì 21 ottobre
+export const MESI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+export const MESI_LUNGHI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
 
 const due = (n: number) => String(n).padStart(2, "0");
 
