@@ -14,9 +14,9 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Piano Fase 1: Task 2 (pulizia boilerplate: via Stripe, blog, Crisp, GPT, testimonianze; slug) e Task 5 (logica di dominio in `libs/domain/`) fatti; del Task 6 c'è `resolveRoute` (`libs/auth/routing.ts`), manca il collegamento al middleware. 58 test Vitest.
 - Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo con lo stacco da terra, scritte subito e "Iniziamo" a ~3,7 s); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; nel prototipo ogni aggiornamento della pagina riparte dal primo passo (`?riprendi` riparte dal passo salvato).
 
-## In corso
-- Benvenuto: passi 2-5 fatti (marchio, privacy, primo cliente, conosci Leo); "Conosci Leo" rifatto il 25/10 (`passi/ConosciLeo.tsx`: Leo in piedi con le schede di quello che fa, capacità a righe, poi scelta del tono). Finale fatto (`passi/Finale.tsx`, `Coriandoli.tsx`: riepilogo, Leo con "Tutto pronto!", in dashboard le schede cadono come meteoriti (`trainer/Meteora.tsx`)); manca la verifica finale (Task 10).
-- Area cliente (in attesa, dopo il benvenuto): spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
+## In corso (il benvenuto è finito)
+- **Benvenuto del trainer completato** (Marco, 25/10): tutti i passi (marchio, privacy, primo cliente, conosci Leo); "Conosci Leo" rifatto il 25/10 (`passi/ConosciLeo.tsx`: Leo in piedi con le schede di quello che fa, capacità a righe, poi scelta del tono). Finale fatto (`passi/Finale.tsx`, `Coriandoli.tsx`: riepilogo, Leo con "Tutto pronto!", in dashboard le schede cadono come meteoriti (`trainer/Meteora.tsx`)).
+- Area cliente (è il prossimo lavoro): spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
 
 ## Da fare (TODO)
 - Leo: foto e scansioni (serve un modello che vede le immagini), import dei clienti a fine onboarding con inviti (spec sua, serve il backend), trascrittore dei vocali sul server UE (`MediaRecorder` + rotta `api/leo/voce`, variabili `AI_STT_*`), area trainer da telefono.
@@ -45,7 +45,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Nome del prodotto da scegliere.
 
 ## Prossimi passi immediati
-1. Marco prova i vocali con la voce vera (Chrome o Edge) e dice cosa non va; poi verifica completa del benvenuto da zero (Task 10).
+1. Marco prova i vocali con la voce vera (Chrome o Edge) e dice cosa non va; poi parte l'area cliente.
 2. Area cliente (spec e piano pronti, 10 task): serve il via di Marco. Poi backend: progetto Supabase UE (Marco) → schema, RLS, accessi, pannello admin → aree su database → landing vera.
 3. Prima del primo cliente vero: scegliere fornitore AI e trascrizione in UE (ricerca e confronto), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto.
 
