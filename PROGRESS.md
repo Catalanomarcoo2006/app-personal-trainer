@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-24
+**Ultimo aggiornamento:** 2026-10-25
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -10,7 +10,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Stato attuale (Completato)
 - Brainstorming, design approvato (`docs/specs/2026-10-21-design.md`), setup con boilerplate ZeroToShip, sito su Vercel.
 - Area trainer del prototipo: tutte le sezioni, Leo con AI (presentazione alla prima apertura, identikit dalla "i" con Leo che si siede, luce intermittente sulla home).
-- **Leo agisce** (ramo `leo-azioni`, spec `docs/specs/2026-10-24-leo-azioni-design.md`, piano `docs/plans/2026-10-24-leo-azioni.md`): fissa, sposta e cancella sedute e scrive ai clienti col tool calling di DeepSeek; fissa/sposta subito con "Annulla", cancella/messaggio dopo "Conferma"; la chat si fa piccola, l'app va al calendario o ai messaggi e l'azione si vede accadere. Calendario (settimane 0 e 1) e conversazioni nello store condiviso (`libs/prototipo/stato.ts`). 123 test Vitest, revisione finale fatta. **Da unire** a `setup-iniziale` e pubblicare con l'ok di Marco.
+- **Leo agisce e fa tutto** (spec `docs/specs/2026-10-24-leo-azioni-design.md` e `2026-10-25-leo-fa-tutto-design.md`, piani in `docs/plans/`): sedute, messaggi (anche a più clienti, con `{nome}`), soldi (segna pagato, registra, rinnova con pagamento da incassare, sollecito), dati del cliente (misure, obiettivo, note, nuovo cliente con email scritta dal trainer), aspetto e notifiche; legge PDF con testo, CSV e TXT allegati (prima → dopo da confermare). "Conferma tutte", parti non capite segnalate. Dati dei clienti nella forma del database (`libs/dati/`: tipi, sportello con annulla, selettori; controlli in `libs/domain/`): con Supabase cambia solo lo sportello. Ramo `leo-fa-tutto`, 221 test.
 - Piano Fase 1: Task 2 (pulizia boilerplate: via Stripe, blog, Crisp, GPT, testimonianze; slug) e Task 5 (logica di dominio in `libs/domain/`) fatti; del Task 6 c'è `resolveRoute` (`libs/auth/routing.ts`), manca il collegamento al middleware. 58 test Vitest.
 - Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo con lo stacco da terra, scritte subito e "Iniziamo" a ~3,7 s); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; nel prototipo ogni aggiornamento della pagina riparte dal primo passo (`?riprendi` riparte dal passo salvato).
 
@@ -19,7 +19,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Area cliente (in attesa, dopo il benvenuto): spec `docs/specs/2026-10-22-area-cliente-design.md` e piano `docs/plans/2026-10-22-area-cliente.md` (10 task) pronti, **in attesa del via di Marco**; esecuzione consigliata: inline, un task alla volta.
 
 ## Da fare (TODO)
-- **Leo fa tutto** (in pausa, Marco prima prova Leo): blocchi cliente (peso, misure, note, obiettivo, nuovo cliente con codice [Cn] dinamico), soldi (segna pagato, registra pagamento, aggiungi lezioni/rinnova, sollecito come messaggio vero), impostazioni (colore, tema, suoni, notifiche), più clienti in una volta (una scheda con spunte e "Invia a tutti"); tasto "Conferma tutte" quando Leo propone più azioni da confermare (Marco ne ha lasciate indietro alcune su 5 cancellazioni). Subito + Annulla: peso, misure, obiettivo, nota, impostazioni; conferma: nuovo cliente, soldi, pacchetti, solleciti, azioni multiple. Schede escluse (scelta di Marco). Prossimo passo: spec.
+- Leo: foto e scansioni (serve un modello che vede le immagini), import dei clienti a fine onboarding con inviti (spec sua, serve il backend), area trainer da telefono.
 - Fase 1, con le chiavi Supabase: schema (Task 3), RLS con test (Task 4), `getAccess` e middleware (Task 6), pannello admin (Task 7).
 - Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate).
 - Marco: chiavi Supabase (progetto UE) e Resend; email di supporto e dominio del prodotto (`config.ts`).
@@ -31,7 +31,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Calendario gestito dal trainer; il cliente chiede lo spostamento con un messaggio: semplice e senza conflitti.
 - Avvisi in app + email; push solo dopo, insieme alla versione telefono completa del trainer.
 - Dati sanitari: consenso esplicito, Supabase UE, Marco responsabile del trattamento (DPA).
-- Azioni di Leo: tool calling con un solo giro verso l'AI (l'app controlla ed esegue, niente secondo giro: costa ~0,15-0,2 cent a domanda); risposta della rotta in NDJSON (testo + azioni). Ragionamento acceso anche con i tools (verificato il 24/10). Leo del trainer risponde con DeepSeek (`deepseek-flash`, ~0,1 cent a domanda): `app/prototipo/api/leo`, Leo vede i nomi dei clienti (dal 24/10, niente più codici [C1]: li capisce anche scritti male), mai email e telefoni; senza chiave o se l'AI non risponde usa le risposte fisse.
+- Azioni di Leo: tool calling con un solo giro verso l'AI (l'app controlla ed esegue, niente secondo giro); risposta della rotta in NDJSON (testo + azioni). Ragionamento acceso anche con i tools (verificato il 24/10). Leo del trainer risponde con DeepSeek (`deepseek-flash`, ~0,04 cent di dollaro a domanda, misurato il 25/10: 0,04 $ per 107 chiamate, ~5.900 token l'una): `app/prototipo/api/leo`, Leo vede i nomi dei clienti (dal 24/10, niente più codici [C1]: li capisce anche scritti male), mai email e telefoni; senza chiave o se l'AI non risponde usa le risposte fisse.
 - Area trainer = una pagina sola (`TrainerApp.tsx`, cambio sezione con `history.pushState`). Nessun tasto nero: `btn-trainer` / `sel-trainer` / `glass` in `globals.css`.
 - Animazioni di Leo seduto: ritagliate dal video con ffmpeg + Python (sfondo tolto), WebP animate in `public/prototipo/coach/`, ripartono con un indirizzo blob nuovo.
 - Benvenuto: niente asterisco (somigliava al logo di Claude), icona del passo al suo posto; niente macchia d'olio verso la dashboard, schede a meteoriti (scelta di Marco del 24/10). Niente pallina (tolta da Marco); casetta come MP4 vero (960 × 720) su fondo bianco, non con trasparenza: niente righe ai bordi né perdita di qualità (`IMMAGINI APP/pulisci-casa.py`). Niente filtri `blur` CSS sugli aloni (Chrome su Windows li taglia in linee dritte). Sorgenti Gemini in `IMMAGINI APP/` (esclusa da git), nomi in maiuscolo.
@@ -45,7 +45,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Nota nel vault non creata: il brain è stato azzerato il 2026-10-21; aggiungerla quando la nuova struttura è pronta.
 
 ## Prossimi passi immediati
-- Marco prova Leo sul sito; poi benvenuto: verifica completa (Task 10 del piano: 1440/1280/375 px, chiaro/scuro, riduci movimento) e ultimare "Conosci Leo"; poi area cliente (Task 1 del suo piano), poi backend. "Leo fa tutto" quando Marco lo riprende (si parte dalla spec).
+- Marco prova "Leo fa tutto" (blocchi 2-5 sul ramo `leo-fa-tutto`, non ancora online) e dà l'ok al push; poi benvenuto: verifica completa (Task 10) e ultimare "Conosci Leo"; poi area cliente, poi backend.
 - Marco: creare il progetto Supabase di sviluppo (UE) in parallelo, per il Task 3 subito dopo.
 
 ## Contesto tecnico utile
@@ -55,6 +55,5 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
+- 2026-10-25: Leo fa tutto (soldi, dati dei clienti, file allegati, aspetto e notifiche, conferma tutte, messaggi a più clienti); dati dei clienti condivisi tra le pagine ("Segna pagato" e "Sollecita" veri, "Da incassare" apre l'elenco); costo misurato di Leo ~0,04 cent di dollaro a domanda.
 - 2026-10-24 (3): animazioni di Leo nel calendario più lente e visibili: la seduta cancellata diventa rossa, trema e si spezza in 6 pezzi; la seduta nuova compare verde con alone e sfuma nel suo colore; Leo vede i nomi dei clienti (via i codici [C1], capisce anche nomi scritti male), mai email e telefoni; regole, spec e testi dell'app aggiornati. Chat di Leo: campo che si accende mentre scrivi, messaggio che vola su all'invio.
-- 2026-10-24 (2): Leo agisce: azioni con controlli (sovrapposizioni, orari 6-22, due settimane), schede in chat con conferma/annulla, viaggio animato (seduta che atterra, vola o lascia il contorno; messaggio che si scrive da solo), memoria degli esiti; prova di 10 frasi con DeepSeek ok.
-- 2026-10-24: finale del benvenuto (coriandoli continui, riepilogo modificabile, Leo fermo con "Tutto pronto!", ingresso in dashboard con le schede che cadono come meteoriti, con fischio e impatto); push e deploy su Vercel (commit d4dba3f); sveglia di Leo più veloce (scritte subito, "Iniziamo" a ~3,7 s); icona del passo al posto dell'asterisco.
