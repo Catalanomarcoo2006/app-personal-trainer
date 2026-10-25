@@ -75,8 +75,10 @@ export function Benvenuto() {
               )}
               {passo < 5 && <Barra passo={passo} />}
             </div>
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-[20px] pb-[44px]">
-              <div className="relative w-full max-w-[392px]">
+            {/* centrato con my-auto e non con items-center: se il passo è più alto dello spazio (schermi bassi), si
+                scorre dall'inizio invece di avere il titolo tagliato in alto */}
+            <div className="flex min-h-0 flex-1 justify-center overflow-y-auto px-[20px] pb-[44px]">
+              <div className="relative my-auto w-full max-w-[392px] py-[8px]">
                 <CambioPasso chiave={passo}>
                   <SchermataPasso passo={passo} avanti={avanti} indietro={indietro} />
                 </CambioPasso>

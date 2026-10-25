@@ -23,7 +23,7 @@ import { Coriandoli } from "../Coriandoli";
 import { Entra, Tasto, TestaPasso } from "../ui";
 
 // Ultimo passo del benvenuto: "La tua app è pronta!". Coriandoli nel colore del trainer, il riepilogo delle
-// scelte in 4 righe (ognuna riporta al suo passo per cambiarla), Leo che saluta nella vetrina (LeoPiegamenti)
+// scelte in 4 righe (ognuna riporta al suo passo per cambiarla), Leo che saluta nella vetrina (LeoVetrina)
 // e "Entra nella tua dashboard": il benvenuto risulta fatto, la pagina sfuma e nella dashboard le schede cadono
 // una alla volta come meteoriti (trainer/Meteora.tsx).
 

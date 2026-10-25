@@ -107,9 +107,9 @@ export const linkApp = (nome: string) => `nomeprodotto.it/${slugify(nome)}`;
 export const TONI: Tono[] = ["amichevole", "professionale", "motivante"];
 
 export const FRASI_TONO: Record<Tono, string> = {
-  amichevole: "Ciao Giulia! Oggi c'è il Giorno A, ce la fai alla grande 💪",
+  amichevole: "Ciao Giulia! Oggi c'è il Giorno A, ce la fai alla grande 💪",
   professionale: "Buongiorno Giulia. Oggi è in programma il Giorno A: 6 esercizi, circa 50 minuti.",
-  motivante: "Giulia, oggi Giorno A! Ogni ripetizione ti avvicina ai −8 kg 🔥",
+  motivante: "Giulia, oggi Giorno A! Ogni ripetizione ti avvicina ai −8 kg 🔥",
 };
 
 // Tono salvato non valido (dati vecchi o modificati a mano) → quello di partenza.
