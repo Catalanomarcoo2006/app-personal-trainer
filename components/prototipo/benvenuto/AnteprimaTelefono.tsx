@@ -107,7 +107,8 @@ export function AnteprimaTelefono({
       <motion.div
         initial={{ opacity: 0, y: reduce ? 0 : 90, scale: reduce ? 1 : 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: reduce ? 0 : 30 }}
+        // uscita rapida e senza ritardo: nel passo di Leo lui entra subito dopo, e non devono sovrapporsi
+        exit={{ opacity: 0, y: reduce ? 0 : 30, transition: { duration: 0.25, ease: EASE_OUT } }}
         transition={reduce ? { duration: 0.3 } : { type: "spring", stiffness: 170, damping: 20, mass: 0.9, delay: 0.25 }}
         style={{ width: LARGO * scala, height: ALTO * scala }}
       >
