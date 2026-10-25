@@ -86,6 +86,8 @@ const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "compl
   aggiorna_obiettivo: "confirm",
   aggiungi_nota: "confirm",
   nuovo_cliente: "complete",
+  cambia_aspetto: "confirm",
+  imposta_notifiche: "tap",
 };
 // la chat durante il viaggio: un riquadro piccolo in basso, Leo resta aggrappato al bordo
 const COMPATTA = { w: 168, h: 150 };
@@ -365,7 +367,8 @@ function useCoachChat(): Chat {
     if (!partenze.current.has(msgId)) partenze.current.set(msgId, window.location.pathname + window.location.search);
     setCompatta(true);
     await attesa(TEMPI.compatta);
-    await navigateFade(sezioneDi(azione, datiLeo()));
+    const dove = sezioneDi(azione, datiLeo());
+    if (dove) await navigateFade(dove);
     await attesa(TEMPI.arrivo);
   }, []);
 

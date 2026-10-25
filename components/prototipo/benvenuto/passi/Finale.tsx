@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowRight, Check, PartyPopper, UserPlus } from "lucide-react";
 import { ACCENTS, useAppearance } from "@/components/ui/appearance";
+import { NOMI_COLORI } from "@/libs/ui/colori";
 import { EASE_OUT } from "@/components/ui/motion";
 import { segnaIngressoMeteoriti } from "@/libs/prototipo/ingresso";
 import { playSound, suonoComparse } from "@/libs/ui/sound";
@@ -28,18 +29,6 @@ import { Entra, Tasto, TestaPasso } from "../ui";
 // una alla volta come meteoriti (trainer/Meteora.tsx).
 
 const DASHBOARD = "/prototipo/trainer";
-
-// Nomi dei colori di ACCENTS (components/ui/appearance.tsx), nello stesso ordine.
-const NOMI_COLORI = [
-  "Arancione",
-  "Rosso",
-  "Fucsia",
-  "Viola",
-  "Blu",
-  "Verde acqua",
-  "Verde",
-  "Ocra",
-];
 
 const TONI: Record<Tono, { emoji: string; nome: string }> = {
   amichevole: { emoji: "😊", nome: "Amichevole" },

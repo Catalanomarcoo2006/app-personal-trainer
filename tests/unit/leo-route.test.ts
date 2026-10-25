@@ -128,6 +128,8 @@ describe("POST /prototipo/api/leo", () => {
       "aggiorna_obiettivo",
       "aggiungi_nota",
       "nuovo_cliente",
+      "cambia_aspetto",
+      "imposta_notifiche",
     ]);
   });
 

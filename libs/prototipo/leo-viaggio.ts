@@ -17,8 +17,10 @@ export const TEMPI = {
   scritturaMax: 3000,
 };
 
-// d: i dati di adesso, per sapere di chi è un pagamento (sollecito).
-export function sezioneDi(a: AzioneLeo, d?: DatiLeo): string {
+// d: i dati di adesso, per sapere di chi è un pagamento (sollecito). null: si resta dove si è (aspetto).
+export function sezioneDi(a: AzioneLeo, d?: DatiLeo): string | null {
+  if (a.nome === "cambia_aspetto") return null;
+  if (a.nome === "imposta_notifiche") return ROUTES.impostazioni;
   const scrive = d ? testoDaScrivere(a, d) : null;
   if (scrive) return `${ROUTES.messaggi}?cliente=${scrive.clientId}`;
   if (a.nome === "scrivi_messaggio") return `${ROUTES.messaggi}?cliente=${a.dati.cliente}`;

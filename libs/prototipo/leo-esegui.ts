@@ -7,6 +7,8 @@ import { testoSollecito } from "@/libs/dati/testi";
 import { OGGI } from "@/libs/dati/iniziali";
 import { cent } from "./leo-azioni-soldi";
 import { misuraDa } from "./leo-azioni-clienti";
+import { cambiaAspetto } from "@/libs/dati/aspetto";
+import { impostaNotifica } from "@/libs/dati/sportello";
 import { luogoPredefinito, personalizza, verificaAzione, type AzioneLeo, type DatiLeo, type Verifica } from "./leo-azioni";
 import { stato } from "./stato";
 
@@ -124,6 +126,13 @@ export async function eseguiAzione(a: AzioneLeo): Promise<Esito> {
       const esito = await creaCliente({ name: a.dati.nome, gender: a.dati.genere, email: a.dati.email, goalLabel: a.dati.obiettivo });
       return conFocus(esito, { tipo: "cliente", clientId: "id" in esito ? esito.id : undefined });
     }
+    case "cambia_aspetto": {
+      const { colore, tema, suoni } = a.dati;
+      const esito = await cambiaAspetto({ colore, tema: tema === undefined ? undefined : tema === "scuro" ? "dark" : "light", suoni });
+      return "motivo" in esito ? esito : { ok: true, annulla: esito.annulla };
+    }
+    case "imposta_notifiche":
+      return conFocus(await impostaNotifica(a.dati.tipo, a.dati.attiva), { tipo: "notifica", notifica: a.dati.tipo });
     case "sollecita": {
       const { pagamenti, clienti } = stato.get().dati;
       const p = pagamenti.find((x) => x.id === a.dati.pagamento);

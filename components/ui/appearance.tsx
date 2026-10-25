@@ -1,14 +1,17 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { KEY_ACCENT, KEY_THEME } from "@/libs/ui/appearance-boot";
 import { conMacchia } from "@/libs/ui/macchia";
+import { isSoundEnabled, setSoundEnabled } from "@/libs/ui/sound";
+import { registraAspetto } from "@/libs/dati/aspetto";
 
 export type Theme = "light" | "dark";
 
-// Colori che il trainer può scegliere per il proprio marchio.
-export const ACCENTS = ["#ff6b2c", "#e5484d", "#d6409f", "#6a5ae0", "#2f7dac", "#0f9d8a", "#2f9a68", "#da9f4a"];
+// Colori che il trainer può scegliere per il proprio marchio (con i nomi in libs/ui/colori.ts).
+import { ACCENTS } from "@/libs/ui/colori";
+export { ACCENTS };
 
 type Appearance = {
   theme: Theme;
@@ -65,6 +68,19 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     setAccentState(color);
     document.documentElement.style.setProperty("--trainer", color);
     write(KEY_ACCENT, color);
+  }, []);
+
+  // Leo cambia colore, tema e suoni dallo sportello (libs/dati/aspetto.ts): il ponte legge sempre i valori di adesso
+  const adesso = useRef({ theme, accent, setTheme, setAccent });
+  adesso.current = { theme, accent, setTheme, setAccent };
+  useEffect(() => {
+    registraAspetto({
+      leggi: () => ({ colore: adesso.current.accent, tema: adesso.current.theme, suoni: isSoundEnabled() }),
+      setAccent: (c) => adesso.current.setAccent(c),
+      setTheme: (t) => adesso.current.setTheme(t),
+      setSuoni: (s) => setSoundEnabled(s),
+    });
+    return () => registraAspetto(null);
   }, []);
 
   return <AppearanceContext.Provider value={{ theme, setTheme, accent, setAccent }}>{children}</AppearanceContext.Provider>;

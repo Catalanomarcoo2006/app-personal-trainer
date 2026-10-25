@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { BellRing, CalendarClock, CalendarPlus, CalendarX, Check, CheckCheck, CircleDollarSign, Loader2, NotebookPen, PackagePlus, Scale, Send, Target, Undo2, UserPlus, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BellRing, CalendarClock, CalendarPlus, CalendarX, Check, CheckCheck, CircleDollarSign, Loader2, NotebookPen, PackagePlus, Palette, Scale, Send, Target, Undo2, UserPlus, Users, Wallet, type LucideIcon } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { useTrovaCliente } from "@/libs/dati/selettori";
 import { personalizza, type AzioneLeo, type StatoScheda } from "@/libs/prototipo/leo-azioni";
@@ -38,6 +38,8 @@ const icone: Record<AzioneLeo["nome"], LucideIcon> = {
   aggiorna_obiettivo: Target,
   aggiungi_nota: NotebookPen,
   nuovo_cliente: UserPlus,
+  cambia_aspetto: Palette,
+  imposta_notifiche: Bell,
 };
 
 // Cosa il trainer può cambiare in una scheda prima di confermarla.

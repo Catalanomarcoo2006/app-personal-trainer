@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { clientById, trainer, type Appointment, type AppointmentType } from "./dati-finti";
 import type { DatiClienti } from "@/libs/dati/tipi";
+import { cosaImpostazioni, riassuntoImpostazioni, SchemiImpostazioni, TOOLS_IMPOSTAZIONI, verificaImpostazioni, type AzioneImpostazioni } from "./leo-azioni-impostazioni";
 import { cosaClienti, eClienti, inChiaroClienti, primaDopoClienti, riassuntoClienti, SchemiClienti, suDatiCliente, TOOLS_CLIENTI, verificaClienti, type AzioneClienti } from "./leo-azioni-clienti";
 import { cosaSoldi, eSoldi, inChiaroSoldi, riassuntoSoldi, SchemiSoldi, TOOLS_SOLDI, verificaSoldi, type AzioneSoldi } from "./leo-azioni-soldi";
 import { giornoDi, isoDi } from "./calendario";
@@ -21,7 +22,8 @@ export type AzioneLeo =
   | { nome: "scrivi_messaggio"; dati: { cliente: string; testo: string } }
   | { nome: "scrivi_a_piu"; dati: { clienti: string[]; testo: string } }
   | AzioneSoldi
-  | AzioneClienti;
+  | AzioneClienti
+  | AzioneImpostazioni;
 
 // Quello che i controlli guardano: il calendario e i dati dei clienti di adesso.
 export type DatiLeo = { sedute: Seduta[]; dati: DatiClienti };
@@ -77,6 +79,7 @@ const Schemi = {
   scrivi_a_piu: z.object({ clienti: z.array(z.string().min(1)).max(60), testo: z.string().trim().min(1).max(MAX_TESTO) }),
   ...SchemiSoldi,
   ...SchemiClienti,
+  ...SchemiImpostazioni,
 };
 
 // Il nome e gli argomenti arrivati dall'AI diventano un'azione, oppure null se la forma è sbagliata.
@@ -156,6 +159,9 @@ export function verificaAzione(a: AzioneLeo, d: DatiLeo, adesso: { data: string;
     case "aggiungi_nota":
     case "nuovo_cliente":
       return verificaClienti(a, d.dati);
+    case "cambia_aspetto":
+    case "imposta_notifiche":
+      return verificaImpostazioni(a);
     case "scrivi_a_piu": {
       if (!a.dati.clienti.length) return no("Scegli almeno un cliente");
       if (a.dati.clienti.length > MAX_DESTINATARI) return no(`Al massimo ${MAX_DESTINATARI} clienti`);
@@ -216,6 +222,9 @@ export function riassunto(a: AzioneLeo, d: DatiLeo): string {
     case "aggiungi_nota":
     case "nuovo_cliente":
       return riassuntoClienti(a, nomeDi);
+    case "cambia_aspetto":
+    case "imposta_notifiche":
+      return riassuntoImpostazioni(a);
   }
 }
 
@@ -243,6 +252,9 @@ function cosa(a: AzioneLeo): string {
     case "aggiungi_nota":
     case "nuovo_cliente":
       return cosaClienti(a, nomeDi);
+    case "cambia_aspetto":
+    case "imposta_notifiche":
+      return cosaImpostazioni(a);
   }
 }
 
@@ -330,4 +342,5 @@ export const LEO_TOOLS = [
   },
   ...TOOLS_SOLDI,
   ...TOOLS_CLIENTI,
+  ...TOOLS_IMPOSTAZIONI,
 ];

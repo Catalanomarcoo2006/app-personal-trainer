@@ -44,7 +44,8 @@ export const demoVideo = (name: string) => `https://www.youtube.com/results?sear
 // multiplo: lo stesso messaggio a più clienti (clientiIds), la chat mostra quanti l'hanno ricevuto.
 export type FocusLeo = {
   seq: number;
-  tipo: "fissa" | "sposta" | "cancella" | "messaggio" | "multiplo" | "pagato" | "pagamento" | "rinnovo" | "misure" | "obiettivo" | "nota" | "cliente";
+  tipo: "fissa" | "sposta" | "cancella" | "messaggio" | "multiplo" | "pagato" | "pagamento" | "rinnovo" | "misure" | "obiettivo" | "nota" | "cliente" | "notifica";
+  notifica?: string;
   id?: string;
   pagamentoId?: string;
   clientId?: string;
