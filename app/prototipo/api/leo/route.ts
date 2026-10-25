@@ -9,11 +9,13 @@ import { z } from "zod";
 import { LEO_TOOLS, type Seduta } from "@/libs/prototipo/leo-azioni";
 import { ClienteContesto, contestoLeo, ExtraContesto, ripulisci, SedutaContesto } from "@/libs/prototipo/leo-contesto";
 import { raccoglitoreAzioni, type EventoLeo } from "@/libs/prototipo/leo-flusso";
+import { conAllegato } from "@/libs/prototipo/leo-allegato";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_CARATTERI = 2000;
+const MAX_CON_ALLEGATO = 8000; // il testo del file (al massimo 6.000) più la richiesta
 const MAX_MESSAGGI = 10;
 const LIMITE_MINUTO = 20;
 const ATTESA_RISPOSTA = 30_000; // ms per iniziare a rispondere
@@ -50,8 +52,10 @@ export async function POST(req: Request) {
   const corpo = Richiesta.safeParse(await req.json().catch((): unknown => null));
   if (!corpo.success) return Response.json({ errore: "richiesta non valida" }, { status: 400 });
 
-  // Ultimi 10 messaggi, tagliati a 2.000 caratteri, senza nomi dei clienti (anche quelli scritti dal trainer).
-  const messaggi = corpo.data.messages.slice(-MAX_MESSAGGI).map((m) => ({ role: m.role, content: ripulisci(m.content.slice(0, MAX_CARATTERI)) }));
+  // Ultimi 10 messaggi, tagliati a 2.000 caratteri (8.000 con un file allegato), senza email e telefoni.
+  const messaggi = corpo.data.messages
+    .slice(-MAX_MESSAGGI)
+    .map((m) => ({ role: m.role, content: ripulisci(m.content.slice(0, conAllegato(m.content) ? MAX_CON_ALLEGATO : MAX_CARATTERI)) }));
 
   const stop = new AbortController();
   const attesa = setTimeout(() => stop.abort(), ATTESA_RISPOSTA);

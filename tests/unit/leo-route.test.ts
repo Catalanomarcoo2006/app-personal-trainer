@@ -219,4 +219,20 @@ describe("POST /prototipo/api/leo", () => {
     });
     expect((await POST(req)).status).toBe(400);
   });
+
+  it("un messaggio con allegato può essere più lungo, gli altri si tagliano a 2.000 caratteri", async () => {
+    fetchFinto.mockResolvedValue(sse([{ choices: [{ delta: { content: "ok" } }] }]));
+    const allegato = `aggiorna le misure
+
+Allegato "misure.csv":
+${"x".repeat(7400)}`;
+    await (await POST(domanda(allegato))).text();
+    const lungo = JSON.parse(fetchFinto.mock.calls[0][1].body).messages.at(-1).content as string;
+    expect(lungo.length).toBe(allegato.length);
+    fetchFinto.mockClear();
+    fetchFinto.mockResolvedValue(sse([{ choices: [{ delta: { content: "ok" } }] }]));
+    await (await POST(domanda("y".repeat(7400)))).text();
+    const corto = JSON.parse(fetchFinto.mock.calls[0][1].body).messages.at(-1).content as string;
+    expect(corto.length).toBe(2000);
+  });
 });

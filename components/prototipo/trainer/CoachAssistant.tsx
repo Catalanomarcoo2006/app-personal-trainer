@@ -3,7 +3,7 @@
 import { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
-import { ArrowRight, ArrowUp, CalendarDays, Hand, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowUp, CalendarDays, Hand, Paperclip, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound, suonoTasto, type SoundKind } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
@@ -13,6 +13,7 @@ import { datiLeo, eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
 import { creaFila } from "@/libs/prototipo/leo-fila";
 import { aspettoAttuale, corpoRichiesta } from "@/libs/prototipo/leo-richiesta";
+import { ACCETTATI, bloccoAllegato, leggiFile } from "@/libs/prototipo/leo-file";
 import { clientiAttuali } from "@/libs/dati/selettori";
 import { durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
@@ -269,12 +270,14 @@ function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; pla
 // ——— La chat (resta mentre si cambia pagina) ———
 
 // nonCapite: azioni proposte dall'AI che non si riescono a leggere (la chat lo dice invece di tacere)
-type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"]; schede?: SchedaAzione[]; nonCapite?: number };
+// allegato: il nome del file mandato insieme al messaggio del trainer
+type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"]; schede?: SchedaAzione[]; nonCapite?: number; allegato?: string };
+type Allegato = { nome: string; testo: string };
 type Chat = {
   messages: Msg[];
   typing: boolean;
   thinking: boolean;
-  ask: (q: string) => void;
+  ask: (q: string, allegato?: Allegato) => void;
   conferma: (msgId: number, key: string, modifica?: Modifica) => void;
   confermaTutte: (msgId: number) => void;
   rifiuta: (msgId: number, key: string) => void;
@@ -473,13 +476,16 @@ function useCoachChat(): Chat {
   const partenza = useCallback((msgId: number) => partenze.current.get(msgId), []);
 
   const ask = useCallback(
-    async (question: string) => {
-      const text = question.trim();
+    async (question: string, allegato?: Allegato) => {
+      const text = question.trim() || (allegato ? "Leggi il file e aggiorna i dati" : "");
       if (!text || busy.current) return;
       busy.current = true;
       playSound("tap");
-      setMessages((m) => [...m, { id: nextId.current++, from: "trainer", text }]);
-      history.current = [...history.current, { role: "user", content: text }];
+      setMessages((m) => [...m, { id: nextId.current++, from: "trainer", text, allegato: allegato?.nome }]);
+      // nella cronologia resta solo il nome del file: il testo intero va a Leo una volta sola, in questa domanda
+      history.current = [...history.current, { role: "user", content: allegato ? `${text}\n(file allegato "${allegato.nome}")` : text }];
+      const conFile = (turni: Turn[]) =>
+        allegato ? turni.map((t, i) => (i === turni.length - 1 && t.role === "user" ? { ...t, content: `${text}\n\n${bloccoAllegato(allegato.nome, allegato.testo)}` } : t)) : turni;
       setTyping(true);
       const id = nextId.current++;
       const thinkTimer = window.setTimeout(() => setThinking(true), 1200);
@@ -506,7 +512,7 @@ function useCoachChat(): Chat {
         const res = await fetch("/prototipo/api/leo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(corpoRichiesta(history.current.slice(-10).map(({ role, content }) => ({ role, content })), aspettoAttuale())),
+          body: JSON.stringify(corpoRichiesta(conFile(history.current.slice(-10)).map(({ role, content }) => ({ role, content })), aspettoAttuale())),
           signal: ctrl.signal,
         });
         if (!res.ok || !res.body) throw new Error(`${res.status} ${((await res.json().catch(() => ({}))) as { errore?: string }).errore ?? ""}`);
@@ -551,7 +557,8 @@ function useCoachChat(): Chat {
                 const testo = testoDaScrivere(chiara, dati)?.testo;
                 if (testo) return { key, azione: { ...chiara, dati: { ...chiara.dati, testo } }, titolo: riassunto(chiara, dati), stato: "da-confermare" };
               }
-              return { key, azione: chiara, titolo: riassunto(chiara, dati), primaDopo: primaDopo(chiara, dati), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
+              // con un file allegato anche misure, obiettivo e note si confermano: si controllano i valori letti
+              return { key, azione: chiara, titolo: riassunto(chiara, dati), primaDopo: primaDopo(chiara, dati), stato: daConfermare(chiara, !!allegato) ? "da-confermare" : "in-corso" };
             }),
           );
           procedi(id);
@@ -657,9 +664,26 @@ function ChatPanel({
     setIntroSeen(true);
     setIntro(false);
   };
-  const ask = (q: string) => {
+  const ask = (q: string, allegato?: Allegato) => {
     if (intro) endIntro();
-    askChat(q);
+    askChat(q, allegato);
+  };
+
+  // il file allegato: l'app lo legge subito (nel browser) e lo manda a Leo con il messaggio
+  const [file, setFile] = useState<Allegato | null>(null);
+  const [erroreFile, setErroreFile] = useState<string | null>(null);
+  const sceltaFile = useRef<HTMLInputElement>(null);
+  const allega = async (f: File | undefined) => {
+    if (!f) return;
+    playSound("tap");
+    const letto = await leggiFile(f);
+    if ("motivo" in letto) {
+      setFile(null);
+      setErroreFile(letto.motivo);
+      return;
+    }
+    setErroreFile(null);
+    setFile({ nome: letto.nome, testo: letto.testo });
   };
 
   useEffect(() => {
@@ -677,9 +701,11 @@ function ChatPanel({
   const [volo, setVolo] = useState<{ daY: number; dopo: number } | null>(null);
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (draft.trim() && campo.current) setVolo({ daY: campo.current.getBoundingClientRect().top, dopo: messages.length });
-    ask(draft);
+    if ((draft.trim() || file) && campo.current) setVolo({ daY: campo.current.getBoundingClientRect().top, dopo: messages.length });
+    ask(draft, file ?? undefined);
     setDraft("");
+    setFile(null);
+    setErroreFile(null);
   };
 
   return (
@@ -765,6 +791,12 @@ function ChatPanel({
               transition={{ duration: 0.3, ease: EASE_OUT }}
               className={`flex max-w-[86%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
             >
+              {m.allegato && (
+                <span className="mb-[4px] flex max-w-[240px] items-center gap-[5px] self-end rounded-full bg-soft px-[10px] py-[4px] text-[11px] font-semibold">
+                  <Paperclip size={11} className="shrink-0" />
+                  <span className="truncate">{m.allegato}</span>
+                </span>
+              )}
               {m.text &&
                 (m.from === "trainer" && volo && !reduce && messages.indexOf(m) === volo.dopo ? (
                   <VolaSu daY={volo.daY}>
@@ -840,6 +872,21 @@ function ChatPanel({
             </motion.button>
           ))}
         </div>
+        {(file || erroreFile) && (
+          <div className="mx-[14px] mb-[6px] flex items-center gap-[6px] text-[11.5px]">
+            {file ? (
+              <span className="flex min-w-0 items-center gap-[5px] rounded-full bg-soft px-[10px] py-[4px] font-semibold">
+                <Paperclip size={12} className="shrink-0" />
+                <span className="truncate">{file.nome}</span>
+                <button type="button" aria-label="Togli il file" onClick={() => setFile(null)} className="grid size-[16px] shrink-0 cursor-pointer place-items-center rounded-full hover:bg-line">
+                  <X size={10} />
+                </button>
+              </span>
+            ) : (
+              <span className="text-[#d43b4f]">{erroreFile}</span>
+            )}
+          </div>
+        )}
         {/* mentre scrivi il campo si accende col colore del trainer e il tasto di invio si sveglia */}
         <form
           ref={campo}
@@ -851,6 +898,10 @@ function ChatPanel({
               : { borderColor: "var(--color-line)" }
           }
         >
+          <input ref={sceltaFile} type="file" accept={ACCETTATI} className="hidden" onChange={(e) => { void allega(e.target.files?.[0]); e.target.value = ""; }} />
+          <button type="button" aria-label="Allega un file (PDF, CSV, TXT)" title="Allega un file (PDF, CSV, TXT)" onClick={() => sceltaFile.current?.click()} className="-ml-[6px] grid size-[26px] shrink-0 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink">
+            <Paperclip size={14} />
+          </button>
           <input
             autoFocus
             value={draft}
