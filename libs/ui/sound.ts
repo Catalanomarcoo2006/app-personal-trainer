@@ -313,7 +313,7 @@ export function suonoMeteora(caduta: number, tono = 1): void {
 }
 
 // Tasto di una tastiera morbida, per la chat di Leo mentre il trainer scrive: un clic breve (rumore filtrato
-// sugli acuti) con sotto un "toc" grave, ogni volta un po' diverso così non suona come una mitragliatrice.
+// sugli acuti) con sotto un "tic" leggero (alzato e abbassato di volume il 25/10, su richiesta di Marco), ogni volta un po' diverso così non suona come una mitragliatrice.
 // Lo spazio è più pieno e grave, la cancellazione più secca. Mai più di un tasto ogni 25 ms.
 let ultimoTasto = 0;
 export function suonoTasto(tipo: "lettera" | "spazio" | "cancella" = "lettera"): void {
@@ -329,14 +329,14 @@ export function suonoTasto(tipo: "lettera" | "spazio" | "cancella" = "lettera"):
   const filtro = ac.createBiquadFilter();
   filtro.type = "bandpass";
   filtro.Q.value = 1.4;
-  filtro.frequency.value = (tipo === "spazio" ? 1700 : tipo === "cancella" ? 3600 : 2800) * varia;
+  filtro.frequency.value = (tipo === "spazio" ? 2800 : tipo === "cancella" ? 5000 : 4200) * varia;
   const amp = ac.createGain();
   const durata = tipo === "spazio" ? 0.05 : 0.032;
   amp.gain.setValueAtTime(0.0001, t);
-  amp.gain.exponentialRampToValueAtTime(tipo === "spazio" ? 0.07 : 0.055, t + 0.002);
+  amp.gain.exponentialRampToValueAtTime(tipo === "spazio" ? 0.042 : 0.034, t + 0.002);
   amp.gain.exponentialRampToValueAtTime(0.0001, t + durata);
   src.connect(filtro).connect(amp).connect(ac.destination);
   src.start(t, Math.random() * 0.5);
   src.stop(t + durata + 0.02);
-  note(ac, t, (tipo === "spazio" ? 190 : 260) * varia, (tipo === "spazio" ? 120 : 170) * varia, tipo === "spazio" ? 0.06 : 0.035, tipo === "spazio" ? 0.05 : 0.03);
+  note(ac, t, (tipo === "spazio" ? 420 : 620) * varia, (tipo === "spazio" ? 300 : 440) * varia, tipo === "spazio" ? 0.045 : 0.028, tipo === "spazio" ? 0.02 : 0.013);
 }
