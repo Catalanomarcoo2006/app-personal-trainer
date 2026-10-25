@@ -3,7 +3,7 @@
 import { FormEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from "motion/react";
-import { ArrowRight, ArrowUp, CalendarDays, Hand, Paperclip, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, CalendarDays, Hand, Paperclip, TriangleAlert, Trophy, Wallet, X, type LucideIcon } from "lucide-react";
 import { EASE_OUT, formatEuro } from "@/components/ui/motion";
 import { playSound, suonoTasto, type SoundKind } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
@@ -19,11 +19,14 @@ import { durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from 
 import { stato } from "@/libs/prototipo/stato";
 import { ConfermaTutte, SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
 import { TastoMicrofono, useVoceLeo, VoceStato } from "./MicrofonoLeo";
+import { useScorrimentoLeo } from "./useScorrimentoLeo";
 import { conModifica, daConfermareTutte, titoloModificato, type Modifica } from "@/libs/prototipo/leo-modifica";
 import { dipendeDaNuovo, ordinaNuoviPrima, risolviDipendenza, sulNuovoCliente, type NuovoCliente } from "@/libs/prototipo/leo-dipendenze";
 import { navigateFade, navigateWithStain, ROUTES } from "./nav";
 import { InfoSparkle, LeoIdentikit, preloadLeoSeduto } from "./LeoIdentikit";
 import { infoSeen, INTRO_LAST, introSeen, LeoPresentazione, setInfoSeen, setIntroSeen } from "./LeoPresentazione";
+
+const BARRA_MAX_PX = 112; // altezza massima della casella del messaggio (~6 righe)
 
 // L'assistente del trainer si chiama Leo.
 export const COACH_NAME = "Leo";
@@ -701,9 +704,8 @@ function ChatPanel({
     setFile({ nome: letto.nome, testo: letto.testo });
   };
 
-  useEffect(() => {
-    scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
-  }, [messages, typing]);
+  // con più azioni insieme la chat porta alla prima e poi segue quella in corso; altrimenti in fondo
+  const { sotto, piuSotto, aggiorna: aggiornaSotto, vaiSotto } = useScorrimentoLeo(scroller, messages, typing);
 
   // le animazioni dell'identikit si scaricano mentre la chat è aperta: alla i sono già pronte
   useEffect(() => {
@@ -713,6 +715,19 @@ function ChatPanel({
 
   // da dove parte il volo del messaggio appena inviato: l'altezza del campo di scrittura
   const campo = useRef<HTMLFormElement>(null);
+  // la casella cresce con il testo (anche mentre si detta) fino a ~6 righe, poi scorre; Maiusc+Invio va a capo
+  const barra = useRef<HTMLTextAreaElement>(null);
+  const [alta, setAlta] = useState(false);
+  useLayoutEffect(() => {
+    const el = barra.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const pieno = el.scrollHeight > BARRA_MAX_PX;
+    el.style.height = `${Math.min(el.scrollHeight, BARRA_MAX_PX)}px`;
+    el.style.overflowY = pieno ? "auto" : "hidden";
+    if (pieno) el.scrollTop = el.scrollHeight;
+    setAlta(el.scrollHeight > 24);
+  }, [draft]);
   const voce = useVoceLeo({ bloccato: thinking, draft, setDraft, invia: (t) => ask(t) });
   const [volo, setVolo] = useState<{ daY: number; dopo: number } | null>(null);
   const submit = (e: FormEvent) => {
@@ -772,7 +787,8 @@ function ChatPanel({
           </button>
         </div>
 
-        <div ref={scroller} className="flex min-h-0 flex-1 flex-col gap-[8px] overflow-y-auto px-[16px] py-[14px] [scrollbar-width:none]">
+        <div className="relative flex min-h-0 flex-1 flex-col">
+        <div ref={scroller} onScroll={aggiornaSotto} className="flex min-h-0 flex-1 flex-col gap-[8px] overflow-y-auto px-[16px] py-[14px] [scrollbar-width:none]">
           {intro && <LeoPresentazione face={<CoachFace size={64} />} onStep={setIntroStep} onDone={endIntro} />}
           {!intro && messages.length === 0 && (
             <div className="mt-[2px]">
@@ -802,6 +818,7 @@ function ChatPanel({
           {!intro && messages.map((m) => (
             <motion.div
               key={m.id}
+              data-msg={m.id}
               initial={{ opacity: 0, y: reduce ? 0 : 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: EASE_OUT }}
@@ -828,20 +845,22 @@ function ChatPanel({
               )}
               {m.schede && (
                 <div className="mt-[6px] flex w-[300px] max-w-full flex-col gap-[6px]">
+                  {m.schede.map((sc) => (
+                    <div key={sc.key} data-scheda={sc.key}>
+                      <SchedaAzioneView
+                        scheda={sc}
+                        onConferma={(modifica) => conferma(m.id, sc.key, modifica)}
+                        onModifica={(modifica) => segnaModifica(sc.key, modifica)}
+                        onRifiuta={() => rifiuta(m.id, sc.key)}
+                        onAnnulla={() => annulla(m.id, sc.key)}
+                        onTorna={partenza(m.id) ? () => torna(m.id) : undefined}
+                      />
+                    </div>
+                  ))}
+                  {/* "Conferma tutte" sta in fondo: si arriva qui dopo aver visto le azioni dalla prima all'ultima */}
                   {m.schede.filter((sc) => sc.stato === "da-confermare").length >= 2 && (
                     <ConfermaTutte n={m.schede.filter((sc) => sc.stato === "da-confermare").length} onConferma={() => confermaTutte(m.id)} />
                   )}
-                  {m.schede.map((sc) => (
-                    <SchedaAzioneView
-                      key={sc.key}
-                      scheda={sc}
-                      onConferma={(modifica) => conferma(m.id, sc.key, modifica)}
-                      onModifica={(modifica) => segnaModifica(sc.key, modifica)}
-                      onRifiuta={() => rifiuta(m.id, sc.key)}
-                      onAnnulla={() => annulla(m.id, sc.key)}
-                      onTorna={partenza(m.id) ? () => torna(m.id) : undefined}
-                    />
-                  ))}
                 </div>
               )}
               {m.action && (
@@ -881,6 +900,19 @@ function ChatPanel({
             </div>
           )}
         </div>
+        {(sotto > 0 || piuSotto) && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, y: reduce ? 0 : 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={vaiSotto}
+            className="btn-trainer absolute bottom-[8px] left-1/2 flex -translate-x-1/2 cursor-pointer items-center gap-[5px] rounded-full px-[12px] py-[6px] text-[11.5px] font-semibold shadow-lg"
+          >
+            <ArrowDown size={12} /> {sotto === 0 ? "Altro sotto" : sotto === 1 ? "1 altra azione sotto" : `${sotto} altre azioni sotto`}
+          </motion.button>
+        )}
+        </div>
 
         <div className="flex flex-wrap gap-[6px] px-[16px] pb-[10px]">
           {!intro && suggestions.map((s) => (
@@ -909,7 +941,7 @@ function ChatPanel({
         <form
           ref={campo}
           onSubmit={submit}
-          className="mx-[14px] mb-[14px] flex items-center gap-[8px] rounded-full border py-[5px] pr-[5px] pl-[14px] transition-[border-color,box-shadow] duration-300 focus-within:border-[color-mix(in_srgb,var(--trainer)_55%,transparent)]"
+          className={`mx-[14px] mb-[14px] flex gap-[8px] border py-[5px] pr-[5px] pl-[14px] transition-[border-color,box-shadow,border-radius] duration-300 focus-within:border-[color-mix(in_srgb,var(--trainer)_55%,transparent)] ${alta ? "items-end rounded-[22px]" : "items-center rounded-full"}`}
           style={
             scrive || voce.fase === "in-ascolto"
               ? { borderColor: "color-mix(in srgb, var(--trainer) 70%, transparent)", boxShadow: "0 0 0 4px color-mix(in srgb, var(--trainer) 14%, transparent), 0 6px 18px color-mix(in srgb, var(--trainer) 18%, transparent)" }
@@ -921,18 +953,26 @@ function ChatPanel({
             <Paperclip size={14} />
           </button>
           <TastoMicrofono voce={voce} />
-          <input
+          <textarea
+            ref={barra}
+            rows={1}
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             // ogni tasto fa il suo clic di tastiera (lettere, spazio, cancella; non le scorciatoie)
             onKeyDown={(e) => {
+              // Invio manda, Maiusc+Invio va a capo
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                campo.current?.requestSubmit();
+                return;
+              }
               if (e.ctrlKey || e.metaKey || e.altKey) return;
               if (e.key === " ") suonoTasto("spazio");
               else if (e.key === "Backspace" || e.key === "Delete") suonoTasto("cancella");
               else if (e.key.length === 1) suonoTasto("lettera");
             }}
-            placeholder={voce.fase === "in-ascolto" ? "Parla adesso…" : voce.fase === "preparazione" ? "Accendo il microfono…" : `Chiedi a ${COACH_NAME}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
+            placeholder={voce.fase === "in-ascolto" ? "Parla adesso…" : voce.fase === "preparazione" ? "Accendo il microfono…" : `Chiedi a ${COACH_NAME}…`} className="my-[7px] min-w-0 flex-1 resize-none bg-transparent leading-[18px] [scrollbar-width:thin] text-[13px] outline-none placeholder:text-muted" />
           <motion.button
             type="submit"
             aria-label="Invia"
