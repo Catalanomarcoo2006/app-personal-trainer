@@ -12,7 +12,7 @@ import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { giornoDi, isoDi, SETTIMANE_LEO } from "@/libs/prototipo/calendario";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
 import { settimanaDi } from "@/libs/prototipo/leo-viaggio";
-import { stato, useStato } from "@/libs/prototipo/stato";
+import { stato, useStato, useFocusLeo } from "@/libs/prototipo/stato";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { useFitDensity } from "./fit";
@@ -484,7 +484,7 @@ export function WeekCalendar() {
   const [hidden, setHidden] = useState<AppointmentType[]>([]);
   // questa settimana e la prossima vivono nello store (le modifica anche Leo); le altre hanno modifiche locali
   const sedute = useStato((s) => s.sedute);
-  const focus = useStato((s) => s.focus);
+  const focus = useFocusLeo();
   const ridotto = !!useReducedMotion();
   const [edits, setEdits] = useState<Record<number, Appointment[][]>>({});
   // tutte le sedute viste: per disegnare il contorno di quella appena cancellata da Leo

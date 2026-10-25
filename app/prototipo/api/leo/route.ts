@@ -111,6 +111,25 @@ export async function POST(req: Request) {
   const riga = (e: EventoLeo) => encoder.encode(JSON.stringify(e) + "\n");
   let resto = "";
 
+  // Una riga del flusso SSE: il testo va subito al browser (true se ne ha mandato), i pezzi delle azioni si accumulano.
+  const leggiRiga = (r: string, controller: ReadableStreamDefaultController<Uint8Array>): boolean => {
+    const dati = r.trim();
+    if (!dati.startsWith("data:")) return false;
+    const json = dati.slice(5).trim();
+    if (json === "[DONE]") return false;
+    try {
+      const delta = JSON.parse(json)?.choices?.[0]?.delta;
+      if (delta?.tool_calls) azioni.aggiungi(delta.tool_calls);
+      if (delta?.content) {
+        controller.enqueue(riga({ tipo: "testo", v: delta.content }));
+        return true;
+      }
+    } catch {
+      // riga incompleta o di servizio: si ignora
+    }
+    return false;
+  };
+
   const flusso = new ReadableStream<Uint8Array>({
     // Legge finché non ha qualcosa da mandare: durante il ragionamento e le azioni arrivano pezzi senza testo
     // e, se pull finisse a mani vuote, il flusso resterebbe fermo.
@@ -120,6 +139,9 @@ export async function POST(req: Request) {
           const { done, value } = await lettore.read();
           if (done) {
             clearTimeout(fine);
+            // l'ultima riga può arrivare senza "a capo" finale (dipende dal fornitore): si legge lo stesso
+            leggiRiga(resto + decoder.decode(), controller);
+            resto = "";
             const { azioni: pronte, scartate } = azioni.risultato();
             for (const a of pronte) controller.enqueue(riga({ tipo: "azione", ...a }));
             for (const nome of scartate) controller.enqueue(riga({ tipo: "azione-scartata", nome }));
@@ -130,22 +152,7 @@ export async function POST(req: Request) {
           const righe = resto.split("\n");
           resto = righe.pop() ?? "";
           let inviato = false;
-          for (const r of righe) {
-            const dati = r.trim();
-            if (!dati.startsWith("data:")) continue;
-            const json = dati.slice(5).trim();
-            if (json === "[DONE]") continue;
-            try {
-              const delta = JSON.parse(json)?.choices?.[0]?.delta;
-              if (delta?.tool_calls) azioni.aggiungi(delta.tool_calls);
-              if (delta?.content) {
-                controller.enqueue(riga({ tipo: "testo", v: delta.content }));
-                inviato = true;
-              }
-            } catch {
-              // riga incompleta o di servizio: si ignora
-            }
-          }
+          for (const r of righe) if (leggiRiga(r, controller)) inviato = true;
           if (inviato) return;
         }
       } catch (e) {

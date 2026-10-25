@@ -40,6 +40,20 @@ describe("raccoglitoreAzioni", () => {
     expect(r.risultato()).toEqual({ azioni: [{ nome: "cancella_appuntamento", dati: { id: "A9" } }], scartate: ["cancella_appuntamento", "fissa_appuntamento"] });
   });
 
+  it("senza indice (altri fornitori) riconosce le azioni dall'id e attacca i pezzi senza id all'ultima", () => {
+    const r = raccoglitoreAzioni();
+    r.aggiungi([
+      { id: "a", type: "function", function: { name: "cancella_appuntamento", arguments: '{"id":"A5"}' } },
+      { id: "b", type: "function", function: { name: "sposta_appuntamento", arguments: '{"id":"A3",' } },
+    ]);
+    r.aggiungi([{ function: { arguments: '"data":"2026-10-23",' } }]);
+    r.aggiungi([{ id: "b", function: { arguments: '"ora":"10:00"}' } }]);
+    expect(r.azioni()).toEqual([
+      { nome: "cancella_appuntamento", dati: { id: "A5" } },
+      { nome: "sposta_appuntamento", dati: { id: "A3", data: "2026-10-23", ora: "10:00" } },
+    ]);
+  });
+
   it("ignora quello che non è un elenco di tool_calls", () => {
     const r = raccoglitoreAzioni();
     r.aggiungi(undefined);

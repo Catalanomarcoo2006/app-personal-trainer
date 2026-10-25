@@ -12,7 +12,7 @@ import { revenue } from "@/libs/prototipo/dati-finti";
 import { dataBreve, useClienti, useIncassi, usePagamenti } from "@/libs/dati/selettori";
 import { inviaMessaggio, segnaPagato } from "@/libs/dati/sportello";
 import { testoSollecito } from "@/libs/dati/testi";
-import { useStato } from "@/libs/prototipo/stato";
+import { useFocusLeo } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { Bagliore, ClientAvatar } from "./shared";
 import { mesiConOggi, RevenueChart } from "./Revenue";
@@ -46,7 +46,7 @@ export function PaymentsView() {
   const pagamenti = usePagamenti();
   const clients = useClienti();
   const incassi = useIncassi();
-  const focus = useStato((s) => s.focus);
+  const focus = useFocusLeo();
   const evidenza = focus && (focus.tipo === "pagato" || focus.tipo === "pagamento" || focus.tipo === "rinnovo") ? focus.pagamentoId : undefined;
   const [filter, setFilter] = useState<"tutti" | "pagati" | "aperti">("tutti");
 

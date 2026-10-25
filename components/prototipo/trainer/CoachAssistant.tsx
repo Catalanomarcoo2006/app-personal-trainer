@@ -1233,9 +1233,11 @@ function CoachStage({ home, chat, open, setOpen }: { home: boolean; chat: Chat; 
     closeInfo();
   };
 
-  // Esc chiude l'identikit (si torna alla chat), poi la chat.
+  // Esc chiude l'identikit (si torna alla chat), poi la chat. Non durante il viaggio di Leo: dura pochi secondi
+  // e, a chat chiusa, l'app cambierebbe sezione da sola senza dire perché.
+  const inViaggio = chat.compatta;
   useEffect(() => {
-    if (!open) return;
+    if (!open || inViaggio) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (info) setInfo(false);
@@ -1243,7 +1245,7 @@ function CoachStage({ home, chat, open, setOpen }: { home: boolean; chat: Chat; 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, info]);
+  }, [open, info, inViaggio]);
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {

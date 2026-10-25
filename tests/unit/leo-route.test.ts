@@ -104,6 +104,48 @@ describe("POST /prototipo/api/leo", () => {
     expect(fetchFinto).toHaveBeenCalledTimes(2);
   });
 
+  it("legge anche l'ultima riga del fornitore quando non finisce con a capo", async () => {
+    const enc = new TextEncoder();
+    fetchFinto.mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          start(c) {
+            c.enqueue(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "Ecco " } }] })}
+
+`));
+            c.enqueue(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "fatto" } }] })}`));
+            c.close();
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    expect(await testoDi(await POST(domanda("ciao")))).toBe("Ecco fatto");
+  });
+
+  it("se il flusso del fornitore si rompe a metà manda l'evento errore dopo il testo arrivato", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const enc = new TextEncoder();
+    let n = 0;
+    fetchFinto.mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          pull(c) {
+            if (n++ === 0) c.enqueue(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "Un attimo" } }] })}
+
+`));
+            else c.error(new Error("connessione chiusa"));
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    expect(await eventi(await POST(domanda("ciao")))).toEqual([
+      { tipo: "testo", v: "Un attimo" },
+      { tipo: "errore", v: "risposta interrotta" },
+    ]);
+  });
+
   it("rifiuta una richiesta senza messaggi", async () => {
     const res = await POST(new Request("http://localhost/prototipo/api/leo", { method: "POST", body: "{}" }));
     expect(res.status).toBe(400);

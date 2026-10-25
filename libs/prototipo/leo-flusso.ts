@@ -7,17 +7,31 @@ import { leggiAzione, MAX_AZIONI, type AzioneLeo } from "./leo-azioni";
 export type EventoLeo = { tipo: "testo"; v: string } | ({ tipo: "azione" } & AzioneLeo) | { tipo: "errore"; v: string } | { tipo: "azione-scartata"; nome: string };
 
 // Accumula delta.tool_calls per indice; alla fine ogni azione si legge e si controlla (le malformate si scartano).
+// Non tutti i fornitori mandano l'indice: allora conta l'id dell'azione, e un pezzo senza né indice né id
+// continua l'ultima azione aperta.
 export function raccoglitoreAzioni(): { aggiungi(toolCalls: unknown): void; azioni(): AzioneLeo[]; risultato(): { azioni: AzioneLeo[]; scartate: string[] } } {
   const parti = new Map<number, { nome: string; argomenti: string }>();
+  const perId = new Map<string, number>();
+  let ultima: number | undefined;
+  const posto = (t: { index?: unknown; id?: unknown }): number | undefined => {
+    if (typeof t.index === "number") return t.index;
+    if (typeof t.id === "string" && t.id) {
+      if (!perId.has(t.id)) perId.set(t.id, Math.max(-1, ...parti.keys()) + 1);
+      return perId.get(t.id);
+    }
+    return ultima;
+  };
   return {
     aggiungi(toolCalls) {
       if (!Array.isArray(toolCalls)) return;
       for (const t of toolCalls) {
-        if (typeof t?.index !== "number") continue;
-        const p = parti.get(t.index) ?? { nome: "", argomenti: "" };
+        const i = t && typeof t === "object" ? posto(t) : undefined;
+        if (i === undefined) continue;
+        const p = parti.get(i) ?? { nome: "", argomenti: "" };
         if (typeof t.function?.name === "string") p.nome += t.function.name;
         if (typeof t.function?.arguments === "string") p.argomenti += t.function.arguments;
-        parti.set(t.index, p);
+        parti.set(i, p);
+        ultima = i;
       }
     },
     azioni() {

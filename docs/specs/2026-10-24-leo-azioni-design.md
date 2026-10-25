@@ -67,7 +67,7 @@ Se un controllo fallisce, l'azione non parte e la scheda mostra il motivo in ita
 
 **Risposta al browser:** righe JSON (NDJSON, `Content-Type: application/x-ndjson`), un evento per riga:
 - `{"tipo":"testo","v":"…"}`: pezzi della frase, man mano che arrivano;
-- `{"tipo":"azione","nome":"…","dati":{…}}`: solo ad azione completa. Il server accumula `delta.tool_calls[i].function.arguments` per indice, alla fine fa `JSON.parse` e la validazione con `zod`; un'azione malformata si scarta con `console.warn`;
+- `{"tipo":"azione","nome":"…","dati":{…}}`: solo ad azione completa. Il server accumula `delta.tool_calls[i].function.arguments` per indice (se il fornitore non lo manda: per `id`, e un pezzo senza né indice né id continua l'ultima azione), legge anche l'ultima riga del flusso senza "a capo", alla fine fa `JSON.parse` e la validazione con `zod`; un'azione malformata si scarta con `console.warn` e la chat lo dice (evento `azione-scartata`, "non ho capito una parte");
 - `{"tipo":"errore","v":"…"}`: interruzione a metà.
 
 Al massimo 5 azioni per risposta (le altre si scartano). Il ragionamento (`reasoning_content`) resta sul server come oggi.
@@ -84,17 +84,17 @@ Al massimo 5 azioni per risposta (le altre si scartano). Il ragionamento (`reaso
 
 **Schede nella chat** (sotto la frase di Leo, una per azione): icona, riassunto con il nome vero del cliente ("Sposto **Sara Conti** · gio 22/10 10:00 → ven 23/10 10:00").
 - immediate: "In corso…" → "Fatto ✓" + "Annulla"; errore: motivo in rosso tenue;
-- da confermare: "Conferma" / "Annulla" (`btn-trainer`); la scheda del messaggio mostra il testo in un campo modificabile;
+- da confermare: "Conferma" / "Annulla" (`btn-trainer`); la scheda del messaggio mostra il testo in un campo modificabile e il tasto si chiama "Invia" ("Invia a tutti (N)" per più clienti, "Aggiungi" per il nuovo cliente); con almeno 2 schede da confermare compare anche "Conferma tutte (N)";
 - "Torna dov'eri" riporta alla sezione da cui si era partiti.
 
 **Il viaggio** (azione immediata, o subito dopo "Conferma"):
-1. la chat si rimpicciolisce in una striscia sul lato destro (Leo resta aggrappato al bordo); l'app passa alla sezione con una dissolvenza veloce (niente macchia d'olio) e, per il calendario, alla settimana giusta;
+1. la chat si rimpicciolisce in un riquadro piccolo in basso (168 × 150 px, "Leo è al lavoro…"; il resto della chat resta montato sotto e si ritrova com'era); durante il viaggio Esc non chiude la chat; l'app passa alla sezione con una dissolvenza veloce (niente macchia d'olio) e, per il calendario, alla settimana giusta;
 2. la cella interessata si illumina col colore del trainer, poi:
    - **fissa:** la seduta atterra (scala 0,6 → 1 con molla, un pop);
    - **sposta:** la seduta vola dalla cella vecchia alla nuova (`layoutId` di Motion), con il suono del fruscio;
    - **cancella:** la seduta si restringe e sbiadisce lasciando un contorno tratteggiato per un attimo (niente `blur`);
    - **messaggio:** si apre la conversazione del cliente, il testo si scrive da solo nella barra, parte con il suono d'invio e compare il fumetto;
-3. dopo ~1 s la chat torna grande; si resta nella sezione dell'azione.
+3. dopo ~1 s la chat torna grande; si resta nella sezione dell'azione. Il segno dell'azione (focus) vale ~4 s: una sezione aperta più tardi non ripete l'ultima azione di Leo.
 
 **Più azioni:** una dopo l'altra (~1,2 s ciascuna) nell'ordine di Leo; una da confermare ferma la sequenza finché il trainer non tocca "Conferma" o "Annulla".
 

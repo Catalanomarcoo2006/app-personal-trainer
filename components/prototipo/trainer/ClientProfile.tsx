@@ -30,7 +30,7 @@ import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { appointmentColors, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
 import { settimanaDelCliente } from "@/libs/prototipo/calendario";
-import { useStato } from "@/libs/prototipo/stato";
+import { useStato, useFocusLeo } from "@/libs/prototipo/stato";
 import { segnaPagato } from "@/libs/dati/sportello";
 import type { ClienteVista } from "@/libs/dati/selettori";
 import { navigate, ROUTES } from "./nav";
@@ -86,7 +86,7 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
   const outstanding = payments.filter((p) => !p.paid).reduce((s, p) => s + p.amount, 0);
 
   // Leo ha appena cambiato qualcosa di questo cliente: quella parte del profilo si illumina
-  const focus = useStato((s) => s.focus);
+  const focus = useFocusLeo();
   const tocca = focus?.clientId === c.id ? focus.tipo : null;
   const note = useRef<HTMLDivElement>(null);
   useEffect(() => {

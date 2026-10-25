@@ -9,7 +9,7 @@ import { Appear, ProgressBar } from "@/components/ui/motion";
 import { ACCENTS, useAppearance } from "@/components/ui/appearance";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled, type SoundKind } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
-import { shrinkPhoto, stato, useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
+import { shrinkPhoto, stato, useTrainerPhoto, useFocusLeo } from "@/libs/prototipo/stato";
 import { Bagliore } from "./shared";
 import { useNotifiche } from "@/libs/dati/selettori";
 import { impostaNotifica } from "@/libs/dati/sportello";
@@ -50,7 +50,7 @@ function Field({ label, value }: { label: string; value: string }) {
 // Un interruttore delle notifiche: il valore sta nello store (lo cambiano anche Leo e l'annulla).
 function Row({ label, hint, tipo }: { label: string; hint: string; tipo: keyof Notifiche }) {
   const on = useNotifiche()[tipo];
-  const focus = useStato((s) => s.focus);
+  const focus = useFocusLeo();
   return (
     <div className="relative flex items-center gap-[12px] rounded-[13px] border border-line px-[12px] py-[10px]">
       {focus?.tipo === "notifica" && focus.notifica === tipo && <Bagliore key={focus.seq} />}

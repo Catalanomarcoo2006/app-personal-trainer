@@ -2,7 +2,7 @@
 // Tiene i video degli esercizi, le schede in modifica e quelle inviate ai clienti, il calendario di questa
 // settimana e della prossima (anche Leo lo modifica) e le conversazioni con i clienti.
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { conta } from "@/libs/ui/testo";
 import { seduteIniziali } from "./calendario";
 import { clients, conversations, defaultPlan, exerciseById, library, plans, trainer, type ChatMessage, type PlanDay } from "./dati-finti";
@@ -42,8 +42,11 @@ export const demoVideo = (name: string) => `https://www.youtube.com/results?sear
 // seq cresce a ogni azione, così la stessa seduta si può evidenziare due volte di fila.
 // daScrivere: la chat dei messaggi scrive il testo nella barra prima che il messaggio parta.
 // multiplo: lo stesso messaggio a più clienti (clientiIds), la chat mostra quanti l'hanno ricevuto.
+// alle: quando è stato dato; vale solo per qualche secondo (focusRecente), così una sezione aperta più tardi
+// non ripete l'ultima azione di Leo.
 export type FocusLeo = {
   seq: number;
+  alle: number;
   tipo: "fissa" | "sposta" | "cancella" | "messaggio" | "multiplo" | "pagato" | "pagamento" | "rinnovo" | "misure" | "obiettivo" | "nota" | "cliente" | "notifica";
   notifica?: string;
   id?: string;
@@ -109,6 +112,16 @@ export function useStato<T>(select: (s: State) => T): T {
   );
 }
 
+export const FOCUS_VALIDO = 4000; // ms
+export const focusRecente = (f: FocusLeo | null, ora = Date.now()): FocusLeo | null => (f && ora - f.alle < FOCUS_VALIDO ? f : null);
+
+// Il focus di Leo per una sezione: solo se è nuovo quando la sezione lo vede; uno vecchio, trovato aprendo
+// la sezione dopo, non riparte.
+export function useFocusLeo(): FocusLeo | null {
+  const focus = useStato((s) => s.focus);
+  return useMemo(() => focusRecente(focus), [focus]);
+}
+
 export const stato = {
   get: () => state,
   setPlan(clientId: string, fn: (days: Day[]) => Day[]) {
@@ -160,8 +173,8 @@ export const stato = {
     state = { ...state, dati: fn(state.dati) };
     emit();
   },
-  setFocus(f: Omit<FocusLeo, "seq"> | null) {
-    state = { ...state, focus: f ? { ...f, seq: ++seqFocus } : null };
+  setFocus(f: Omit<FocusLeo, "seq" | "alle"> | null) {
+    state = { ...state, focus: f ? { ...f, seq: ++seqFocus, alle: Date.now() } : null };
     emit();
   },
   setTrainerPhoto(url: string | null) {

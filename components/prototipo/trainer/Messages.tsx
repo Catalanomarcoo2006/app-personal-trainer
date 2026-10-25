@@ -9,8 +9,9 @@ import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { Attachment, conversations, progressOf } from "@/libs/prototipo/dati-finti";
 import { useTrovaCliente } from "@/libs/dati/selettori";
+import { MAX_MESSAGGIO } from "@/libs/dati/sportello";
 import { durataScrittura, TEMPI } from "@/libs/prototipo/leo-viaggio";
-import { stato, useStato } from "@/libs/prototipo/stato";
+import { stato, useStato, useFocusLeo } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
@@ -61,7 +62,7 @@ export function MessagesView({ search }: { search: string }) {
 
   // Leo scrive al cliente: apre la sua conversazione e scrive il testo nella barra; quando il messaggio parte
   // (focus senza daScrivere) la barra si svuota e compare il fumetto.
-  const focus = useStato((s) => s.focus);
+  const focus = useFocusLeo();
   const reduce = useReducedMotion();
   useEffect(() => {
     if (focus?.tipo !== "messaggio" || !focus.clientId) return;
@@ -323,7 +324,7 @@ export function MessagesView({ search }: { search: string }) {
           ))}
         </div>
         <form onSubmit={submit} className="mx-[16px] mb-[14px] flex items-center gap-[8px] rounded-full border border-line py-[5px] pr-[5px] pl-[16px]">
-          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Scrivi a ${client.name.split(" ")[0]}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={MAX_MESSAGGIO} placeholder={`Scrivi a ${client.name.split(" ")[0]}…`} className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted" />
           <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.9 }} className="grid size-[34px] shrink-0 cursor-pointer place-items-center rounded-full btn-trainer">
             <ArrowUp size={15} />
           </motion.button>

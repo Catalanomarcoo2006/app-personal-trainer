@@ -16,7 +16,7 @@ import type { ClienteDati, DatiClienti, Misura, Notifiche, Pacchetto, Pagamento 
 
 export type Esito = { ok: true; annulla?: () => Promise<Verifica>; id?: string } | { ok: false; motivo: string };
 
-const MAX_MESSAGGIO = 1000;
+export const MAX_MESSAGGIO = 1000;
 const MAX_NOTA = 500;
 const TONI: Tone[] = ["peach", "sky", "rose", "violet", "mint"];
 
