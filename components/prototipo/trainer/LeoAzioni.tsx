@@ -1,13 +1,15 @@
 "use client";
 
 // Le schede delle azioni di Leo nella chat: una per azione, sotto la sua frase.
-// Fissare e spostare partono da sole (con "Annulla"); cancellare e scrivere al cliente aspettano "Conferma".
+// Fissare e spostare partono da sole (con "Annulla"); cancellare e scrivere ai clienti aspettano "Conferma".
+// Con più schede da confermare, sopra compare "Conferma tutte (N)".
 
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { CalendarClock, CalendarPlus, CalendarX, Check, Loader2, Send, Undo2, type LucideIcon } from "lucide-react";
+import { CalendarClock, CalendarPlus, CalendarX, Check, CheckCheck, Loader2, Send, Undo2, Users, type LucideIcon } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
-import type { AzioneLeo, StatoScheda } from "@/libs/prototipo/leo-azioni";
+import { useTrovaCliente } from "@/libs/dati/selettori";
+import { personalizza, type AzioneLeo, type StatoScheda } from "@/libs/prototipo/leo-azioni";
 
 export type SchedaAzione = {
   key: string;
@@ -15,7 +17,7 @@ export type SchedaAzione = {
   titolo: string; // riassunto calcolato quando è arrivata (prima dell'esecuzione)
   stato: StatoScheda;
   motivo?: string;
-  annulla?: () => { ok: boolean; motivo?: string };
+  annulla?: () => Promise<{ ok: boolean; motivo?: string }>;
   fattaAlle?: number;
 };
 
@@ -26,7 +28,27 @@ const icone: Record<AzioneLeo["nome"], LucideIcon> = {
   sposta_appuntamento: CalendarClock,
   cancella_appuntamento: CalendarX,
   scrivi_messaggio: Send,
+  scrivi_a_piu: Users,
 };
+
+// Cosa il trainer può cambiare in una scheda prima di confermarla.
+export type Modifica = { testo?: string; clienti?: string[] };
+
+export function ConfermaTutte({ n, onConferma }: { n: number; onConferma: () => void }) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.button
+      type="button"
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onConferma}
+      className="btn-trainer flex h-[34px] w-full cursor-pointer items-center justify-center gap-[6px] rounded-full text-[12px] font-semibold"
+    >
+      <CheckCheck size={14} /> Conferma tutte ({n})
+    </motion.button>
+  );
+}
 
 export function SchedaAzioneView({
   scheda,
@@ -36,7 +58,7 @@ export function SchedaAzioneView({
   onTorna,
 }: {
   scheda: SchedaAzione;
-  onConferma: (testo?: string) => void;
+  onConferma: (modifica?: Modifica) => void;
   onRifiuta: () => void;
   onAnnulla: () => void;
   onTorna?: () => void;
@@ -44,8 +66,12 @@ export function SchedaAzioneView({
   const reduce = useReducedMotion();
   const { azione, stato } = scheda;
   const Icon = icone[azione.nome];
-  const messaggio = azione.nome === "scrivi_messaggio";
+  const multiplo = azione.nome === "scrivi_a_piu";
+  const messaggio = azione.nome === "scrivi_messaggio" || multiplo;
   const [testo, setTesto] = useState(messaggio ? azione.dati.testo : "");
+  const [scelti, setScelti] = useState<string[]>(multiplo ? azione.dati.clienti : []);
+  const trova = useTrovaCliente();
+  const pronto = !!testo.trim() && (!multiplo || scelti.length > 0);
   // "Annulla" resta in evidenza per qualche secondo dopo l'esecuzione, poi diventa un link discreto
   const [evidenza, setEvidenza] = useState(() => !!scheda.fattaAlle && Date.now() - scheda.fattaAlle < ANNULLA_IN_EVIDENZA);
   useEffect(() => {
@@ -90,6 +116,26 @@ export function SchedaAzioneView({
         </div>
       </div>
 
+      {multiplo && stato === "da-confermare" && (
+        <div className="mt-[8px] flex flex-wrap gap-[5px]">
+          {azione.dati.clienti.map((id) => {
+            const acceso = scelti.includes(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={acceso}
+                onClick={() => setScelti((x) => (acceso ? x.filter((y) => y !== id) : [...x, id]))}
+                className={`flex h-[26px] cursor-pointer items-center gap-[4px] rounded-full border px-[9px] text-[11px] font-semibold transition-colors ${acceso ? "border-[var(--trainer)] text-ink" : "border-line text-muted line-through"}`}
+                style={acceso ? { background: "color-mix(in srgb, var(--trainer) 12%, transparent)" } : undefined}
+              >
+                {acceso && <Check size={10} strokeWidth={3} />}
+                {trova(id)?.name ?? id}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {messaggio && stato === "da-confermare" && (
         <textarea
           value={testo}
@@ -100,12 +146,23 @@ export function SchedaAzioneView({
           className="mt-[8px] w-full resize-none rounded-[12px] border border-line bg-card px-[10px] py-[8px] text-[16px] leading-snug outline-none focus:border-[var(--trainer)] md:text-[12.5px]"
         />
       )}
+      {multiplo && stato === "da-confermare" && scelti[0] && testo.includes("{nome}") && (
+        <p className="mt-[5px] text-[10.5px] leading-snug text-muted">
+          Per {trova(scelti[0])?.name.split(" ")[0]}: “{personalizza(testo, trova(scelti[0])?.name ?? "")}”
+        </p>
+      )}
       {messaggio && stato !== "da-confermare" && <p className="mt-[6px] rounded-[12px] bg-soft px-[10px] py-[7px] text-[12px] leading-snug">{azione.dati.testo}</p>}
 
       {stato === "da-confermare" && (
         <div className="mt-[8px] flex gap-[6px]">
-          <motion.button type="button" whileTap={{ scale: 0.95 }} onClick={() => onConferma(messaggio ? testo : undefined)} disabled={messaggio && !testo.trim()} className={`btn-trainer ${piccolo} disabled:cursor-not-allowed disabled:opacity-50`}>
-            <Check size={12} /> {messaggio ? "Invia" : "Conferma"}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onConferma(multiplo ? { testo, clienti: scelti } : messaggio ? { testo } : undefined)}
+            disabled={messaggio && !pronto}
+            className={`btn-trainer ${piccolo} disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            <Check size={12} /> {multiplo ? `Invia a tutti (${scelti.length})` : messaggio ? "Invia" : "Conferma"}
           </motion.button>
           <button type="button" onClick={onRifiuta} className={`${piccolo} bg-soft hover:bg-line`}>
             Annulla

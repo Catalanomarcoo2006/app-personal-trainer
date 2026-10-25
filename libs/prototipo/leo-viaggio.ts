@@ -17,7 +17,9 @@ export const TEMPI = {
 };
 
 export function sezioneDi(a: AzioneLeo): string {
-  return a.nome === "scrivi_messaggio" ? `${ROUTES.messaggi}?cliente=${a.dati.cliente}` : ROUTES.calendario;
+  if (a.nome === "scrivi_messaggio") return `${ROUTES.messaggi}?cliente=${a.dati.cliente}`;
+  if (a.nome === "scrivi_a_piu") return `${ROUTES.messaggi}?cliente=${a.dati.clienti[0]}`;
+  return ROUTES.calendario;
 }
 
 // 0 = questa settimana (19–25 ottobre), 1 = la prossima.

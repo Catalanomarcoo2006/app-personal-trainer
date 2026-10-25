@@ -119,6 +119,7 @@ describe("POST /prototipo/api/leo", () => {
       "sposta_appuntamento",
       "cancella_appuntamento",
       "scrivi_messaggio",
+      "scrivi_a_piu",
     ]);
   });
 

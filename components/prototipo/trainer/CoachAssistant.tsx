@@ -9,14 +9,14 @@ import { playSound, suonoTasto, type SoundKind } from "@/libs/ui/sound";
 import { agenda, clientById, clients, revenue, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
 import { daConfermare, inChiaro, notaPerLeo, riassunto, verificaAzione, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
 import { estraiAzione, type Sezione } from "@/libs/prototipo/leo-contesto";
-import { eseguiAzione } from "@/libs/prototipo/leo-esegui";
+import { datiLeo, eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
 import { creaFila } from "@/libs/prototipo/leo-fila";
 import { aspettoAttuale, corpoRichiesta } from "@/libs/prototipo/leo-richiesta";
 import { clientiAttuali } from "@/libs/dati/selettori";
 import { durataScrittura, sezioneDi, TEMPI, tempoAzione } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
-import { SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
+import { ConfermaTutte, SchedaAzioneView, type Modifica, type SchedaAzione } from "./LeoAzioni";
 import { navigateFade, navigateWithStain, ROUTES } from "./nav";
 import { InfoSparkle, LeoIdentikit, preloadLeoSeduto } from "./LeoIdentikit";
 import { infoSeen, INTRO_LAST, introSeen, LeoPresentazione, setInfoSeen, setIntroSeen } from "./LeoPresentazione";
@@ -75,9 +75,17 @@ export function CoachFace({ size }: { size: number }) {
 
 const attesa = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 const ridotto = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "complete", sposta_appuntamento: "open", cancella_appuntamento: "close", scrivi_messaggio: "confirm" };
+const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "complete", sposta_appuntamento: "open", cancella_appuntamento: "close", scrivi_messaggio: "confirm", scrivi_a_piu: "confirm" };
 // la chat durante il viaggio: un riquadro piccolo in basso, Leo resta aggrappato al bordo
 const COMPATTA = { w: 168, h: 150 };
+
+// Le modifiche fatte nella scheda prima di confermare: il testo del messaggio, i destinatari.
+function conModifica(a: AzioneLeo, m?: Modifica): AzioneLeo {
+  if (!m) return a;
+  if (a.nome === "scrivi_messaggio" && m.testo !== undefined) return { ...a, dati: { ...a.dati, testo: m.testo.trim() } };
+  if (a.nome === "scrivi_a_piu") return { ...a, dati: { clienti: m.clienti ?? a.dati.clienti, testo: (m.testo ?? a.dati.testo).trim() } };
+  return a;
+}
 
 // ——— Le risposte, calcolate dai dati ———
 
@@ -254,7 +262,8 @@ type Chat = {
   typing: boolean;
   thinking: boolean;
   ask: (q: string) => void;
-  conferma: (msgId: number, key: string, testo?: string) => void;
+  conferma: (msgId: number, key: string, modifica?: Modifica) => void;
+  confermaTutte: (msgId: number) => void;
   rifiuta: (msgId: number, key: string) => void;
   annulla: (msgId: number, key: string) => void;
   torna: (msgId: number) => void;
@@ -353,7 +362,7 @@ function useCoachChat(): Chat {
         for (;;) {
           const s = (schede.current.get(msgId) ?? []).find((x) => x.stato === "in-corso" || x.stato === "da-confermare");
           if (!s || s.stato === "da-confermare") break;
-          const verifica = verificaAzione(s.azione, stato.get().sedute);
+          const verifica = verificaAzione(s.azione, datiLeo());
           if ("motivo" in verifica) {
             cambia(msgId, s.key, { stato: "rifiutato", motivo: verifica.motivo });
             continue;
@@ -364,7 +373,7 @@ function useCoachChat(): Chat {
             stato.setFocus({ tipo: "messaggio", clientId: s.azione.dati.cliente, testo: s.azione.dati.testo, daScrivere: true });
             await attesa(durataScrittura(s.azione.dati.testo, ridotto()) + 250);
           }
-          const esito = eseguiAzione(s.azione);
+          const esito = await eseguiAzione(s.azione);
           if ("motivo" in esito) {
             cambia(msgId, s.key, { stato: "rifiutato", motivo: esito.motivo });
             continue;
@@ -383,15 +392,29 @@ function useCoachChat(): Chat {
   );
 
   const conferma = useCallback(
-    (msgId: number, key: string, testo?: string) => {
+    (msgId: number, key: string, modifica?: Modifica) => {
       const s = schede.current.get(msgId)?.find((x) => x.key === key);
       if (!s || s.stato !== "da-confermare") return;
       playSound("tap");
-      const azione: AzioneLeo = testo !== undefined && s.azione.nome === "scrivi_messaggio" ? { ...s.azione, dati: { ...s.azione.dati, testo: testo.trim() } } : s.azione;
-      cambia(msgId, key, { stato: "in-corso", azione });
+      cambia(msgId, key, { stato: "in-corso", azione: conModifica(s.azione, modifica) });
       procedi(msgId);
     },
     [cambia, procedi],
+  );
+
+  // Tutte le schede ancora da confermare partono insieme, in ordine, con il loro viaggio.
+  const confermaTutte = useCallback(
+    (msgId: number) => {
+      const lista = schede.current.get(msgId) ?? [];
+      if (!lista.some((x) => x.stato === "da-confermare")) return;
+      playSound("tap");
+      salvaSchede(
+        msgId,
+        lista.map((x) => (x.stato === "da-confermare" ? { ...x, stato: "in-corso" } : x)),
+      );
+      procedi(msgId);
+    },
+    [salvaSchede, procedi],
   );
 
   const rifiuta = useCallback(
@@ -412,7 +435,7 @@ function useCoachChat(): Chat {
       cambia(msgId, key, { stato: "in-corso", motivo: undefined });
       void fila.aggiungi(async () => {
         await viaggia(msgId, s.azione);
-        const fatto = s.annulla!();
+        const fatto = await s.annulla!();
         if ("motivo" in fatto) {
           cambia(msgId, key, { stato: "fatto", motivo: `Non posso annullare: ${fatto.motivo}` });
         } else {
@@ -501,14 +524,14 @@ function useCoachChat(): Chat {
         finish(testo);
         if (nonCapite) setMessages((m) => m.map((x) => (x.id === id ? { ...x, nonCapite } : x)));
         if (azioni.length) {
-          const sedute = stato.get().sedute;
+          const dati = datiLeo();
           salvaSchede(
             id,
             azioni.map((a, i): SchedaAzione => {
               const chiara = inChiaro(a, clientiAttuali());
               const key = `${id}-${i}`;
               if (!chiara) return { key, azione: a, titolo: "Azione su un cliente che non conosco", stato: "errore", motivo: "Cliente non trovato" };
-              return { key, azione: chiara, titolo: riassunto(chiara, sedute), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
+              return { key, azione: chiara, titolo: riassunto(chiara, dati), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
             }),
           );
           procedi(id);
@@ -538,7 +561,7 @@ function useCoachChat(): Chat {
     [procedi, salvaSchede],
   );
 
-  return { messages, typing, thinking, ask, conferma, rifiuta, annulla, torna, partenza, compatta };
+  return { messages, typing, thinking, ask, conferma, confermaTutte, rifiuta, annulla, torna, partenza, compatta };
 }
 
 // Il messaggio appena inviato dal trainer: parte dall'altezza del campo di scrittura (daY, in px dello schermo),
@@ -602,7 +625,7 @@ function ChatPanel({
   dismiss: () => void;
   openInfo: () => void;
 }) {
-  const { messages, typing, thinking, ask: askChat, conferma, rifiuta, annulla, torna, partenza, compatta } = chat;
+  const { messages, typing, thinking, ask: askChat, conferma, confermaTutte, rifiuta, annulla, torna, partenza, compatta } = chat;
   const [draft, setDraft] = useState("");
   const scrive = draft.trim().length > 0;
   const reduce = useReducedMotion();
@@ -737,11 +760,14 @@ function ChatPanel({
               )}
               {m.schede && (
                 <div className="mt-[6px] flex w-[300px] max-w-full flex-col gap-[6px]">
+                  {m.schede.filter((sc) => sc.stato === "da-confermare").length >= 2 && (
+                    <ConfermaTutte n={m.schede.filter((sc) => sc.stato === "da-confermare").length} onConferma={() => confermaTutte(m.id)} />
+                  )}
                   {m.schede.map((sc) => (
                     <SchedaAzioneView
                       key={sc.key}
                       scheda={sc}
-                      onConferma={(testo) => conferma(m.id, sc.key, testo)}
+                      onConferma={(modifica) => conferma(m.id, sc.key, modifica)}
                       onRifiuta={() => rifiuta(m.id, sc.key)}
                       onAnnulla={() => annulla(m.id, sc.key)}
                       onTorna={partenza(m.id) ? () => torna(m.id) : undefined}

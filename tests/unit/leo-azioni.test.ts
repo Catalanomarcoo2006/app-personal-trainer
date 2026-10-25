@@ -8,13 +8,17 @@ import {
   luogoPredefinito,
   normalizzaOra,
   notaPerLeo,
+  personalizza,
   riassunto,
   verificaAzione,
   type AzioneLeo,
   type Seduta,
 } from "@/libs/prototipo/leo-azioni";
 import { clienteDa } from "@/libs/prototipo/leo-contesto";
+import { datiIniziali } from "@/libs/dati/iniziali";
 
+// I controlli ricevono calendario e dati dei clienti insieme.
+const conDati = (sedute: Seduta[]) => ({ sedute, dati: datiIniziali() });
 // Una sola seduta di prova: giovedì 22 alle 18:00 per un'ora con Giulia Bianchi.
 const sedute: Seduta[] = [{ id: "A1", date: "2026-10-22", time: "18:00", minutes: 60, clientId: "giulia-bianchi", type: "Workout", place: "Fit Lab, Meolo" }];
 
@@ -91,50 +95,50 @@ describe("riconoscere il cliente", () => {
 
 describe("verificaAzione", () => {
   it("rifiuta le sovrapposizioni col nome vero del cliente", () => {
-    expect(verificaAzione(fissa("18:30"), sedute)).toEqual({ ok: false, motivo: "Si sovrappone con Giulia Bianchi alle 18:00" });
+    expect(verificaAzione(fissa("18:30"), conDati(sedute))).toEqual({ ok: false, motivo: "Si sovrappone con Giulia Bianchi alle 18:00" });
   });
   it("accetta le sedute attaccate", () => {
-    expect(verificaAzione(fissa("19:00"), sedute)).toEqual({ ok: true });
-    expect(verificaAzione(fissa("17:00"), sedute)).toEqual({ ok: true });
+    expect(verificaAzione(fissa("19:00"), conDati(sedute))).toEqual({ ok: true });
+    expect(verificaAzione(fissa("17:00"), conDati(sedute))).toEqual({ ok: true });
   });
   it("tiene le sedute tra le 6 e le 22", () => {
-    const presto = verificaAzione(fissa("05:30"), sedute);
+    const presto = verificaAzione(fissa("05:30"), conDati(sedute));
     expect(presto).toMatchObject({ ok: false, motivo: expect.stringContaining("6:00") });
-    const tardi = verificaAzione(fissa("21:30"), sedute);
+    const tardi = verificaAzione(fissa("21:30"), conDati(sedute));
     expect(tardi).toMatchObject({ ok: false, motivo: expect.stringContaining("22:00") });
-    expect(verificaAzione(fissa("21:00"), sedute)).toEqual({ ok: true });
+    expect(verificaAzione(fissa("21:00"), conDati(sedute))).toEqual({ ok: true });
   });
   it("tiene la durata tra 15 e 180 minuti", () => {
-    expect(verificaAzione(fissa("10:00", 10), sedute).ok).toBe(false);
-    expect(verificaAzione(fissa("10:00", 200), sedute).ok).toBe(false);
-    expect(verificaAzione(fissa("10:00", 15), sedute).ok).toBe(true);
+    expect(verificaAzione(fissa("10:00", 10), conDati(sedute)).ok).toBe(false);
+    expect(verificaAzione(fissa("10:00", 200), conDati(sedute)).ok).toBe(false);
+    expect(verificaAzione(fissa("10:00", 15), conDati(sedute)).ok).toBe(true);
   });
   it("agisce solo su questa settimana e la prossima, non nel passato", () => {
-    expect(verificaAzione(fissa("10:00", 60, "2026-11-02"), sedute).ok).toBe(false);
-    expect(verificaAzione(fissa("09:00", 60, "2026-10-21"), sedute).ok).toBe(false);
-    expect(verificaAzione(fissa("09:00", 60, "2026-10-20"), sedute).ok).toBe(false);
-    expect(verificaAzione(fissa("11:00", 60, "2026-10-21"), sedute).ok).toBe(true);
-    expect(verificaAzione(fissa("10:00", 60, "2026-11-01"), sedute).ok).toBe(true);
+    expect(verificaAzione(fissa("10:00", 60, "2026-11-02"), conDati(sedute)).ok).toBe(false);
+    expect(verificaAzione(fissa("09:00", 60, "2026-10-21"), conDati(sedute)).ok).toBe(false);
+    expect(verificaAzione(fissa("09:00", 60, "2026-10-20"), conDati(sedute)).ok).toBe(false);
+    expect(verificaAzione(fissa("11:00", 60, "2026-10-21"), conDati(sedute)).ok).toBe(true);
+    expect(verificaAzione(fissa("10:00", 60, "2026-11-01"), conDati(sedute)).ok).toBe(true);
   });
   it("lo spostamento può sovrapporsi solo a sé stesso", () => {
-    expect(verificaAzione({ nome: "sposta_appuntamento", dati: { id: "A1", data: "2026-10-22", ora: "18:30" } }, sedute)).toEqual({ ok: true });
-    expect(verificaAzione({ nome: "sposta_appuntamento", dati: { id: "A99", data: "2026-10-22", ora: "18:30" } }, sedute)).toEqual({
+    expect(verificaAzione({ nome: "sposta_appuntamento", dati: { id: "A1", data: "2026-10-22", ora: "18:30" } }, conDati(sedute))).toEqual({ ok: true });
+    expect(verificaAzione({ nome: "sposta_appuntamento", dati: { id: "A99", data: "2026-10-22", ora: "18:30" } }, conDati(sedute))).toEqual({
       ok: false,
       motivo: "Appuntamento non trovato",
     });
     const due: Seduta[] = [...sedute, { ...sedute[0], id: "A2", time: "10:00", clientId: "sara-conti" }];
-    expect(verificaAzione({ nome: "sposta_appuntamento", dati: { id: "A2", data: "2026-10-22", ora: "17:30" } }, due)).toEqual({
+    expect(verificaAzione({ nome: "sposta_appuntamento", dati: { id: "A2", data: "2026-10-22", ora: "17:30" } }, conDati(due))).toEqual({
       ok: false,
       motivo: "Si sovrappone con Giulia Bianchi alle 18:00",
     });
   });
   it("controlla che cliente e seduta esistano", () => {
-    expect(verificaAzione({ ...fissa("10:00"), dati: { ...fissa("10:00").dati, cliente: "nessuno" } } as AzioneLeo, sedute)).toEqual({
+    expect(verificaAzione({ ...fissa("10:00"), dati: { ...fissa("10:00").dati, cliente: "nessuno" } } as AzioneLeo, conDati(sedute))).toEqual({
       ok: false,
       motivo: "Cliente non trovato",
     });
-    expect(verificaAzione({ nome: "cancella_appuntamento", dati: { id: "A7" } }, sedute)).toEqual({ ok: false, motivo: "Appuntamento non trovato" });
-    expect(verificaAzione({ nome: "cancella_appuntamento", dati: { id: "A1" } }, sedute)).toEqual({ ok: true });
+    expect(verificaAzione({ nome: "cancella_appuntamento", dati: { id: "A7" } }, conDati(sedute))).toEqual({ ok: false, motivo: "Appuntamento non trovato" });
+    expect(verificaAzione({ nome: "cancella_appuntamento", dati: { id: "A1" } }, conDati(sedute))).toEqual({ ok: true });
   });
 });
 
@@ -159,12 +163,12 @@ describe("altre regole", () => {
   });
   it("riassume l'azione con i nomi veri", () => {
     const s: Seduta[] = [{ ...sedute[0], id: "A3", clientId: "sara-conti", time: "10:00" }];
-    expect(riassunto({ nome: "sposta_appuntamento", dati: { id: "A3", data: "2026-10-23", ora: "10:00" } }, s)).toBe(
+    expect(riassunto({ nome: "sposta_appuntamento", dati: { id: "A3", data: "2026-10-23", ora: "10:00" } }, conDati(s))).toBe(
       "Sposto Sara Conti · gio 22/10 10:00 → ven 23/10 10:00",
     );
-    expect(riassunto(fissa("19:00"), s)).toBe("Fisso Workout con Sara Conti · gio 22/10 19:00 · 60 min");
-    expect(riassunto({ nome: "cancella_appuntamento", dati: { id: "A3" } }, s)).toBe("Cancello Workout con Sara Conti · gio 22/10 10:00");
-    expect(riassunto({ nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao" } }, s)).toBe("Messaggio a Sara Conti");
+    expect(riassunto(fissa("19:00"), conDati(s))).toBe("Fisso Workout con Sara Conti · gio 22/10 19:00 · 60 min");
+    expect(riassunto({ nome: "cancella_appuntamento", dati: { id: "A3" } }, conDati(s))).toBe("Cancello Workout con Sara Conti · gio 22/10 10:00");
+    expect(riassunto({ nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao" } }, conDati(s))).toBe("Messaggio a Sara Conti");
   });
   it("la nota per Leo racconta gli esiti con i nomi", () => {
     const nota = notaPerLeo([
@@ -178,3 +182,29 @@ describe("altre regole", () => {
     expect(notaPerLeo([])).toBe("");
   });
 });
+
+describe("scrivi_a_piu", () => {
+  const piu = (clienti: string[], testo = "Ciao {nome}!"): AzioneLeo => ({ nome: "scrivi_a_piu", dati: { clienti, testo } });
+  it("legge l'azione e mette gli id veri dei clienti", () => {
+    const a = leggiAzione("scrivi_a_piu", { clienti: ["giulia-bianchi", "Sara"], testo: "Ciao {nome}, domani chiuso" });
+    expect(a && inChiaro(a)).toEqual({ nome: "scrivi_a_piu", dati: { clienti: ["giulia-bianchi", "sara-conti"], testo: "Ciao {nome}, domani chiuso" } });
+  });
+  it("un cliente sconosciuto rende l'azione non valida", () => {
+    expect(inChiaro(piu(["giulia-bianchi", "Mario Rossi"]))).toBeNull();
+  });
+  it("controlla destinatari e segnaposto", () => {
+    expect(verificaAzione(piu(Array(51).fill("giulia-bianchi")), conDati(sedute))).toEqual({ ok: false, motivo: "Al massimo 50 clienti" });
+    expect(verificaAzione(piu([]), conDati(sedute))).toEqual({ ok: false, motivo: "Scegli almeno un cliente" });
+    expect(verificaAzione(piu(["giulia-bianchi"], "Ciao {cognome}"), conDati(sedute))).toEqual({ ok: false, motivo: "Nel testo uso solo {nome}" });
+    expect(verificaAzione(piu(["giulia-bianchi", "sara-conti"]), conDati(sedute))).toEqual({ ok: true });
+  });
+  it("personalizza mette il primo nome", () => {
+    expect(personalizza("Ciao {nome}!", "Giulia Bianchi")).toBe("Ciao Giulia!");
+    expect(personalizza("Ciao a tutti", "Giulia Bianchi")).toBe("Ciao a tutti");
+  });
+  it("si conferma prima di inviare e il riassunto dice quanti clienti", () => {
+    expect(daConfermare(piu(["giulia-bianchi"]))).toBe(true);
+    expect(riassunto(piu(["giulia-bianchi", "sara-conti"]), conDati(sedute))).toBe("Messaggio a 2 clienti");
+  });
+});
+

@@ -33,78 +33,87 @@ describe("store del calendario", () => {
   });
 });
 
-describe("eseguiAzione", () => {
-  it("fissa una seduta con il luogo abituale, e annulla la toglie", () => {
+describe("eseguiAzione", async () => {
+  it("fissa una seduta con il luogo abituale, e annulla la toglie", async () => {
     const prima = m.stato.get().sedute;
-    const esito = m.eseguiAzione({ nome: "fissa_appuntamento", dati: { cliente: "paolo-costa", data: "2026-10-26", ora: "13:00", durata: 60, tipo: "Workout" } });
+    const esito = await m.eseguiAzione({ nome: "fissa_appuntamento", dati: { cliente: "paolo-costa", data: "2026-10-26", ora: "13:00", durata: 60, tipo: "Workout" } });
     expect(esito.ok).toBe(true);
     const nuova = m.stato.get().sedute.find((s) => s.clientId === "paolo-costa" && s.date === "2026-10-26" && s.time === "13:00")!;
     expect(nuova).toMatchObject({ place: "Fit Lab, Meolo", minutes: 60, type: "Workout" });
     expect(m.stato.get().focus).toMatchObject({ tipo: "fissa", id: nuova.id });
-    if (esito.ok) esito.annulla?.();
+    if (esito.ok) await esito.annulla?.();
     expect(m.stato.get().sedute).toEqual(prima);
   });
 
-  it("sposta una seduta e annulla la riporta dov'era", () => {
+  it("sposta una seduta e annulla la riporta dov'era", async () => {
     const s = seduta("sara-conti", "2026-10-22");
-    const esito = m.eseguiAzione({ nome: "sposta_appuntamento", dati: { id: s.id, data: "2026-10-23", ora: "15:00" } });
+    const esito = await m.eseguiAzione({ nome: "sposta_appuntamento", dati: { id: s.id, data: "2026-10-23", ora: "15:00" } });
     expect(esito.ok).toBe(true);
     expect(m.stato.get().sedute.find((x) => x.id === s.id)).toMatchObject({ date: "2026-10-23", time: "15:00", minutes: 60 });
     expect(m.stato.get().focus).toMatchObject({ tipo: "sposta", id: s.id, da: { date: "2026-10-22", time: "10:00" } });
-    if (esito.ok) esito.annulla?.();
+    if (esito.ok) await esito.annulla?.();
     expect(m.stato.get().sedute.find((x) => x.id === s.id)).toEqual(s);
   });
 
-  it("cancella una seduta e annulla la rimette con lo stesso id", () => {
+  it("cancella una seduta e annulla la rimette con lo stesso id", async () => {
     const s = seduta("davide-greco", "2026-10-22");
-    const esito = m.eseguiAzione({ nome: "cancella_appuntamento", dati: { id: s.id } });
+    const esito = await m.eseguiAzione({ nome: "cancella_appuntamento", dati: { id: s.id } });
     expect(m.stato.get().sedute.some((x) => x.id === s.id)).toBe(false);
     expect(m.stato.get().focus).toMatchObject({ tipo: "cancella", id: s.id });
-    if (esito.ok) esito.annulla?.();
+    if (esito.ok) await esito.annulla?.();
     expect(m.stato.get().sedute.find((x) => x.id === s.id)).toEqual(s);
   });
 
-  it("annulla tocca solo la seduta di Leo, non le modifiche fatte a mano dopo", () => {
+  it("annulla tocca solo la seduta di Leo, non le modifiche fatte a mano dopo", async () => {
     const x = seduta("sara-conti", "2026-10-22");
     const y = seduta("davide-greco", "2026-10-22");
-    const esito = m.eseguiAzione({ nome: "sposta_appuntamento", dati: { id: x.id, data: "2026-10-23", ora: "15:00" } });
+    const esito = await m.eseguiAzione({ nome: "sposta_appuntamento", dati: { id: x.id, data: "2026-10-23", ora: "15:00" } });
     m.stato.removeSeduta(y.id);
-    if (esito.ok) esito.annulla?.();
+    if (esito.ok) await esito.annulla?.();
     expect(m.stato.get().sedute.find((s) => s.id === x.id)).toEqual(x);
     expect(m.stato.get().sedute.some((s) => s.id === y.id)).toBe(false);
   });
 
-  it("annulla non rimette una seduta sopra un'altra fissata a mano nel frattempo", () => {
+  it("annulla non rimette una seduta sopra un'altra fissata a mano nel frattempo", async () => {
     const x = seduta("sara-conti", "2026-10-22");
-    const esito = m.eseguiAzione({ nome: "sposta_appuntamento", dati: { id: x.id, data: "2026-10-23", ora: "15:00" } });
+    const esito = await m.eseguiAzione({ nome: "sposta_appuntamento", dati: { id: x.id, data: "2026-10-23", ora: "15:00" } });
     m.stato.addSeduta({ clientId: "paolo-costa", date: "2026-10-22", time: "10:00", minutes: 60, type: "Workout", place: "Fit Lab, Meolo" });
-    const annullato = esito.ok && esito.annulla ? esito.annulla() : null;
+    const annullato = esito.ok && esito.annulla ? await esito.annulla() : null;
     expect(annullato).toEqual({ ok: false, motivo: "Si sovrappone con Paolo Costa alle 10:00" });
     expect(m.stato.get().sedute.find((s) => s.id === x.id)).toMatchObject({ date: "2026-10-23", time: "15:00" });
   });
 
-  it("annulla di una cancellazione controlla anche lui le sovrapposizioni", () => {
+  it("annulla di una cancellazione controlla anche lui le sovrapposizioni", async () => {
     const y = seduta("davide-greco", "2026-10-22");
-    const esito = m.eseguiAzione({ nome: "cancella_appuntamento", dati: { id: y.id } });
+    const esito = await m.eseguiAzione({ nome: "cancella_appuntamento", dati: { id: y.id } });
     m.stato.addSeduta({ clientId: "paolo-costa", date: y.date, time: y.time, minutes: 60, type: "Workout", place: "Fit Lab, Meolo" });
-    const annullato = esito.ok && esito.annulla ? esito.annulla() : null;
+    const annullato = esito.ok && esito.annulla ? await esito.annulla() : null;
     expect(annullato).toMatchObject({ ok: false });
     expect(m.stato.get().sedute.some((s) => s.id === y.id)).toBe(false);
   });
 
-  it("scrive il messaggio nella conversazione del cliente, senza annulla", () => {
-    const esito = m.eseguiAzione({ nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao Sara, ci vediamo venerdì" } });
+  it("scrive il messaggio nella conversazione del cliente, senza annulla", async () => {
+    const esito = await m.eseguiAzione({ nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao Sara, ci vediamo venerdì" } });
     expect(esito).toEqual({ ok: true });
     expect(m.stato.get().threads["sara-conti"].at(-1)).toEqual({ from: "trainer", text: "Ciao Sara, ci vediamo venerdì", time: "Adesso" });
     expect(m.stato.get().focus).toMatchObject({ tipo: "messaggio", clientId: "sara-conti" });
   });
 
-  it("se il controllo non passa non cambia niente", () => {
+  it("se il controllo non passa non cambia niente", async () => {
     const prima = m.stato.get();
     const giulia = seduta("giulia-bianchi", "2026-10-23");
     const azione: AzioneLeo = { nome: "fissa_appuntamento", dati: { cliente: "sara-conti", data: "2026-10-23", ora: giulia.time, durata: 60, tipo: "Workout" } };
-    expect(m.eseguiAzione(azione)).toEqual({ ok: false, motivo: `Si sovrappone con Giulia Bianchi alle ${giulia.time}` });
+    expect(await m.eseguiAzione(azione)).toEqual({ ok: false, motivo: `Si sovrappone con Giulia Bianchi alle ${giulia.time}` });
     expect(m.stato.get().sedute).toBe(prima.sedute);
     expect(m.stato.get().focus).toBe(prima.focus);
+  });
+
+  it("scrive lo stesso messaggio a più clienti, ognuno col suo nome", async () => {
+    const esito = await m.eseguiAzione({ nome: "scrivi_a_piu", dati: { clienti: ["giulia-bianchi", "sara-conti", "luca-ferri"], testo: "Ciao {nome}, domani apro alle 9" } });
+    expect(esito.ok).toBe(true);
+    expect(m.stato.get().threads["giulia-bianchi"].at(-1)).toMatchObject({ from: "trainer", text: "Ciao Giulia, domani apro alle 9" });
+    expect(m.stato.get().threads["sara-conti"].at(-1)).toMatchObject({ text: "Ciao Sara, domani apro alle 9" });
+    expect(m.stato.get().threads["luca-ferri"].at(-1)).toMatchObject({ text: "Ciao Luca, domani apro alle 9" });
+    expect(m.stato.get().focus).toMatchObject({ tipo: "multiplo", clientiIds: ["giulia-bianchi", "sara-conti", "luca-ferri"] });
   });
 });

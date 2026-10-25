@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowUp, Bot, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound } from "lucide-react";
+import { ArrowUp, Bot, Check, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound } from "lucide-react";
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
@@ -83,6 +83,19 @@ export function MessagesView({ search }: { search: string }) {
     }, TEMPI.carattere);
     return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus]);
+
+  // Leo ha scritto lo stesso messaggio a più clienti: si apre il primo, gli altri risultano letti, e per un
+  // attimo un'etichetta dice a quanti è partito.
+  const [inviatiA, setInviatiA] = useState<number | null>(null);
+  useEffect(() => {
+    if (focus?.tipo !== "multiplo" || !focus.clientiIds?.length) return;
+    const ids = focus.clientiIds;
+    setActiveId(ids[0]);
+    setUnread((u) => ({ ...u, ...Object.fromEntries(ids.map((id) => [id, 0])) }));
+    setInviatiA(ids.length);
+    const t = window.setTimeout(() => setInviatiA(null), 2600);
+    return () => window.clearTimeout(t);
   }, [focus]);
 
   // Il cliente risponde alla scheda appena ricevuta.
@@ -238,6 +251,20 @@ export function MessagesView({ search }: { search: string }) {
             </p>
           </div>
           <div className="ml-auto flex items-center gap-[6px]">
+            <AnimatePresence>
+              {inviatiA && (
+                <motion.span
+                  key="inviati"
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.8, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                  className="flex h-[30px] items-center gap-[5px] rounded-full bg-ok-soft px-[11px] text-[11.5px] font-bold text-ok"
+                >
+                  <Check size={12} strokeWidth={3} /> Inviato a {inviatiA} clienti
+                </motion.span>
+              )}
+            </AnimatePresence>
             <IconCircle icon={Phone} label={`Chiama ${client.phone}`} size={34} onClick={() => (window.location.href = `tel:${client.phone.replace(/\s/g, "")}`)} />
             <Link href={ROUTES.cliente(client.id)} onClick={() => playSound("tap")} className="flex h-[34px] items-center gap-[6px] rounded-full bg-soft px-[14px] text-[12px] font-semibold text-ink transition-colors hover:bg-line">
               <UserRound size={13} /> Apri profilo

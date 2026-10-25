@@ -41,7 +41,17 @@ export const demoVideo = (name: string) => `https://www.youtube.com/results?sear
 // Dove guardare dopo un'azione di Leo: il calendario o la chat la usano per evidenziare e animare.
 // seq cresce a ogni azione, così la stessa seduta si può evidenziare due volte di fila.
 // daScrivere: la chat dei messaggi scrive il testo nella barra prima che il messaggio parta.
-export type FocusLeo = { seq: number; tipo: "fissa" | "sposta" | "cancella" | "messaggio"; id?: string; clientId?: string; da?: { date: string; time: string }; testo?: string; daScrivere?: boolean };
+// multiplo: lo stesso messaggio a più clienti (clientiIds), la chat mostra quanti l'hanno ricevuto.
+export type FocusLeo = {
+  seq: number;
+  tipo: "fissa" | "sposta" | "cancella" | "messaggio" | "multiplo";
+  id?: string;
+  clientId?: string;
+  clientiIds?: string[];
+  da?: { date: string; time: string };
+  testo?: string;
+  daScrivere?: boolean;
+};
 
 export const planReply = "Grazie! La guardo subito, i video sono comodissimi 💪";
 
