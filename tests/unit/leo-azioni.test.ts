@@ -83,6 +83,10 @@ describe("riconoscere il cliente", () => {
     expect(inChiaro({ nome: "fissa_appuntamento", dati: { cliente: "Mario Rossi", data: "2026-10-22", ora: "10:00", durata: 60, tipo: "Workout" } })).toBeNull();
     expect(inChiaro({ nome: "cancella_appuntamento", dati: { id: "A1" } })).toEqual({ nome: "cancella_appuntamento", dati: { id: "A1" } });
   });
+  it("inChiaro riconosce anche i clienti creati nell'app", () => {
+    const elenco = [{ id: "marta-neri", name: "Marta Neri" }];
+    expect(inChiaro({ nome: "scrivi_messaggio", dati: { cliente: "Marta", testo: "Ciao" } }, elenco)).toEqual({ nome: "scrivi_messaggio", dati: { cliente: "marta-neri", testo: "Ciao" } });
+  });
 });
 
 describe("verificaAzione", () => {

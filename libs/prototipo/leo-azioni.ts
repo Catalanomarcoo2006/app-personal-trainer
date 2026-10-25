@@ -17,7 +17,7 @@ export type AzioneLeo =
   | { nome: "cancella_appuntamento"; dati: { id: string } }
   | { nome: "scrivi_messaggio"; dati: { cliente: string; testo: string } };
 
-export const MAX_AZIONI = 5;
+export const MAX_AZIONI = 10;
 export const TIPI: AppointmentType[] = ["Workout", "Valutazione", "Online", "Corsa"];
 
 // La demo è ferma a mercoledì 21 ottobre 2026; Leo agisce su questa settimana (19–25) e sulla prossima.
@@ -74,9 +74,10 @@ export function leggiAzione(nome: string, argomenti: unknown): AzioneLeo | null 
 }
 
 // Dal cliente indicato dall'AI (id, nome completo o nome) all'id vero. null se il cliente non esiste.
-export function inChiaro(a: AzioneLeo): AzioneLeo | null {
+// elenco: i clienti di adesso (anche quelli creati nell'app); senza, quelli della demo.
+export function inChiaro(a: AzioneLeo, elenco?: { id: string; name: string }[]): AzioneLeo | null {
   if (a.nome === "fissa_appuntamento" || a.nome === "scrivi_messaggio") {
-    const cliente = clienteDa(a.dati.cliente);
+    const cliente = clienteDa(a.dati.cliente, elenco);
     if (!cliente) return null;
     if (a.nome === "scrivi_messaggio") return { nome: a.nome, dati: { cliente, testo: a.dati.testo } };
     return { nome: a.nome, dati: { ...a.dati, cliente } };

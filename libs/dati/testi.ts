@@ -1,10 +1,8 @@
 // Testi calcolati dai dati: il sollecito di pagamento e gli avvisi "Urgenti" (pagamenti aperti, pacchetti in scadenza).
 
-import { useMemo } from "react";
 import { urgent, type UrgentKind } from "@/libs/prototipo/dati-finti";
-import { useStato } from "@/libs/prototipo/stato";
 import type { DatiClienti, Pagamento } from "./tipi";
-import { vistaCliente } from "./selettori";
+import { vistaCliente } from "./vista";
 
 const euro = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2, useGrouping: "always" });
 
@@ -33,9 +31,4 @@ export function urgentiDa(d: DatiClienti): Urgente[] {
   });
   const fissi = (k: UrgentKind) => urgent.filter((u) => u.kind === k);
   return [...fissi("imminente"), ...pagamenti, ...fissi("dolore"), ...pacchetti];
-}
-
-export function useUrgenti(): Urgente[] {
-  const d = useStato((s) => s.dati);
-  return useMemo(() => urgentiDa(d), [d]);
 }

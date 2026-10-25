@@ -12,6 +12,8 @@ import { estraiAzione, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { eseguiAzione } from "@/libs/prototipo/leo-esegui";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
 import { creaFila } from "@/libs/prototipo/leo-fila";
+import { aspettoAttuale, corpoRichiesta } from "@/libs/prototipo/leo-richiesta";
+import { clientiAttuali } from "@/libs/dati/selettori";
 import { durataScrittura, sezioneDi, TEMPI, tempoAzione } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
 import { SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
@@ -245,7 +247,8 @@ function Bubble({ speech, place, onAsk }: { speech: Speech & { id: number }; pla
 
 // ——— La chat (resta mentre si cambia pagina) ———
 
-type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"]; schede?: SchedaAzione[] };
+// nonCapite: azioni proposte dall'AI che non si riescono a leggere (la chat lo dice invece di tacere)
+type Msg = { id: number; from: "trainer" | "coach"; text: string; action?: Answer["action"]; schede?: SchedaAzione[]; nonCapite?: number };
 type Chat = {
   messages: Msg[];
   typing: boolean;
@@ -460,11 +463,12 @@ function useCoachChat(): Chat {
       request.current = ctrl;
       let raw = "";
       const azioni: AzioneLeo[] = [];
+      let nonCapite = 0;
       try {
         const res = await fetch("/prototipo/api/leo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history.current.slice(-10).map(({ role, content }) => ({ role, content })), calendario: stato.get().sedute }),
+          body: JSON.stringify(corpoRichiesta(history.current.slice(-10).map(({ role, content }) => ({ role, content })), aspettoAttuale())),
           signal: ctrl.signal,
         });
         if (!res.ok || !res.body) throw new Error(`${res.status} ${((await res.json().catch(() => ({}))) as { errore?: string }).errore ?? ""}`);
@@ -477,6 +481,8 @@ function useCoachChat(): Chat {
             show(estraiAzione(raw).text);
           } else if (e.tipo === "azione") {
             azioni.push({ nome: e.nome, dati: e.dati } as AzioneLeo);
+          } else if (e.tipo === "azione-scartata") {
+            nonCapite++;
           } else console.warn("Leo: risposta interrotta dal server", e.v);
         });
         for (;;) {
@@ -485,20 +491,21 @@ function useCoachChat(): Chat {
           lettore.scrivi(decoder.decode(value, { stream: true }));
         }
         lettore.chiudi();
-        if (!raw.trim() && !azioni.length) throw new Error("risposta vuota");
+        if (!raw.trim() && !azioni.length && !nonCapite) throw new Error("risposta vuota");
         stopAttesa();
         const { text: final, vai } = estraiAzione(raw);
         // a volte l'AI propone le azioni senza scrivere niente: una frase di riserva, le schede dicono il resto
-        const testo = final || (azioni.length ? "Ecco cosa preparo:" : "");
+        const testo = final || (azioni.length ? "Ecco cosa preparo:" : "Non ho capito bene cosa fare: puoi riprovare con altre parole?");
         // con un'azione il tasto per aprire la sezione non serve: ci pensa l'azione
         show(testo, azioni.length ? undefined : actionFor(vai));
         finish(testo);
+        if (nonCapite) setMessages((m) => m.map((x) => (x.id === id ? { ...x, nonCapite } : x)));
         if (azioni.length) {
           const sedute = stato.get().sedute;
           salvaSchede(
             id,
             azioni.map((a, i): SchedaAzione => {
-              const chiara = inChiaro(a);
+              const chiara = inChiaro(a, clientiAttuali());
               const key = `${id}-${i}`;
               if (!chiara) return { key, azione: a, titolo: "Azione su un cliente che non conosco", stato: "errore", motivo: "Cliente non trovato" };
               return { key, azione: chiara, titolo: riassunto(chiara, sedute), stato: daConfermare(chiara) ? "da-confermare" : "in-corso" };
@@ -723,6 +730,11 @@ function ChatPanel({
                 ) : (
                   <p className={`rounded-[16px] px-[12px] py-[8px] text-[12.5px] leading-relaxed ${m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"}`}>{m.text}</p>
                 ))}
+              {!!m.nonCapite && (
+                <p className="mt-[6px] max-w-[300px] rounded-[12px] border border-line px-[10px] py-[6px] text-[11px] leading-snug text-[#d43b4f]">
+                  {m.nonCapite === 1 ? "Non ho capito una parte della richiesta" : `Non ho capito ${m.nonCapite} parti della richiesta`}: riprova con altre parole.
+                </p>
+              )}
               {m.schede && (
                 <div className="mt-[6px] flex w-[300px] max-w-full flex-col gap-[6px]">
                   {m.schede.map((sc) => (

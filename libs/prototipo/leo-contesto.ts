@@ -4,21 +4,85 @@
 
 import { z } from "zod";
 import { LONG, seduteIniziali } from "./calendario";
-import { clientById, clients, conversations, notifications, progressOf, revenue, TODAY_INDEX, trainer, urgent, week } from "./dati-finti";
+import { clients, conversations, notifications, revenue, TODAY_INDEX, trainer, urgent, week } from "./dati-finti";
 import type { Seduta } from "./leo-azioni";
+import { datiIniziali } from "@/libs/dati/iniziali";
+import { vistaClienti } from "@/libs/dati/vista";
+import type { DatiClienti, Notifiche } from "@/libs/dati/tipi";
 
-const nomeDi = (id: string) => clientById(id)?.name ?? "cliente sconosciuto";
 const semplice = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
 // Il cliente indicato dall'AI: id ("sara-conti"), nome completo ("Sara Conti") o solo nome se è unico ("Sara").
-export function clienteDa(valore: string): string | undefined {
+// elenco: i clienti di adesso (anche quelli creati nell'app); senza, quelli della demo.
+export function clienteDa(valore: string, elenco: { id: string; name: string }[] = clients): string | undefined {
   const v = semplice(valore);
   if (!v) return undefined;
-  const esatto = clients.find((c) => c.id === v || semplice(c.name) === v);
+  const esatto = elenco.find((c) => c.id === v || semplice(c.name) === v);
   if (esatto) return esatto.id;
-  const perNome = clients.filter((c) => semplice(c.name.split(" ")[0]) === v);
+  const perNome = elenco.filter((c) => semplice(c.name.split(" ")[0]) === v);
   return perNome.length === 1 ? perNome[0].id : undefined;
 }
+
+// ——— I clienti come li manda il browser: la situazione di adesso, senza email, telefoni e foto ———
+
+const testo = (max: number) => z.string().max(max);
+export const ClienteContesto = z.object({
+  id: testo(60),
+  name: testo(80),
+  gender: z.enum(["donna", "uomo"]),
+  since: testo(40),
+  goal: testo(120),
+  unit: testo(12),
+  start: z.number(),
+  current: z.number(),
+  target: z.number(),
+  weights: z.array(z.number()).max(12),
+  measures: z.array(z.object({ label: testo(20), start: z.number(), current: z.number() })).max(8),
+  ultimaMisura: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  pkg: z.object({ label: testo(80), left: testo(80), expiring: z.boolean() }),
+  payments: z.array(z.object({ id: testo(12), date: testo(12), label: testo(120), amount: z.number(), paid: z.boolean() })).max(40),
+  lastWorkout: testo(40),
+  needsAttention: z.boolean(),
+  plan: testo(120),
+  notes: testo(3000),
+  questions: z.array(testo(300)).max(20),
+});
+export type ClienteContesto = z.infer<typeof ClienteContesto>;
+
+export function perContesto(d: DatiClienti): ClienteContesto[] {
+  return vistaClienti(d).map((v) => {
+    const date = d.misure.filter((m) => m.clientId === v.id).map((m) => m.takenOn);
+    return {
+      id: v.id,
+      name: v.name,
+      gender: v.gender,
+      since: v.since,
+      goal: v.goal,
+      unit: v.unit,
+      start: v.start,
+      current: v.current,
+      target: v.target,
+      weights: v.weights,
+      measures: v.measures,
+      ...(date.length ? { ultimaMisura: date.sort().at(-1) } : {}),
+      pkg: v.pkg,
+      payments: v.payments,
+      lastWorkout: v.lastWorkout,
+      needsAttention: v.needsAttention,
+      plan: v.plan,
+      notes: v.notes,
+      questions: v.questions,
+    };
+  });
+}
+
+// Altri dati di adesso che il browser manda insieme ai clienti.
+export const ExtraContesto = z.object({
+  incassi: z.object({ incassatoCents: z.number().int(), daIncassareCents: z.number().int() }).optional(),
+  aspetto: z.object({ colore: testo(9), tema: z.enum(["light", "dark"]) }).optional(),
+  notifiche: z.object({ dolore: z.boolean(), spostamento: z.boolean(), pacchetti: z.boolean(), riepilogo: z.boolean(), avvisoDolori: z.boolean() }).optional(),
+});
+export type ExtraContesto = { incassi?: { incassatoCents: number; daIncassareCents: number }; aspetto?: { colore: string; tema: "light" | "dark" }; notifiche?: Notifiche };
 
 // Email e numeri di telefono spariscono dai testi che vanno all'AI: a Leo non servono.
 export function ripulisci(testo: string): string {
@@ -68,19 +132,21 @@ const GUIDA = `- Schede: si costruiscono dalla libreria esercizi. Sotto ogni ese
 - Impostazioni: profilo e foto, colore del marchio (i clienti vedono l'app con quel colore), tema chiaro o scuro, suoni, notifiche.
 - In alto: campanello "Urgenti" con quello che va fatto subito, ricerca (Ctrl+K), avvisi recenti.`;
 
-function cliente(c: (typeof clients)[number]): string {
-  const peso = `${numero.format(c.weights[0])} → ${numero.format(c.weights[c.weights.length - 1])} kg in 8 settimane`;
+const avanzamento = (c: ClienteContesto) => Math.round(Math.max(0, Math.min(100, ((c.current - c.start) / (c.target - c.start || 1)) * 100)));
+
+function cliente(c: ClienteContesto): string {
+  const peso = c.weights.length ? `${numero.format(c.weights[0])} → ${numero.format(c.weights[c.weights.length - 1])} kg nelle ultime ${c.weights.length} rilevazioni` : "nessuna rilevazione";
   const misure = c.measures.map((m) => `${m.label.toLowerCase()} ${m.start}→${m.current} cm`).join(", ");
-  const pagamenti = c.payments.map((p) => `${p.label} ${euro(p.amount)} del ${p.date} (${p.paid ? "pagato" : "DA PAGARE"})`).join("; ");
+  const pagamenti = c.payments.length ? c.payments.map((p) => `${p.id} ${p.label} ${euro(p.amount)} del ${p.date} (${p.paid ? "pagato" : "DA PAGARE"})`).join("; ") : "nessuno";
   const parti = [
-    `obiettivo "${c.goal}": partenza ${numero.format(c.start)} ${c.unit}, ora ${numero.format(c.current)}, traguardo ${numero.format(c.target)} (avanzamento ${progressOf(c)}%)`,
+    `obiettivo "${c.goal}": partenza ${numero.format(c.start)} ${c.unit}, ora ${numero.format(c.current)}, traguardo ${numero.format(c.target)} (avanzamento ${avanzamento(c)}%)`,
     `cliente ${c.since.toLowerCase()}`,
     `pacchetto: ${c.pkg.label}, ${c.pkg.left.toLowerCase()}${c.pkg.expiring ? " (IN SCADENZA)" : ""}`,
     `ultimo allenamento: ${c.lastWorkout.toLowerCase()}${c.needsAttention ? " (DA SEGUIRE: non si allena da più di una settimana)" : ""}`,
     `scheda attuale: ${c.plan}`,
-    `peso: ${peso}; misure: ${misure}`,
+    `peso: ${peso}; misure: ${misure || "nessuna"}${c.ultimaMisura ? ` (ultima rilevazione ${c.ultimaMisura})` : ""}`,
     `pagamenti: ${pagamenti}`,
-    `note del trainer: ${c.notes}`,
+    `note del trainer: ${c.notes || "nessuna"}`,
   ];
   if (c.questions.length) parti.push(`domande fatte all'assistente: ${c.questions.map((q) => `"${q}"`).join(", ")}`);
   return `- ${c.name} (${c.gender}, id ${c.id}): ${parti.join(" · ")}`;
@@ -97,33 +163,38 @@ export const SedutaContesto = z.object({
   place: z.string().max(80),
 });
 
-function seduta(s: Seduta): string {
+function seduta(s: Seduta, nomeDi: (id: string) => string): string {
   const [y, m, d] = s.date.split("-").map(Number);
   const giornoSett = LONG[(new Date(y, m - 1, d).getDay() + 6) % 7].toLowerCase();
   const oggi = s.date === "2026-10-21" ? " (OGGI)" : "";
   return `- ${s.id} · ${giornoSett} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}${oggi} · ${s.time} · ${s.minutes} min · ${s.type.toLowerCase()} · ${s.place} · ${nomeDi(s.clientId)}`;
 }
 
-export function contestoLeo(sedute: Seduta[] = seduteIniziali()): string {
+export function contestoLeo(sedute: Seduta[] = seduteIniziali(), clienti: ClienteContesto[] = perContesto(datiIniziali()), extra: ExtraContesto = {}): string {
   const oggi = week[TODAY_INDEX];
-  const mesi = revenue.months.map((m) => `${m.label} ${euro(m.value)}`).join(", ");
+  const nomi = new Map(clienti.map((c) => [c.id, c.name]));
+  const nomeDi = (id: string) => nomi.get(id) ?? "cliente sconosciuto";
+  const incassato = extra.incassi ? extra.incassi.incassatoCents / 100 : revenue.collected;
+  const daIncassare = extra.incassi ? extra.incassi.daIncassareCents / 100 : revenue.outstanding;
+  const mesi = revenue.months.map((m, i, tutti) => `${m.label} ${euro(i === tutti.length - 1 ? incassato : m.value)}`).join(", ");
   const righe = [
     ISTRUZIONI,
     "",
     `Oggi è ${oggi.long.toLowerCase()} ${trainer.today.toLowerCase()} 2026, sono le ${trainer.now}. Le date nelle azioni vanno scritte AAAA-MM-GG (oggi è 2026-10-21).`,
     "",
-    `## Clienti (${clients.length})`,
-    ...clients.map(cliente),
+    `## Clienti (${clienti.length})`,
+    "I pagamenti hanno un id (P2, P7…): usalo nelle azioni sui pagamenti, mai nel testo per il trainer.",
+    ...clienti.map(cliente),
     "",
     "## Calendario (questa settimana e la prossima)",
     "Settimane: questa da lunedì 19 a domenica 25 ottobre, la prossima da lunedì 26 ottobre a domenica 1 novembre. Puoi agire solo su questi giorni. Giorni senza righe = nessuna seduta.",
-    ...[...sedute].sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time)).map(seduta),
+    ...[...sedute].sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time)).map((s) => seduta(s, nomeDi)),
     "",
     "## Incassi",
-    `${revenue.month}: incassato ${euro(revenue.collected)} (+${revenue.delta}% sul mese prima), da incassare ${euro(revenue.outstanding)}, previsto a fine mese ${euro(revenue.forecast)}. Ultimi 6 mesi: ${mesi}.`,
+    `${revenue.month}: incassato ${euro(incassato)}, da incassare ${euro(daIncassare)}, previsto a fine mese ${euro(revenue.forecast)}. Ultimi 6 mesi: ${mesi}.`,
     "",
-    "## Da fare subito",
-    ...urgent.map((u) => `- ${u.title}: ${u.detail}`),
+    "## Da fare subito (oltre a pagamenti DA PAGARE e pacchetti IN SCADENZA scritti nei clienti)",
+    ...urgent.filter((u) => u.kind === "imminente" || u.kind === "dolore").map((u) => `- ${u.title}: ${u.detail}`),
     "",
     "## Avvisi recenti",
     ...notifications.map((n) => `- ${nomeDi(n.clientId)} ${n.text} (${n.when})`),
@@ -138,6 +209,14 @@ export function contestoLeo(sedute: Seduta[] = seduteIniziali()): string {
           .join(" | "),
     ),
     "",
+    ...(extra.aspetto || extra.notifiche
+      ? [
+          "## Impostazioni attuali",
+          ...(extra.aspetto ? [`- colore del marchio ${extra.aspetto.colore}, tema ${extra.aspetto.tema === "dark" ? "scuro" : "chiaro"}`] : []),
+          ...(extra.notifiche ? [`- notifiche: ${Object.entries(extra.notifiche).map(([k, v]) => `${k} ${v ? "accesa" : "spenta"}`).join(", ")}`] : []),
+          "",
+        ]
+      : []),
     "## Come si usa l'app",
     GUIDA,
   ];

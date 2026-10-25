@@ -135,8 +135,10 @@ describe("POST /prototipo/api/leo", () => {
     );
     const ev = await eventi(await POST(domanda("Sposta Sara a venerdì alle 10")));
     expect(ev[0]).toEqual({ tipo: "testo", v: "Sposto [C4] a venerdì." });
-    expect(ev.at(-1)).toEqual({ tipo: "azione", nome: "sposta_appuntamento", dati: { id: "A3", data: "2026-10-23", ora: "10:00" } });
+    expect(ev.at(-2)).toEqual({ tipo: "azione", nome: "sposta_appuntamento", dati: { id: "A3", data: "2026-10-23", ora: "10:00" } });
     expect(ev.filter((e) => e.tipo === "azione")).toHaveLength(1);
+    // l'azione sconosciuta non sparisce in silenzio: la chat dirà "non ho capito questa parte"
+    expect(ev.at(-1)).toEqual({ tipo: "azione-scartata", nome: "vola" });
   });
 
   it("restituisce le azioni anche quando l'AI non scrive testo", async () => {
@@ -165,6 +167,45 @@ describe("POST /prototipo/api/leo", () => {
     const req = new Request("http://localhost/prototipo/api/leo", {
       method: "POST",
       body: JSON.stringify({ messages: [{ role: "user", content: "ciao" }], calendario: Array(81).fill(s) }),
+      headers: { "x-forwarded-for": `ip-${Math.random()}` },
+    });
+    expect((await POST(req)).status).toBe(400);
+  });
+
+  it("segnala le azioni che non ha potuto leggere", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fetchFinto.mockResolvedValue(
+      sse([{ choices: [{ delta: { content: "Fatto", tool_calls: [{ index: 0, id: "c0", type: "function", function: { name: "sposta_appuntamento", arguments: '{"id":' } }] } }] }]),
+    );
+    expect(await eventi(await POST(domanda("sposta")))).toEqual([
+      { tipo: "testo", v: "Fatto" },
+      { tipo: "azione-scartata", nome: "sposta_appuntamento" },
+    ]);
+  });
+
+  it("mette nel contesto i clienti mandati dal browser", async () => {
+    fetchFinto.mockResolvedValue(sse([{ choices: [{ delta: { content: "ok" } }] }]));
+    const { perContesto } = await import("@/libs/prototipo/leo-contesto");
+    const { datiIniziali } = await import("@/libs/dati/iniziali");
+    const d = datiIniziali();
+    const clienti = perContesto({ ...d, clienti: d.clienti.map((c) => (c.id === "luca-ferri" ? { ...c, notes: "Nota nuova di prova" } : c)) });
+    const req = new Request("http://localhost/prototipo/api/leo", {
+      method: "POST",
+      body: JSON.stringify({ messages: [{ role: "user", content: "ciao" }], clienti }),
+      headers: { "x-forwarded-for": `ip-${Math.random()}` },
+    });
+    await (await POST(req)).text();
+    const sistema = JSON.parse(fetchFinto.mock.calls[0][1].body).messages[0].content as string;
+    expect(sistema).toContain("Nota nuova di prova");
+  });
+
+  it("rifiuta troppi clienti", async () => {
+    const { perContesto } = await import("@/libs/prototipo/leo-contesto");
+    const { datiIniziali } = await import("@/libs/dati/iniziali");
+    const uno = perContesto(datiIniziali())[0];
+    const req = new Request("http://localhost/prototipo/api/leo", {
+      method: "POST",
+      body: JSON.stringify({ messages: [{ role: "user", content: "ciao" }], clienti: Array(61).fill(uno) }),
       headers: { "x-forwarded-for": `ip-${Math.random()}` },
     });
     expect((await POST(req)).status).toBe(400);

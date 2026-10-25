@@ -8,7 +8,7 @@ import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { UrgentKind } from "@/libs/prototipo/dati-finti";
 import { useClienti } from "@/libs/dati/selettori";
-import { useUrgenti } from "@/libs/dati/testi";
+import { useUrgenti } from "@/libs/dati/selettori";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 

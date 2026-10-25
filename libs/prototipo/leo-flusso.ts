@@ -3,10 +3,11 @@
 
 import { leggiAzione, MAX_AZIONI, type AzioneLeo } from "./leo-azioni";
 
-export type EventoLeo = { tipo: "testo"; v: string } | ({ tipo: "azione" } & AzioneLeo) | { tipo: "errore"; v: string };
+// azione-scartata: l'AI ha proposto un'azione che non si riesce a leggere; la chat lo dice invece di tacere.
+export type EventoLeo = { tipo: "testo"; v: string } | ({ tipo: "azione" } & AzioneLeo) | { tipo: "errore"; v: string } | { tipo: "azione-scartata"; nome: string };
 
 // Accumula delta.tool_calls per indice; alla fine ogni azione si legge e si controlla (le malformate si scartano).
-export function raccoglitoreAzioni(): { aggiungi(toolCalls: unknown): void; azioni(): AzioneLeo[] } {
+export function raccoglitoreAzioni(): { aggiungi(toolCalls: unknown): void; azioni(): AzioneLeo[]; risultato(): { azioni: AzioneLeo[]; scartate: string[] } } {
   const parti = new Map<number, { nome: string; argomenti: string }>();
   return {
     aggiungi(toolCalls) {
@@ -20,20 +21,28 @@ export function raccoglitoreAzioni(): { aggiungi(toolCalls: unknown): void; azio
       }
     },
     azioni() {
+      return this.risultato().azioni;
+    },
+    risultato() {
       const out: AzioneLeo[] = [];
+      const scartate: string[] = [];
       for (const [, p] of [...parti].sort(([a], [b]) => a - b)) {
         let argomenti: unknown;
         try {
           argomenti = JSON.parse(p.argomenti || "{}");
         } catch {
           console.warn("Leo: argomenti dell'azione non leggibili", p.nome);
+          scartate.push(p.nome);
           continue;
         }
         const azione = leggiAzione(p.nome, argomenti);
         if (azione) out.push(azione);
-        else console.warn("Leo: azione scartata", p.nome, p.argomenti.slice(0, 200));
+        else {
+          console.warn("Leo: azione scartata", p.nome, p.argomenti.slice(0, 200));
+          scartate.push(p.nome);
+        }
       }
-      return out.slice(0, MAX_AZIONI);
+      return { azioni: out.slice(0, MAX_AZIONI), scartate };
     },
   };
 }
@@ -46,6 +55,7 @@ function evento(riga: string): EventoLeo | null {
     return null;
   }
   if ((e.tipo === "testo" || e.tipo === "errore") && typeof e.v === "string") return { tipo: e.tipo, v: e.v };
+  if (e.tipo === "azione-scartata" && typeof e.nome === "string") return { tipo: "azione-scartata", nome: e.nome.slice(0, 60) };
   if (e.tipo === "azione" && typeof e.nome === "string") {
     const azione = leggiAzione(e.nome, e.dati);
     return azione ? { tipo: "azione", ...azione } : null;

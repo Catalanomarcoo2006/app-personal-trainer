@@ -25,10 +25,19 @@ describe("raccoglitoreAzioni", () => {
     expect(r.azioni()).toEqual([{ nome: "cancella_appuntamento", dati: { id: "A9" } }]);
   });
 
-  it("tiene al massimo 5 azioni", () => {
+  it("tiene al massimo 10 azioni", () => {
     const r = raccoglitoreAzioni();
-    for (let i = 0; i < 7; i++) r.aggiungi(pezzo(i, { name: "cancella_appuntamento", arguments: `{"id":"A${i}"}` }));
-    expect(r.azioni()).toHaveLength(5);
+    for (let i = 0; i < 12; i++) r.aggiungi(pezzo(i, { name: "cancella_appuntamento", arguments: `{"id":"A${i}"}` }));
+    expect(r.azioni()).toHaveLength(10);
+  });
+
+  it("risultato dice anche quali azioni ha scartato", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const r = raccoglitoreAzioni();
+    r.aggiungi(pezzo(0, { name: "cancella_appuntamento", arguments: '{"id":' }));
+    r.aggiungi(pezzo(1, { name: "fissa_appuntamento", arguments: '{"cliente":"sara-conti"}' }));
+    r.aggiungi(pezzo(2, { name: "cancella_appuntamento", arguments: '{"id":"A9"}' }));
+    expect(r.risultato()).toEqual({ azioni: [{ nome: "cancella_appuntamento", dati: { id: "A9" } }], scartate: ["cancella_appuntamento", "fissa_appuntamento"] });
   });
 
   it("ignora quello che non è un elenco di tool_calls", () => {
@@ -52,6 +61,13 @@ describe("lettoreNdjson", () => {
       { tipo: "azione", nome: "cancella_appuntamento", dati: { id: "A5" } },
       { tipo: "testo", v: "!" },
     ]);
+  });
+
+  it("legge l'evento azione-scartata", () => {
+    const visti: EventoLeo[] = [];
+    const l = lettoreNdjson((e) => visti.push(e));
+    l.scrivi('{"tipo":"azione-scartata","nome":"sposta_appuntamento"}\n');
+    expect(visti).toEqual([{ tipo: "azione-scartata", nome: "sposta_appuntamento" }]);
   });
 
   it("scarta eventi azione malformati", () => {

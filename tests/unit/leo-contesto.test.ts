@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clients } from "@/libs/prototipo/dati-finti";
-import { contestoLeo, estraiAzione, ripulisci, SedutaContesto } from "@/libs/prototipo/leo-contesto";
+import { clienteDa, ClienteContesto, contestoLeo, estraiAzione, perContesto, ripulisci, SedutaContesto } from "@/libs/prototipo/leo-contesto";
+import { datiIniziali } from "@/libs/dati/iniziali";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
 
 describe("contesto per l'AI", () => {
@@ -87,5 +88,49 @@ describe("calendario e azioni nel contesto", () => {
     expect(SedutaContesto.safeParse(sedute[0]).success).toBe(true);
     expect(SedutaContesto.safeParse({ ...sedute[0], time: "10" }).success).toBe(false);
     expect(SedutaContesto.safeParse({ ...sedute[0], type: "Yoga" }).success).toBe(false);
+  });
+});
+
+describe("clienti mandati dal browser", () => {
+  const conGiulia68 = () => {
+    const d = datiIniziali();
+    return {
+      ...d,
+      clienti: d.clienti.map((c) => (c.id === "giulia-bianchi" ? { ...c, goalCurrent: 68, notes: "scrivimi a giulia@esempio.it o al +39 333 1234567" } : c)),
+      misure: [...d.misure, { id: "M999", clientId: "giulia-bianchi", takenOn: "2026-10-21", weightKg: 68 }],
+    };
+  };
+
+  it("perContesto toglie email, telefoni e foto e passa la validazione", () => {
+    const clienti = perContesto(conGiulia68());
+    const giulia = clienti.find((c) => c.id === "giulia-bianchi")!;
+    expect(giulia).not.toHaveProperty("email");
+    expect(giulia).not.toHaveProperty("phone");
+    expect(giulia).not.toHaveProperty("photo");
+    expect(clienti.every((c) => ClienteContesto.safeParse(c).success)).toBe(true);
+  });
+
+  it("il contesto usa i dati aggiornati, con gli id dei pagamenti aperti", () => {
+    const testo = contestoLeo(undefined, perContesto(conGiulia68()));
+    expect(testo.split("\n").find((r) => r.includes("Giulia Bianchi"))).toContain("ora 68");
+    expect(testo).toMatch(/P2 Valutazione posturale € 40 del 03 Ott \(DA PAGARE\)/);
+    expect(testo).not.toContain("giulia@esempio.it");
+    expect(testo).not.toContain("1234567");
+  });
+
+  it("un cliente creato nell'app entra nel contesto e nel calendario col suo nome", () => {
+    const d = datiIniziali();
+    const marta = { ...d.clienti[0], id: "marta-neri", name: "Marta Neri", goalLabel: "Da definire" };
+    const clienti = perContesto({ ...d, clienti: [...d.clienti, marta] });
+    const sedute = [{ id: "A99", date: "2026-10-22", time: "09:00", minutes: 60, clientId: "marta-neri", type: "Workout" as const, place: "Fit Lab" }];
+    const testo = contestoLeo(sedute, clienti);
+    expect(testo).toContain("id marta-neri");
+    expect(testo).toContain("A99 · giovedì 22/10 · 09:00 · 60 min · workout · Fit Lab · Marta Neri");
+  });
+
+  it("clienteDa cerca anche nell'elenco attuale", () => {
+    const elenco = [...clients, { id: "marta-neri", name: "Marta Neri" }];
+    expect(clienteDa("Marta", elenco)).toBe("marta-neri");
+    expect(clienteDa("Marta")).toBeUndefined();
   });
 });

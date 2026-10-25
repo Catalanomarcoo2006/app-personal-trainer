@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { LEO_TOOLS, type Seduta } from "@/libs/prototipo/leo-azioni";
-import { contestoLeo, ripulisci, SedutaContesto } from "@/libs/prototipo/leo-contesto";
+import { ClienteContesto, contestoLeo, ExtraContesto, ripulisci, SedutaContesto } from "@/libs/prototipo/leo-contesto";
 import { raccoglitoreAzioni, type EventoLeo } from "@/libs/prototipo/leo-flusso";
 
 export const runtime = "nodejs";
@@ -25,6 +25,9 @@ const Richiesta = z.object({
     .min(1)
     .max(50),
   calendario: z.array(SedutaContesto).max(80).optional(),
+  // i dati di adesso: clienti (senza email e telefoni), incassi, aspetto e notifiche
+  clienti: z.array(ClienteContesto).max(60).optional(),
+  extra: ExtraContesto.optional(),
 });
 
 // Rete di sicurezza contro l'uso eccessivo: al massimo 20 domande al minuto per indirizzo (in memoria).
@@ -57,7 +60,7 @@ export async function POST(req: Request) {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${chiave}` },
     body: JSON.stringify({
       model: process.env.AI_MODEL ?? "deepseek-flash",
-      messages: [{ role: "system", content: contestoLeo(corpo.data.calendario as Seduta[] | undefined) }, ...messaggi],
+      messages: [{ role: "system", content: contestoLeo(corpo.data.calendario as Seduta[] | undefined, corpo.data.clienti, corpo.data.extra as ExtraContesto | undefined) }, ...messaggi],
       stream: true,
       tools: LEO_TOOLS,
       tool_choice: "auto",
@@ -113,7 +116,9 @@ export async function POST(req: Request) {
           const { done, value } = await lettore.read();
           if (done) {
             clearTimeout(fine);
-            for (const a of azioni.azioni()) controller.enqueue(riga({ tipo: "azione", ...a }));
+            const { azioni: pronte, scartate } = azioni.risultato();
+            for (const a of pronte) controller.enqueue(riga({ tipo: "azione", ...a }));
+            for (const nome of scartate) controller.enqueue(riga({ tipo: "azione-scartata", nome }));
             controller.close();
             return;
           }
