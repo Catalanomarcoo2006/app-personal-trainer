@@ -21,6 +21,7 @@ export type SchedaAzione = {
   annulla?: () => Promise<{ ok: boolean; motivo?: string }>;
   primaDopo?: { voce: string; prima?: string; dopo: string }[]; // calcolato quando è arrivata: i valori di allora
   fattaAlle?: number;
+  dipendeDa?: string; // chiave della scheda del nuovo cliente su cui agisce: aspetta che sia stato creato
 };
 
 const ANNULLA_IN_EVIDENZA = 8000;
@@ -130,7 +131,7 @@ export function SchedaAzioneView({
           <p className={`text-[12px] font-semibold ${stato === "annullato" ? "line-through" : ""}`}>{scheda.titolo}</p>
           {stato === "in-corso" && (
             <p className="mt-[3px] flex items-center gap-[4px] text-[11px] text-muted">
-              <Loader2 size={11} className={reduce ? "" : "animate-spin"} /> In corso…
+              <Loader2 size={11} className={reduce ? "" : "animate-spin"} /> {scheda.dipendeDa ? "Aspetta il nuovo cliente…" : "In corso…"}
             </p>
           )}
           {stato === "fatto" && (

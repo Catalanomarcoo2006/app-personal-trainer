@@ -41,6 +41,14 @@ describe("forma delle azioni dei soldi", () => {
     expect(m.az.leggiAzione("rinnova_pacchetto", { cliente: "giulia", importo: 450 })).toBeNull();
   });
 
+  it("lo 0 sul campo che non serve (mesi 0 con le lezioni, lezioni 0 con i mesi) vale come non indicato", () => {
+    expect(m.az.leggiAzione("rinnova_pacchetto", { cliente: "giulia", lezioni: 10, mesi: 0, importo: 450 })).toEqual({ nome: "rinnova_pacchetto", dati: { cliente: "giulia", lezioni: 10, importo: 450 } });
+    expect(m.az.leggiAzione("rinnova_pacchetto", { cliente: "luca", lezioni: 0, mesi: 1, importo: 120 })).toEqual({ nome: "rinnova_pacchetto", dati: { cliente: "luca", mesi: 1, importo: 120 } });
+    // niente da rinnovare (0 e 0, o un solo 0): "non ho capito"
+    expect(m.az.leggiAzione("rinnova_pacchetto", { cliente: "luca", lezioni: 0, mesi: 0, importo: 120 })).toBeNull();
+    expect(m.az.leggiAzione("rinnova_pacchetto", { cliente: "luca", mesi: 0, importo: 120 })).toBeNull();
+  });
+
   it("inChiaro trova il cliente e scrive l'id del pagamento in maiuscolo", () => {
     expect(m.az.inChiaro({ nome: "registra_pagamento", dati: { cliente: "Luca", importo: 120, descrizione: "x" } })).toMatchObject({ dati: { cliente: "luca-ferri" } });
     expect(m.az.inChiaro({ nome: "segna_pagato", dati: { pagamento: "p2" } })).toEqual({ nome: "segna_pagato", dati: { pagamento: "P2" } });

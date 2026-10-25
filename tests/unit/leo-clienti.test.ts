@@ -25,6 +25,12 @@ describe("forma e controlli", () => {
     expect(m.az.leggiAzione("aggiorna_misure", { cliente: "giulia", peso: "68,4", vita: "79" })).toEqual({ nome: "aggiorna_misure", dati: { cliente: "giulia", peso: 68.4, vita: 79 } });
   });
 
+  it("un valore che non è un numero (n/d, -, testo) non diventa 0: si lascia fuori", () => {
+    expect(m.az.leggiAzione("aggiorna_misure", { cliente: "giulia", peso: "n/d", vita: "79" })).toEqual({ nome: "aggiorna_misure", dati: { cliente: "giulia", vita: 79 } });
+    expect(m.az.leggiAzione("aggiorna_misure", { cliente: "giulia", peso: "-", fianchi: "da misurare" })).toEqual({ nome: "aggiorna_misure", dati: { cliente: "giulia" } });
+    expect(m.az.verificaAzione(misure({}), m.datiLeo())).toEqual({ ok: false, motivo: "Nessun valore da salvare" });
+  });
+
   it("misure senza valori o fuori misura non passano", () => {
     expect(m.az.verificaAzione(misure({}), m.datiLeo())).toEqual({ ok: false, motivo: "Nessun valore da salvare" });
     const v = m.az.verificaAzione(misure({ peso: 680 }), m.datiLeo());

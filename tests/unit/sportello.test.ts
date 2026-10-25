@@ -168,3 +168,48 @@ describe("clienti, messaggi e notifiche", () => {
     expect(dati().notifiche.riepilogo).toBe(false);
   });
 });
+
+describe("misura con data vecchia e messaggi a più clienti", () => {
+  it("una misura con data più vecchia dell'ultima non cambia il peso attuale", async () => {
+    const prima = vista("giulia-bianchi").current;
+    const esito = await m.sp.aggiungiMisura({ clientId: "giulia-bianchi", takenOn: "2026-01-05", weightKg: 90 });
+    expect(esito.ok).toBe(true);
+    expect(vista("giulia-bianchi").current).toBe(prima);
+    expect(dati().misure.some((x) => x.takenOn === "2026-01-05" && x.weightKg === 90)).toBe(true);
+  });
+
+  it("una misura di oggi aggiorna il peso attuale, e annulla lo riporta com'era", async () => {
+    const prima = vista("giulia-bianchi").current;
+    const esito = await m.sp.aggiungiMisura({ clientId: "giulia-bianchi", takenOn: "2026-10-21", weightKg: 67.5 });
+    expect(vista("giulia-bianchi").current).toBe(67.5);
+    if (esito.ok) await esito.annulla!();
+    expect(vista("giulia-bianchi").current).toBe(prima);
+  });
+
+  it("inviaMessaggi controlla tutti prima di scrivere: se uno non va, non parte nessuno", async () => {
+    const lunghezza = () => (m.stato.get().threads["giulia-bianchi"] ?? []).length;
+    const prima = lunghezza();
+    const esito = await m.sp.inviaMessaggi([
+      { clientId: "giulia-bianchi", testo: "Ciao" },
+      { clientId: "non-esiste", testo: "Ciao" },
+    ]);
+    expect(esito).toEqual({ ok: false, motivo: "Cliente non trovato" });
+    expect(lunghezza()).toBe(prima);
+    const troppo = await m.sp.inviaMessaggi([
+      { clientId: "giulia-bianchi", testo: "Ciao" },
+      { clientId: "sara-conti", testo: "x".repeat(1001) },
+    ]);
+    expect(troppo.ok).toBe(false);
+    expect(lunghezza()).toBe(prima);
+  });
+
+  it("inviaMessaggi scrive a tutti quando vanno bene", async () => {
+    const esito = await m.sp.inviaMessaggi([
+      { clientId: "giulia-bianchi", testo: "Ciao Giulia" },
+      { clientId: "sara-conti", testo: "Ciao Sara" },
+    ]);
+    expect(esito.ok).toBe(true);
+    expect(m.stato.get().threads["giulia-bianchi"].at(-1)).toMatchObject({ text: "Ciao Giulia" });
+    expect(m.stato.get().threads["sara-conti"].at(-1)).toMatchObject({ text: "Ciao Sara" });
+  });
+});

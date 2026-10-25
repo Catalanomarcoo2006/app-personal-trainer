@@ -23,10 +23,14 @@ export const suDatiCliente = (nome: string) => nome === "aggiorna_misure" || nom
 
 const MAX_NOTA = 500;
 const vuotoComeAssente = (v: unknown) => (v === null || (typeof v === "string" && v.trim() === "") ? undefined : v);
-// "68,4" → 68.4; numeri già numeri restano tali
+// "68,4" → 68.4; numeri già numeri restano tali. Un valore che non è un numero ("n/d", "-", "da misurare")
+// si lascia fuori: non deve diventare 0 (Number("") vale 0) e finire in una scheda "0 kg?".
 const Numero = z.preprocess((v) => {
   const x = vuotoComeAssente(v);
-  return typeof x === "string" ? Number(x.replace(",", ".").replace(/[^\d.-]/g, "")) : x;
+  if (typeof x !== "string") return x;
+  const pulito = x.replace(",", ".").replace(/[^\d.-]/g, "");
+  const n = Number(pulito);
+  return pulito === "" || Number.isNaN(n) ? undefined : n;
 }, z.number().finite().optional());
 const Testo = (max: number) => z.preprocess(vuotoComeAssente, z.string().trim().max(max).optional());
 

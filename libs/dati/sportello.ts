@@ -110,7 +110,11 @@ export async function aggiungiMisura(m: Omit<Misura, "id">, oggi = OGGI): Promis
   const v = controllaMisura(m, oggi);
   if (!v.ok) return fallito(v);
   const id = nuovoId("M", dati().misure.map((x) => x.id));
-  const pesoObiettivo = m.weightKg !== undefined && c.goalUnit === "kg";
+  // il peso attuale cambia solo se questa rilevazione non è più vecchia dell'ultima già registrata
+  const ultimoPeso = dati()
+    .misure.filter((x) => x.clientId === c.id && x.weightKg !== undefined)
+    .reduce((u, x) => (x.takenOn > u ? x.takenOn : u), "");
+  const pesoObiettivo = m.weightKg !== undefined && c.goalUnit === "kg" && m.takenOn >= ultimoPeso;
   scrivi((d) => ({
     ...d,
     misure: [...d.misure, { id, ...m }],
@@ -218,11 +222,28 @@ export async function creaCliente(r: { name: string; gender: "donna" | "uomo"; e
   };
 }
 
-export async function inviaMessaggio(clientId: string, testo: string): Promise<Esito> {
+const controllaMessaggio = (clientId: string, testo: string): Esito => {
   if (!cliente(clientId)) return { ok: false, motivo: "Cliente non trovato" };
   const t = testo.trim();
   if (!t || t.length > MAX_MESSAGGIO) return { ok: false, motivo: "Il messaggio è vuoto o troppo lungo" };
-  stato.addMessage(clientId, { from: "trainer", text: t, time: "Adesso" });
+  return { ok: true };
+};
+
+export async function inviaMessaggio(clientId: string, testo: string): Promise<Esito> {
+  const v = controllaMessaggio(clientId, testo);
+  if (!v.ok) return v;
+  stato.addMessage(clientId, { from: "trainer", text: testo.trim(), time: "Adesso" });
+  return { ok: true };
+}
+
+// Più messaggi insieme (lo stesso testo a più clienti): si controllano tutti prima di scrivere,
+// così se uno non va non ne parte nessuno e non resta un invio a metà.
+export async function inviaMessaggi(messaggi: { clientId: string; testo: string }[]): Promise<Esito> {
+  for (const m of messaggi) {
+    const v = controllaMessaggio(m.clientId, m.testo);
+    if (!v.ok) return v;
+  }
+  for (const m of messaggi) stato.addMessage(m.clientId, { from: "trainer", text: m.testo.trim(), time: "Adesso" });
   return { ok: true };
 }
 

@@ -18,7 +18,8 @@ import { clientiAttuali } from "@/libs/dati/selettori";
 import { durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
 import { ConfermaTutte, SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
-import { conModifica, daConfermareTutte, type Modifica } from "@/libs/prototipo/leo-modifica";
+import { conModifica, daConfermareTutte, titoloModificato, type Modifica } from "@/libs/prototipo/leo-modifica";
+import { dipendeDaNuovo, ordinaNuoviPrima, risolviDipendenza, sulNuovoCliente, type NuovoCliente } from "@/libs/prototipo/leo-dipendenze";
 import { navigateFade, navigateWithStain, ROUTES } from "./nav";
 import { InfoSparkle, LeoIdentikit, preloadLeoSeduto } from "./LeoIdentikit";
 import { infoSeen, INTRO_LAST, introSeen, LeoPresentazione, setInfoSeen, setIntroSeen } from "./LeoPresentazione";
@@ -372,6 +373,14 @@ function useCoachChat(): Chat {
         for (;;) {
           const s = (schede.current.get(msgId) ?? []).find((x) => x.stato === "in-corso" || x.stato === "da-confermare");
           if (!s || s.stato === "da-confermare") break;
+          // un'azione sul cliente che Leo ha appena creato: ora il cliente c'è, si cerca il suo id vero
+          if (s.dipendeDa) {
+            const dip = (schede.current.get(msgId) ?? []).find((x) => x.key === s.dipendeDa);
+            const r = risolviDipendenza(s.azione, dip, clientiAttuali());
+            if ("motivo" in r) cambia(msgId, s.key, { stato: "rifiutato", motivo: r.motivo, dipendeDa: undefined });
+            else cambia(msgId, s.key, { azione: r.azione, titolo: riassunto(r.azione, datiLeo()), primaDopo: primaDopo(r.azione, datiLeo()), dipendeDa: undefined });
+            continue;
+          }
           const verifica = verificaAzione(s.azione, datiLeo());
           if ("motivo" in verifica) {
             cambia(msgId, s.key, { stato: "rifiutato", motivo: verifica.motivo });
@@ -408,7 +417,7 @@ function useCoachChat(): Chat {
       const s = schede.current.get(msgId)?.find((x) => x.key === key);
       if (!s || s.stato !== "da-confermare") return;
       playSound("tap");
-      cambia(msgId, key, { stato: "in-corso", azione: conModifica(s.azione, modifica) });
+      cambia(msgId, key, { stato: "in-corso", azione: conModifica(s.azione, modifica), ...(modifica && !s.dipendeDa ? { titolo: titoloModificato(s.azione, modifica, datiLeo()) } : {}) });
       procedi(msgId);
     },
     [cambia, procedi],
@@ -426,7 +435,7 @@ function useCoachChat(): Chat {
       const lista = schede.current.get(msgId) ?? [];
       if (!lista.some((x) => x.stato === "da-confermare")) return;
       playSound("tap");
-      salvaSchede(msgId, daConfermareTutte(lista, modifiche.current));
+      salvaSchede(msgId, daConfermareTutte(lista, modifiche.current, datiLeo()));
       procedi(msgId);
     },
     [salvaSchede, procedi],
@@ -543,11 +552,19 @@ function useCoachChat(): Chat {
         if (nonCapite) setMessages((m) => m.map((x) => (x.id === id ? { ...x, nonCapite } : x)));
         if (azioni.length) {
           const dati = datiLeo();
+          // il nuovo cliente passa per primo: le azioni che lo citano ("e fissagli una seduta") aspettano che esista
+          const ordinate = ordinaNuoviPrima(azioni);
+          const nuovi = ordinate.flatMap((a, i): NuovoCliente[] => (a.nome === "nuovo_cliente" ? [{ key: `${id}-${i}`, nome: a.dati.nome }] : []));
           salvaSchede(
             id,
-            azioni.map((a, i): SchedaAzione => {
+            ordinate.map((a, i): SchedaAzione => {
               const chiara = inChiaro(a, clientiAttuali());
               const key = `${id}-${i}`;
+              const nuovo = !chiara ? dipendeDaNuovo(a, nuovi) : undefined;
+              if (nuovo) {
+                const { azione, titolo } = sulNuovoCliente(a, nuovo, dati);
+                return { key, azione, titolo, stato: daConfermare(azione, !!allegato) ? "da-confermare" : "in-corso", dipendeDa: nuovo.key };
+              }
               if (!chiara) return { key, azione: a, titolo: "Azione su un cliente che non conosco", stato: "errore", motivo: "Cliente non trovato" };
               // il sollecito si legge e si può cambiare prima dell'invio: se Leo non l'ha scritto, quello standard
               if (chiara.nome === "sollecita" && !chiara.dati.testo) {

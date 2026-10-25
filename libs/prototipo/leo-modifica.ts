@@ -1,7 +1,7 @@
 // Le modifiche che il trainer fa in una scheda di Leo prima di confermarla (testo del messaggio, destinatari,
 // nome ed email del nuovo cliente) e "Conferma tutte", che parte con le modifiche di ogni scheda.
 
-import type { AzioneLeo, StatoScheda } from "./leo-azioni";
+import { riassunto, type AzioneLeo, type DatiLeo, type StatoScheda } from "./leo-azioni";
 
 export type Modifica = { testo?: string; clienti?: string[]; nome?: string; obiettivo?: string; email?: string };
 
@@ -15,7 +15,17 @@ export function conModifica(a: AzioneLeo, m?: Modifica): AzioneLeo {
   return a;
 }
 
+// Il titolo della scheda dopo le modifiche (il nome del nuovo cliente, i destinatari): quello di prima non vale più.
+export const titoloModificato = (a: AzioneLeo, m: Modifica | undefined, d: DatiLeo) => riassunto(conModifica(a, m), d);
+
 // Tutte le schede ancora da confermare partono, ognuna con quello che il trainer ci ha cambiato.
-export function daConfermareTutte<T extends { key: string; azione: AzioneLeo; stato: StatoScheda }>(schede: T[], modifiche: Map<string, Modifica>): T[] {
-  return schede.map((s) => (s.stato === "da-confermare" ? { ...s, stato: "in-corso", azione: conModifica(s.azione, modifiche.get(s.key)) } : s));
+// Con d anche il titolo si aggiorna (senza, resta quello calcolato quando è arrivata); le schede che aspettano un
+// nuovo cliente (dipendeDa) tengono il loro, finché il cliente non esiste.
+export function daConfermareTutte<T extends { key: string; azione: AzioneLeo; stato: StatoScheda; titolo?: string; dipendeDa?: string }>(schede: T[], modifiche: Map<string, Modifica>, d?: DatiLeo): T[] {
+  return schede.map((s) => {
+    if (s.stato !== "da-confermare") return s;
+    const m = modifiche.get(s.key);
+    const azione = conModifica(s.azione, m);
+    return { ...s, stato: "in-corso", azione, ...(d && m && !s.dipendeDa ? { titolo: riassunto(azione, d) } : {}) };
+  });
 }

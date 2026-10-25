@@ -27,7 +27,8 @@ const Importo = z.preprocess((v) => {
 }, z.number());
 export const cent = (euro: number) => Math.round(euro * 100);
 const IdPagamento = z.string().trim().min(1).max(12);
-const Intero = z.preprocess(vuotoComeAssente, z.coerce.number().int().optional());
+// Lezioni e mesi del rinnovo: l'AI mette spesso 0 sul campo che non serve (mesi 0 con 10 lezioni): vale come non indicato.
+const Intero = z.preprocess((v) => (v === 0 || v === "0" ? undefined : vuotoComeAssente(v)), z.coerce.number().int().optional());
 
 export const SchemiSoldi = {
   segna_pagato: z.object({ pagamento: IdPagamento }),

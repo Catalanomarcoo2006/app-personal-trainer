@@ -2,7 +2,7 @@
 // Prima ricontrolla sullo stato attuale: nel frattempo il trainer può aver cambiato qualcosa a mano.
 // Asincrona come lo sportello dei dati (libs/dati/sportello.ts): con Supabase le scritture vanno al server.
 
-import { aggiornaObiettivo, aggiungiMisura, aggiungiNota, creaCliente, inviaMessaggio, registraPagamento, rinnovaPacchetto, segnaPagato, type Esito as EsitoSportello } from "@/libs/dati/sportello";
+import { aggiornaObiettivo, aggiungiMisura, aggiungiNota, creaCliente, inviaMessaggio, inviaMessaggi, registraPagamento, rinnovaPacchetto, segnaPagato, type Esito as EsitoSportello } from "@/libs/dati/sportello";
 import { testoSollecito } from "@/libs/dati/testi";
 import { OGGI } from "@/libs/dati/iniziali";
 import { cent } from "./leo-azioni-soldi";
@@ -97,10 +97,8 @@ export async function eseguiAzione(a: AzioneLeo): Promise<Esito> {
       return { ok: true };
     case "scrivi_a_piu": {
       const nomi = new Map(stato.get().dati.clienti.map((c) => [c.id, c.name]));
-      for (const id of a.dati.clienti) {
-        const esito = await inviaMessaggio(id, personalizza(a.dati.testo, nomi.get(id) ?? ""));
-        if ("motivo" in esito) return esito;
-      }
+      const esito = await inviaMessaggi(a.dati.clienti.map((id) => ({ clientId: id, testo: personalizza(a.dati.testo, nomi.get(id) ?? "") })));
+      if ("motivo" in esito) return esito;
       stato.setFocus({ tipo: "multiplo", clientiIds: a.dati.clienti, testo: a.dati.testo });
       return { ok: true };
     }
