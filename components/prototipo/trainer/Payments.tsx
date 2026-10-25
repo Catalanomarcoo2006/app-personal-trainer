@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import toast from "react-hot-toast";
@@ -20,10 +20,15 @@ import { mesiConOggi, RevenueChart } from "./Revenue";
 type Movement = { key: string; clientId: string; date: string; label: string; amount: number; paid: boolean };
 
 
-function Kpi({ icon: Icon, label, children, note, i }: { icon: LucideIcon; label: string; children: ReactNode; note?: ReactNode; i: number }) {
+// onClick: la scheda diventa un tasto (per esempio "Da incassare" filtra i movimenti).
+function Kpi({ icon: Icon, label, children, note, i, onClick }: { icon: LucideIcon; label: string; children: ReactNode; note?: ReactNode; i: number; onClick?: () => void }) {
+  const Box = onClick ? motion.button : motion.div;
   return (
     <Appear i={1 + i}>
-      <div className="flex h-[96px] items-center gap-[12px] panel rounded-[18px] px-[16px]">
+      <Box
+        {...(onClick ? { type: "button" as const, onClick, whileHover: { y: -2 }, whileTap: { scale: 0.98 }, "aria-label": `${label}: mostra l'elenco` } : {})}
+        className={`flex h-[96px] w-full items-center gap-[12px] panel rounded-[18px] px-[16px] text-left ${onClick ? "cursor-pointer" : ""}`}
+      >
         <span className="grid size-[40px] shrink-0 place-items-center rounded-full bg-soft text-ink/70">
           <Icon size={18} />
         </span>
@@ -32,7 +37,7 @@ function Kpi({ icon: Icon, label, children, note, i }: { icon: LucideIcon; label
           <p className="mt-[6px] text-[24px] font-extrabold tracking-[-0.03em]">{children}</p>
           {note && <div className="mt-[5px] text-[10.5px]">{note}</div>}
         </div>
-      </div>
+      </Box>
     </Appear>
   );
 }
@@ -82,6 +87,16 @@ export function PaymentsView() {
     toast.success(`${formatEuro(m.amount)} incassati da ${clientById(m.clientId)?.name.split(" ")[0]}`);
   };
 
+  // "Da incassare" in alto: la tabella dei movimenti mostra solo i pagamenti aperti, ci si arriva e si illumina
+  const movimenti = useRef<HTMLElement>(null);
+  const [lampo, setLampo] = useState(0);
+  const mostraDaIncassare = () => {
+    playSound("tap");
+    setFilter("aperti");
+    setLampo((n) => n + 1);
+    movimenti.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
   // il sollecito è un messaggio vero nella chat del cliente
   const sollecita = async (key: string): Promise<void> => {
     const p = pagamenti.find((x) => x.id === key);
@@ -99,7 +114,7 @@ export function PaymentsView() {
         <Kpi icon={Wallet} label="Incassato a ottobre" i={0} note={<span className="inline-flex items-center gap-[3px] rounded-full bg-ok-soft px-[6px] py-[2px] font-bold text-ok"><TrendingUp size={10} /> +{revenue.delta}% su settembre</span>}>
           <CountUp value={collected} format={formatEuro} />
         </Kpi>
-        <Kpi icon={Hourglass} label="Da incassare" i={1} note={<span className="text-muted">{conta(open.length, "pagamento aperto", "pagamenti aperti")}</span>}>
+        <Kpi icon={Hourglass} label="Da incassare" i={1} onClick={mostraDaIncassare} note={<span className="text-muted">{conta(open.length, "pagamento aperto", "pagamenti aperti")}</span>}>
           <span className={outstanding > 0 ? "text-[#d43b4f]" : "text-ok"}>{formatEuro(outstanding)}</span>
         </Kpi>
         <Kpi icon={CircleDollarSign} label="Previsto a fine mese" i={2} note={<span className="text-muted">pacchetti e rinnovi già fissati</span>}>
@@ -187,7 +202,8 @@ export function PaymentsView() {
       </div>
 
       <Appear i={7}>
-        <section className="flex h-[228px] flex-col panel rounded-[18px] px-[16px] pt-[13px] pb-[10px]">
+        <section ref={movimenti} className="relative flex h-[228px] flex-col panel rounded-[18px] px-[16px] pt-[13px] pb-[10px]">
+          {lampo > 0 && <Bagliore key={lampo} />}
           <div className="flex items-center justify-between">
             <h2 className="text-[14px] font-bold">Movimenti</h2>
             <div className="flex gap-[5px]">
