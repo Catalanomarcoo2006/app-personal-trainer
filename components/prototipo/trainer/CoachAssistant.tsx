@@ -17,7 +17,8 @@ import { ACCETTATI, bloccoAllegato, leggiFile } from "@/libs/prototipo/leo-file"
 import { clientiAttuali } from "@/libs/dati/selettori";
 import { durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
 import { stato } from "@/libs/prototipo/stato";
-import { ConfermaTutte, SchedaAzioneView, type Modifica, type SchedaAzione } from "./LeoAzioni";
+import { ConfermaTutte, SchedaAzioneView, type SchedaAzione } from "./LeoAzioni";
+import { conModifica, daConfermareTutte, type Modifica } from "@/libs/prototipo/leo-modifica";
 import { navigateFade, navigateWithStain, ROUTES } from "./nav";
 import { InfoSparkle, LeoIdentikit, preloadLeoSeduto } from "./LeoIdentikit";
 import { infoSeen, INTRO_LAST, introSeen, LeoPresentazione, setInfoSeen, setIntroSeen } from "./LeoPresentazione";
@@ -91,17 +92,6 @@ const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento: "compl
 };
 // la chat durante il viaggio: un riquadro piccolo in basso, Leo resta aggrappato al bordo
 const COMPATTA = { w: 168, h: 150 };
-
-// Le modifiche fatte nella scheda prima di confermare: il testo del messaggio, i destinatari.
-function conModifica(a: AzioneLeo, m?: Modifica): AzioneLeo {
-  if (!m) return a;
-  if ((a.nome === "scrivi_messaggio" || a.nome === "sollecita") && m.testo !== undefined) return { ...a, dati: { ...a.dati, testo: m.testo.trim() } } as AzioneLeo;
-  if (a.nome === "scrivi_a_piu") return { ...a, dati: { clienti: m.clienti ?? a.dati.clienti, testo: (m.testo ?? a.dati.testo).trim() } };
-  // l'email la scrive solo il trainer, qui: non passa mai dall'AI
-  if (a.nome === "nuovo_cliente")
-    return { ...a, dati: { ...a.dati, nome: m.nome?.trim() || a.dati.nome, obiettivo: m.obiettivo?.trim() || undefined, email: m.email?.trim() || undefined } };
-  return a;
-}
 
 // ——— Le risposte, calcolate dai dati ———
 
@@ -282,6 +272,7 @@ type Chat = {
   ask: (q: string, allegato?: Allegato) => void;
   conferma: (msgId: number, key: string, modifica?: Modifica) => void;
   confermaTutte: (msgId: number) => void;
+  segnaModifica: (key: string, modifica: Modifica) => void;
   rifiuta: (msgId: number, key: string) => void;
   annulla: (msgId: number, key: string) => void;
   torna: (msgId: number) => void;
@@ -423,16 +414,19 @@ function useCoachChat(): Chat {
     [cambia, procedi],
   );
 
-  // Tutte le schede ancora da confermare partono insieme, in ordine, con il loro viaggio.
+  // Quello che il trainer cambia in una scheda (testo, spunte, email) mentre aspetta: "Conferma tutte" lo usa.
+  const modifiche = useRef(new Map<string, Modifica>());
+  const segnaModifica = useCallback((key: string, m: Modifica) => {
+    modifiche.current.set(key, m);
+  }, []);
+
+  // Tutte le schede ancora da confermare partono insieme, in ordine, con il loro viaggio e le loro modifiche.
   const confermaTutte = useCallback(
     (msgId: number) => {
       const lista = schede.current.get(msgId) ?? [];
       if (!lista.some((x) => x.stato === "da-confermare")) return;
       playSound("tap");
-      salvaSchede(
-        msgId,
-        lista.map((x) => (x.stato === "da-confermare" ? { ...x, stato: "in-corso" } : x)),
-      );
+      salvaSchede(msgId, daConfermareTutte(lista, modifiche.current));
       procedi(msgId);
     },
     [salvaSchede, procedi],
@@ -591,7 +585,7 @@ function useCoachChat(): Chat {
     [procedi, salvaSchede],
   );
 
-  return { messages, typing, thinking, ask, conferma, confermaTutte, rifiuta, annulla, torna, partenza, compatta };
+  return { messages, typing, thinking, ask, conferma, confermaTutte, segnaModifica, rifiuta, annulla, torna, partenza, compatta };
 }
 
 // Il messaggio appena inviato dal trainer: parte dall'altezza del campo di scrittura (daY, in px dello schermo),
@@ -655,7 +649,7 @@ function ChatPanel({
   dismiss: () => void;
   openInfo: () => void;
 }) {
-  const { messages, typing, thinking, ask: askChat, conferma, confermaTutte, rifiuta, annulla, torna, partenza, compatta } = chat;
+  const { messages, typing, thinking, ask: askChat, conferma, confermaTutte, segnaModifica, rifiuta, annulla, torna, partenza, compatta } = chat;
   const [draft, setDraft] = useState("");
   const scrive = draft.trim().length > 0;
   const reduce = useReducedMotion();
@@ -823,6 +817,7 @@ function ChatPanel({
                       key={sc.key}
                       scheda={sc}
                       onConferma={(modifica) => conferma(m.id, sc.key, modifica)}
+                      onModifica={(modifica) => segnaModifica(sc.key, modifica)}
                       onRifiuta={() => rifiuta(m.id, sc.key)}
                       onAnnulla={() => annulla(m.id, sc.key)}
                       onTorna={partenza(m.id) ? () => torna(m.id) : undefined}

@@ -206,14 +206,13 @@ export async function creaCliente(r: { name: string; gender: "donna" | "uomo"; e
   return {
     ok: true,
     id,
+    // si toglie solo se è ancora vuoto: misure, pagamenti, sedute o messaggi arrivati dopo non si perdono
     annulla: async () => {
-      scrivi((d) => ({
-        ...d,
-        clienti: d.clienti.filter((c) => c.id !== id),
-        misure: d.misure.filter((m) => m.clientId !== id),
-        pagamenti: d.pagamenti.filter((p) => p.clientId !== id),
-        pacchetti: d.pacchetti.filter((p) => p.clientId !== id),
-      }));
+      const { dati: d, sedute, threads } = stato.get();
+      const usato =
+        d.misure.some((m) => m.clientId === id) || d.pagamenti.some((p) => p.clientId === id) || d.pacchetti.some((p) => p.clientId === id) || sedute.some((x) => x.clientId === id) || (threads[id]?.length ?? 0) > 0;
+      if (usato) return no(`${name} ha già dei dati: non ${r.gender === "donna" ? "la" : "lo"} tolgo`);
+      scrivi((x) => ({ ...x, clienti: x.clienti.filter((c) => c.id !== id) }));
       return OK;
     },
   };

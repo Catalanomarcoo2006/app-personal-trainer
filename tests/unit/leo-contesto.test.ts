@@ -35,6 +35,16 @@ describe("pulizia dei messaggi", () => {
     expect(ripulisci("Luca Ferri ha scritto da luca.ferri@esempio.it, chiamalo al +39 333 123 4567")).toBe("Luca Ferri ha scritto da [email], chiamalo al [telefono]");
     expect(ripulisci("cosa ha fatto giulia oggi?")).toBe("cosa ha fatto giulia oggi?");
   });
+
+  it("riconosce i telefoni scritti in tanti modi", () => {
+    for (const tel of ["333-1234567", "333.123.4567", "(+39) 333/1234567", "+39 340 000 0101", "3331234567", "0039 333 1234567", "041 5551234"])
+      expect(ripulisci(`chiamami al ${tel} grazie`)).toBe("chiamami al [telefono] grazie");
+  });
+
+  it("non tocca le misure, le date e gli importi", () => {
+    for (const riga of ["Giulia Bianchi  64,2  80  94  88", "Conti Sara 68,4 82 96 90 30", "Luca 77 85 99 33 56", "data 2026-10-21 peso 68", "Totale € 1.200,00"])
+      expect(ripulisci(riga)).toBe(riga);
+  });
 });
 
 describe("tasto per aprire una sezione", () => {
@@ -128,6 +138,16 @@ describe("clienti mandati dal browser", () => {
     const testo = contestoLeo(sedute, clienti);
     expect(testo).toContain("id marta-neri");
     expect(testo).toContain("A99 · giovedì 22/10 · 09:00 · 60 min · workout · Fit Lab · Marta Neri");
+  });
+
+  it("note lunghe e tanti pagamenti si accorciano invece di far rifiutare la domanda", () => {
+    const d = datiIniziali();
+    const tanti = Array.from({ length: 50 }, (_, i) => ({ ...d.pagamenti[0], id: `P${100 + i}`, clientId: "luca-ferri" }));
+    const lungo = { ...d, clienti: d.clienti.map((c) => (c.id === "luca-ferri" ? { ...c, notes: "vecchia ".repeat(800) + "ULTIMA NOTA", questions: Array(30).fill("domanda?") } : c)), pagamenti: [...d.pagamenti, ...tanti] };
+    const luca = perContesto(lungo).find((c) => c.id === "luca-ferri")!;
+    expect(ClienteContesto.safeParse(luca).success).toBe(true);
+    expect(luca.notes.endsWith("ULTIMA NOTA")).toBe(true);
+    expect(luca.payments.at(-1)?.id).toBe("P149");
   });
 
   it("clienteDa cerca anche nell'elenco attuale", () => {

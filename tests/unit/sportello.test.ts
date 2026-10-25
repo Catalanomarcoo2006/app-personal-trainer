@@ -142,6 +142,19 @@ describe("clienti, messaggi e notifiche", () => {
     expect(m.sel.clientiAttuali().some((c) => c.id === "marta-neri")).toBe(false);
   });
 
+  it("annulla del nuovo cliente non cancella i dati inseriti dopo", async () => {
+    const esito = await m.sp.creaCliente({ name: "Marta Neri", gender: "donna" });
+    await m.sp.aggiungiMisura({ clientId: "marta-neri", takenOn: "2026-10-21", weightKg: 60 });
+    expect(esito.ok && (await esito.annulla!())).toEqual({ ok: false, motivo: "Marta Neri ha già dei dati: non la tolgo" });
+    expect(m.sel.clientiAttuali().some((c) => c.id === "marta-neri")).toBe(true);
+  });
+
+  it("annulla del nuovo cliente si ferma anche se ha già messaggi o sedute", async () => {
+    const esito = await m.sp.creaCliente({ name: "Marco Blu", gender: "uomo" });
+    await m.sp.inviaMessaggio("marco-blu", "Benvenuto!");
+    expect(esito.ok && (await esito.annulla!())).toEqual({ ok: false, motivo: "Marco Blu ha già dei dati: non lo tolgo" });
+  });
+
   it("inviaMessaggio scrive nella conversazione del cliente", async () => {
     expect((await m.sp.inviaMessaggio("giulia-bianchi", "Ciao!")).ok).toBe(true);
     expect(m.stato.get().threads["giulia-bianchi"].at(-1)).toMatchObject({ from: "trainer", text: "Ciao!" });

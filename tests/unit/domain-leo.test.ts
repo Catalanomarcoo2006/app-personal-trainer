@@ -13,6 +13,13 @@ describe("pagamenti", () => {
     expect(euroInCentesimi("450,50")).toBe(45050);
     expect(euroInCentesimi("€ 450")).toBe(45000);
     expect(euroInCentesimi("1.200,00")).toBe(120000);
+    // il punto delle migliaia all'italiana, senza virgola
+    expect(euroInCentesimi("1.200")).toBe(120000);
+    expect(euroInCentesimi("€ 1.200")).toBe(120000);
+    expect(euroInCentesimi("12.000")).toBe(1200000);
+    // un punto con una o due cifre dopo resta il separatore dei decimali
+    expect(euroInCentesimi("12.5")).toBe(1250);
+    expect(euroInCentesimi("120.50")).toBe(12050);
     expect(euroInCentesimi(-3)).toBe(-300);
     expect(euroInCentesimi("abc")).toBeNull();
     expect(euroInCentesimi(null)).toBeNull();

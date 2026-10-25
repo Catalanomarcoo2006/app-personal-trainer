@@ -7,12 +7,13 @@ import { no, OK, type Verifica } from "./verifica";
 const MIN_CENTS = 100; // 1 €
 const MAX_CENTS = 500_000; // 5.000 €
 
-// 450, "450", "450,50", "€ 450", "1.200,00" → centesimi; null se non è un importo.
+// 450, "450", "450,50", "€ 450", "1.200", "1.200,00" → centesimi; null se non è un importo.
 export function euroInCentesimi(v: unknown): number | null {
   if (typeof v === "number") return Number.isFinite(v) ? Math.round(v * 100) : null;
   if (typeof v !== "string") return null;
   let s = v.replace(/€|eur(o)?/gi, "").replace(/\s/g, "");
   if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ""); // "1.200": punto delle migliaia
   if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
   return Math.round(Number(s) * 100);
 }

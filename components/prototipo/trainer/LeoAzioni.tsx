@@ -5,6 +5,7 @@
 // Con più schede da confermare, sopra compare "Conferma tutte (N)".
 
 import { useEffect, useState } from "react";
+import type { Modifica } from "@/libs/prototipo/leo-modifica";
 import { motion, useReducedMotion } from "motion/react";
 import { Bell, BellRing, CalendarClock, CalendarPlus, CalendarX, Check, CheckCheck, CircleDollarSign, Loader2, NotebookPen, PackagePlus, Palette, Scale, Send, Target, Undo2, UserPlus, Users, Wallet, type LucideIcon } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
@@ -43,7 +44,7 @@ const icone: Record<AzioneLeo["nome"], LucideIcon> = {
 };
 
 // Cosa il trainer può cambiare in una scheda prima di confermarla.
-export type Modifica = { testo?: string; clienti?: string[]; nome?: string; obiettivo?: string; email?: string };
+export type { Modifica };
 
 export function ConfermaTutte({ n, onConferma }: { n: number; onConferma: () => void }) {
   const reduce = useReducedMotion();
@@ -64,12 +65,14 @@ export function ConfermaTutte({ n, onConferma }: { n: number; onConferma: () => 
 export function SchedaAzioneView({
   scheda,
   onConferma,
+  onModifica,
   onRifiuta,
   onAnnulla,
   onTorna,
 }: {
   scheda: SchedaAzione;
   onConferma: (modifica?: Modifica) => void;
+  onModifica?: (modifica: Modifica) => void;
   onRifiuta: () => void;
   onAnnulla: () => void;
   onTorna?: () => void;
@@ -88,6 +91,14 @@ export function SchedaAzioneView({
   const [email, setEmail] = useState("");
   const emailValida = !email.trim() || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email.trim());
   const pronto = nuovo ? !!nome.trim() && emailValida : !!testo.trim() && (!multiplo || scelti.length > 0);
+  // ogni cambiamento fatto qui arriva alla chat, così "Conferma tutte" parte con le spunte e i testi di adesso
+  useEffect(() => {
+    if (stato !== "da-confermare" || !onModifica) return;
+    if (nuovo) onModifica({ nome, obiettivo, email });
+    else if (multiplo) onModifica({ testo, clienti: scelti });
+    else if (messaggio) onModifica({ testo });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testo, scelti, nome, obiettivo, email, stato]);
   const campo = "w-full rounded-[10px] border border-line bg-card px-[9px] py-[6px] text-[16px] outline-none focus:border-[var(--trainer)] md:text-[12px]";
   // "Annulla" resta in evidenza per qualche secondo dopo l'esecuzione, poi diventa un link discreto
   const [evidenza, setEvidenza] = useState(() => !!scheda.fattaAlle && Date.now() - scheda.fattaAlle < ANNULLA_IN_EVIDENZA);

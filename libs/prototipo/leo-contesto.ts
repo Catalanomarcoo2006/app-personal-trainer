@@ -51,6 +51,12 @@ export const ClienteContesto = z.object({
 });
 export type ClienteContesto = z.infer<typeof ClienteContesto>;
 
+// Quanto si manda di ogni cliente: le parti più recenti, così la domanda non supera mai i limiti della rotta.
+const MAX_NOTE = 2500;
+const MAX_PAGAMENTI = 30;
+const MAX_DOMANDE = 10;
+const coda = (t: string, max: number) => (t.length > max ? `…${t.slice(-(max - 1))}` : t);
+
 export function perContesto(d: DatiClienti): ClienteContesto[] {
   return vistaClienti(d).map((v) => {
     const date = d.misure.filter((m) => m.clientId === v.id).map((m) => m.takenOn);
@@ -68,12 +74,12 @@ export function perContesto(d: DatiClienti): ClienteContesto[] {
       measures: v.measures,
       ...(date.length ? { ultimaMisura: date.sort().at(-1) } : {}),
       pkg: v.pkg,
-      payments: v.payments,
+      payments: v.payments.slice(-MAX_PAGAMENTI),
       lastWorkout: v.lastWorkout,
       needsAttention: v.needsAttention,
       plan: v.plan,
-      notes: v.notes,
-      questions: v.questions,
+      notes: coda(v.notes, MAX_NOTE),
+      questions: v.questions.slice(-MAX_DOMANDE).map((q) => q.slice(0, 300)),
     };
   });
 }
@@ -87,8 +93,18 @@ export const ExtraContesto = z.object({
 export type ExtraContesto = { incassi?: { incassatoCents: number; daIncassareCents: number }; aspetto?: { colore: string; tema: "light" | "dark" }; notifiche?: Notifiche };
 
 // Email e numeri di telefono spariscono dai testi che vanno all'AI: a Leo non servono.
+// Un telefono italiano: prefisso internazionale facoltativo, poi un numero che inizia con 3 (cellulare) o 0 (fisso),
+// a gruppi separati da spazio, punto, trattino o barra; in tutto 9-15 cifre. Le righe di misure ("68,4 82 96 90")
+// e le date non iniziano così, quindi restano intatte.
+const TELEFONO = /(?<![\w,.])(?:\(?(?:\+|00)\d{1,3}\)?[\s./-]?)?[03]\d{2,3}(?:[\s./-]?\d{2,4}){1,3}(?![\d,])/g;
+
 export function ripulisci(testo: string): string {
-  return testo.replace(/[^\s@,;:()<>]+@[^\s@,;:()<>]+\.[a-z]{2,}/gi, "[email]").replace(/\+?\d[\d ]{7,}\d/g, "[telefono]");
+  return testo
+    .replace(/[^\s@,;:()<>]+@[^\s@,;:()<>]+\.[a-z]{2,}/gi, "[email]")
+    .replace(TELEFONO, (t) => {
+      const cifre = t.replace(/\D/g, "").length;
+      return cifre >= 9 && cifre <= 15 ? "[telefono]" : t;
+    });
 }
 
 // ——— Il tasto per aprire una sezione: l'AI chiude la risposta con [[vai:incassi]] o [[vai:cliente:luca-ferri]] ———
