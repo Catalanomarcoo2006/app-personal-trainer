@@ -6,6 +6,7 @@ import { z } from "zod";
 import { clientById, trainer, type Appointment, type AppointmentType } from "./dati-finti";
 import { giornoDi, isoDi } from "./calendario";
 import { clienteDa } from "./leo-contesto";
+import { no, type Verifica } from "@/libs/domain/verifica";
 
 // Una seduta del calendario con id stabile (A1, A2, …) e data vera.
 export type Seduta = Appointment & { id: string; date: string }; // date "AAAA-MM-GG"
@@ -85,8 +86,7 @@ export function inChiaro(a: AzioneLeo): AzioneLeo | null {
 
 // ——— Controlli dell'app ———
 
-export type Verifica = { ok: true } | { ok: false; motivo: string };
-const no = (motivo: string): Verifica => ({ ok: false, motivo });
+export type { Verifica };
 const nomeDi = (id: string) => clientById(id)?.name ?? "un altro cliente";
 
 function controllaOrario(data: string, ora: string, durata: number, sedute: Seduta[], adesso: { data: string; ora: string }, esclusa?: string): Verifica {
