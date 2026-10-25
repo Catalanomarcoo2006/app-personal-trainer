@@ -61,7 +61,7 @@ export function useSceltaVocali(): [SceltaVocali, (s: SceltaVocali) => void] {
   const scelta = useSyncExternalStore(
     (f: () => void): (() => void) => archivioDelBrowser().iscriviti(f),
     () => archivioDelBrowser().leggi(),
-    () => null,
+    (): SceltaVocali => null,
   );
   const scrivi = useCallback((s: SceltaVocali): void => archivioDelBrowser().scrivi(s), []);
   return [scelta, scrivi];
