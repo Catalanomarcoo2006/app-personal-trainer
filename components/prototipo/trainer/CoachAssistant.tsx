@@ -897,7 +897,7 @@ function ChatPanel({
           }
         >
           <input ref={sceltaFile} type="file" accept={ACCETTATI} className="hidden" onChange={(e) => { void allega(e.target.files?.[0]); e.target.value = ""; }} />
-          <button type="button" aria-label="Allega un file (PDF, CSV, TXT)" title="Allega un file (PDF, CSV, TXT)" onClick={() => sceltaFile.current?.click()} className="-ml-[6px] grid size-[26px] shrink-0 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink">
+          <button type="button" aria-label="Allega un file (PDF, Excel, CSV, TXT)" title="Allega un file (PDF, Excel, CSV, TXT)" onClick={() => sceltaFile.current?.click()} className="-ml-[6px] grid size-[26px] shrink-0 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink">
             <Paperclip size={14} />
           </button>
           <input

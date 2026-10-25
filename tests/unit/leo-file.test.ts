@@ -30,8 +30,30 @@ describe("leggiFile", () => {
     expect(r).toEqual({ ok: false, motivo: "Questo PDF è una foto: per ora leggo solo PDF con testo" });
   });
 
+  it("legge i file Excel come righe separate da punto e virgola", async () => {
+    const r = await leggiFile(file("xlsx finto", "misure.xlsx"), undefined, async () => [
+      { nome: "Misure", righe: [["Cliente", "Peso", "Vita", null], ["Luca Ferri", 76.6, 83.5, null], [null, null], ["Data", new Date(Date.UTC(2026, 9, 21)), true]] },
+    ]);
+    expect(r).toEqual({ ok: true, nome: "misure.xlsx", testo: "Cliente;Peso;Vita\nLuca Ferri;76,6;83,5\nData;21/10/2026;sì", tagliato: false });
+  });
+
+  it("con più fogli scrive il nome di ognuno e salta quelli vuoti", async () => {
+    const r = await leggiFile(file("xlsx finto", "clienti.xlsx"), undefined, async () => [
+      { nome: "Luca", righe: [["Peso", 76.6]] },
+      { nome: "Vuoto", righe: [] },
+      { nome: "Giulia", righe: [["Peso", 68]] },
+    ]);
+    expect(r.ok && r.testo).toBe("Foglio \"Luca\"\nPeso;76,6\n\nFoglio \"Giulia\"\nPeso;68");
+  });
+
+  it("un Excel vuoto o rovinato non si legge", async () => {
+    expect(await leggiFile(file("x", "vuoto.xlsx"), undefined, async () => [{ nome: "Foglio1", righe: [] }])).toEqual({ ok: false, motivo: "Questo file Excel è vuoto" });
+    expect(await leggiFile(file("x", "rotto.xlsx"), undefined, async () => { throw new Error("zip"); })).toEqual({ ok: false, motivo: "Non riesco ad aprire questo file Excel" });
+  });
+
   it("rifiuta formati non supportati e file troppo grandi", async () => {
-    expect(await leggiFile(file("x", "misure.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))).toEqual({ ok: false, motivo: "Per ora leggo PDF, CSV e TXT" });
+    expect(await leggiFile(file("x", "misure.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))).toEqual({ ok: false, motivo: "Per ora leggo PDF, Excel, CSV e TXT" });
+    expect(await leggiFile(file("x", "vecchio.xls"))).toEqual({ ok: false, motivo: "Questo è un Excel vecchio (.xls): salvalo come .xlsx e riallegalo" });
     const grande = new File([new Uint8Array(6 * 1024 * 1024)], "grande.csv", { type: "text/csv" });
     expect(await leggiFile(grande)).toEqual({ ok: false, motivo: "Il file è troppo grande (massimo 5 MB)" });
   });
