@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-25
+**Ultimo aggiornamento:** 2026-10-26
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -12,6 +12,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Area trainer del prototipo: tutte le sezioni, Leo con AI (presentazione alla prima apertura, identikit dalla "i" con Leo che si siede, luce intermittente sulla home).
 - **Leo agisce e fa tutto** (spec `docs/specs/2026-10-24-leo-azioni-design.md` e `2026-10-25-leo-fa-tutto-design.md`, piani in `docs/plans/`): sedute, messaggi (anche a più clienti, con `{nome}`), soldi (segna pagato, registra, rinnova con pagamento da incassare, sollecito), dati del cliente (misure, obiettivo, note, nuovo cliente con email scritta dal trainer), aspetto e notifiche; legge PDF con testo, CSV e TXT allegati (prima → dopo da confermare). "Conferma tutte", parti non capite segnalate. Dati dei clienti nella forma del database (`libs/dati/`: tipi, sportello con annulla, selettori; controlli in `libs/domain/`): con Supabase cambia solo lo sportello. Online dal 25/10 (unito a `setup-iniziale`), 230 test; revisione finale fatta (5 correzioni, 7 dettagli minori in `docs/DA-CAMBIARE.md`). Dopo: file Excel (.xlsx) letti, dettagli della revisione sistemati e **vocali** (si tocca il microfono nella chat: un tocco inizia, uno finisce; per ora con la dettatura del browser, provati da Marco con la voce vera il 25/10: vanno come voleva; scelta "invia subito / rivedi prima" al primo vocale e nelle Impostazioni; spec e piano `2026-10-25-vocali-leo`).
 - Piano Fase 1: Task 2 (pulizia boilerplate: via Stripe, blog, Crisp, GPT, testimonianze; slug) e Task 5 (logica di dominio in `libs/domain/`) fatti; del Task 6 c'è `resolveRoute` (`libs/auth/routing.ts`), manca il collegamento al middleware. 58 test Vitest.
+- **Estetica dell'area trainer (26/10)**: tema scuro rifatto (nero pece, vetro con bordo chiaro, colori schiariti, chat col colore del cliente); barra in alto con azioni rapide (Nuova seduta, Scrivi, Pagamento e Nuovo cliente con Leo), ricerca nella barra (Ctrl+K), suoni; "Novità" negli Urgenti; testa di Leo dentro la barra laterale; cambio tema con l'onda del video (`libs/ui/onda.ts`); Clienti che scorrono con avviso del cliente nuovo. 297 test.
 - Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo con lo stacco da terra, scritte subito e "Iniziamo" a ~3,7 s); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; nel prototipo ogni aggiornamento della pagina riparte dal primo passo (`?riprendi` riparte dal passo salvato).
 
 ## In corso (il benvenuto è finito)
@@ -28,26 +29,25 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Un'unica web app sul boilerplate, non due app né Lovable: un solo progetto, massimo controllo su animazioni.
 - Libreria ~100 esercizi base + esercizi del trainer: la demo parte piena.
 - Pacchetti a lezioni e a tempo + registro libero dei pagamenti; importi in centesimi, mesi nel fuso `Europe/Rome`.
-- Calendario gestito dal trainer; il cliente chiede lo spostamento con un messaggio: semplice e senza conflitti.
-- Avvisi in app + email; push solo dopo, insieme alla versione telefono completa del trainer.
+- Calendario gestito dal trainer; il cliente chiede lo spostamento con un messaggio: semplice e senza conflitti. Avvisi in app + email; push solo dopo, con la versione telefono del trainer.
 - Dati sanitari: consenso esplicito, Supabase UE, Marco responsabile del trattamento (DPA).
 - Azioni di Leo: tool calling con un solo giro verso l'AI (l'app controlla ed esegue, niente secondo giro); risposta della rotta in NDJSON (testo + azioni). Ragionamento acceso anche con i tools (verificato il 24/10). Leo del trainer risponde con DeepSeek (`deepseek-flash`, ~0,04 cent di dollaro a domanda, misurato il 25/10: 0,04 $ per 107 chiamate, ~5.900 token l'una): `app/prototipo/api/leo`, Leo vede i nomi dei clienti (dal 24/10, niente più codici [C1]: li capisce anche scritti male), mai email e telefoni; senza chiave o se l'AI non risponde usa le risposte fisse.
 - Vocali: si toccano (un tocco inizia, uno finisce), testo dal vivo in una casella che cresce, scelta "invia subito / rivedi prima" al primo vocale. Trascrizione con la dettatura del browser (solo dati finti), poi un trascrittore UE con la stessa forma (`Trascrittore`). Con più azioni la chat porta alla prima e "Conferma tutte" sta in fondo.
 - Area trainer = una pagina sola (`TrainerApp.tsx`, cambio sezione con `history.pushState`). Nessun tasto nero: `btn-trainer` / `sel-trainer` / `glass` in `globals.css`.
 - Animazioni di Leo seduto: ritagliate dal video con ffmpeg + Python (sfondo tolto), WebP animate in `public/prototipo/coach/`, ripartono con un indirizzo blob nuovo.
+- Colori (26/10): il tema chiaro resta com'è (pastelli per cliente, piace a Marco; provata e scartata una versione neutra). Tema scuro = stessi colori schiariti su nero pece con vetro: sul nero un colore a metà sembra sporco. Barra in alto senza effetto "Apple" (lineetta/elastico provati e tolti: non coerenti). Macchia tonda resta per marchio e link di Leo, l'onda solo per il cambio tema.
 - Benvenuto: niente asterisco (somigliava al logo di Claude), icona del passo al suo posto; niente macchia d'olio verso la dashboard, schede a meteoriti (scelta di Marco del 24/10). Niente pallina (tolta da Marco); casetta come MP4 vero (960 × 720) su fondo bianco, non con trasparenza: niente righe ai bordi né perdita di qualità (`IMMAGINI APP/pulisci-casa.py`). Niente filtri `blur` CSS sugli aloni (Chrome su Windows li taglia in linee dritte). Sorgenti Gemini in `IMMAGINI APP/` (esclusa da git), nomi in maiuscolo.
 
 ## Problemi noti / blocchi
-- Licenza ZeroToShip da verificare con Alberto Ravasini prima di vendere.
-- Partita IVA da aprire prima del primo incasso.
+- Licenza ZeroToShip da verificare con Alberto Ravasini prima di vendere; partita IVA da aprire prima del primo incasso.
 - Fornitore AI in UE da scegliere prima del primo cliente vero: strade possibili DeepSeek ospitato in UE da un provider europeo (modello aperto: stesso Leo, dati in UE; verificare versione, DPA e tool calling), Mistral, o i grandi modelli su server UE. Cambiano solo le variabili AI_*.
 - Informativa, DPA e termini da far rivedere a un professionista; l'informativa deve dire che l'assistente (fornitore UE) tratta nomi e dati dei clienti. Anche la voce dei vocali: **niente vocali con clienti veri finché non c'è il trascrittore UE** (la dettatura del browser manda l'audio a Google).
 
 ## Prossimi passi immediati (da qui si riparte)
-1. `git push` dei commit del 25/10 (non ancora online), poi area cliente (spec e piano pronti, 10 task, inline): serve il via di Marco. Leo lato trainer, da PC, è chiuso per il prototipo: resta solo quello che chiede fornitore UE o backend.
+1. Area cliente (spec e piano pronti, 10 task, inline): serve il via di Marco. Tutto è online (ultimo push 26/10, `dcc52f7`).
 2. Poi backend: Marco crea il progetto Supabase UE → schema, RLS con test, accessi, admin → aree su database → assistente, account demo → landing vera → area trainer da telefono.
 3. Prima del primo cliente vero: ricerca e scelta fornitore AI + trascrizione in UE (la fa Claude se Marco la chiede), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto, chiavi Resend, dominio.
-4. Estetica (decisa da Marco il 25/10): rifare tutto il tema scuro da PC (anche Leo che si siede al buio) e la macchia d'olio come nel video; area trainer da telefono dopo, quando Leo fa tutto. Altre voci in `docs/DA-CAMBIARE.md` (fluidità, import clienti, foto e scansioni).
+4. Estetica che resta: Leo che si siede al buio (chiazze del pavimento; una pulizia dei fotogrammi rovinava il chiaro, tornati agli originali), fluidità, macchia da "Salta per ora", area trainer da telefono. Voci in `docs/DA-CAMBIARE.md`.
 
 ## Contesto tecnico utile
 - Online: https://app-personal-trainer-kappa.vercel.app (progetto Vercel `app-personal-trainer`). Codice su GitHub privato `Catalanomarcoo2006/app-personal-trainer`. Pubblicare: `git push` sul ramo `setup-iniziale`, Vercel pubblica da solo. Chiavi: elenco senza valori in `docs/chiavi.md`.
@@ -56,4 +56,4 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista).
 
 ## Changelog
-- 2026-10-25: Leo diviso in `trainer/leo/` (CoachAssistant da 1.380 a ~300 righe), testa di Leo centrata e più grande, suggerimenti nascosti con le schede; vocali provati da Marco (ok); deciso: tema scuro da rifare tutto, telefono del trainer dopo; rifiniture della revisione del 24/10 fatte (flusso del fornitore più robusto, sezioni che non ripetono l'ultima azione di Leo, Esc bloccato durante il viaggio, 293 test). Leo legge anche Excel; dettagli della revisione sistemati; vocali a Leo (tocco, casella che cresce mentre detti, dettatura del browser); con più azioni la chat porta alla prima e "Conferma tutte" va in fondo; Leo fa tutto (soldi, dati dei clienti, file allegati, aspetto e notifiche, messaggi a più clienti); costo di Leo ~0,04 cent di dollaro a domanda.
+- 2026-10-26: cambio tema con l'onda del video; testa di Leo nella barra laterale; tema scuro rifatto (nero pece, vetro, colori schiariti, chat colorate); barra in alto con azioni rapide, ricerca nella barra e suoni, novità negli Urgenti; Clienti con scorrimento e avviso del cliente nuovo; provati e scartati: colori neutri nel chiaro, effetto "Apple" della barra, pulizia di Leo seduto.
