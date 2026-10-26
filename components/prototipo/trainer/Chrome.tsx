@@ -28,6 +28,7 @@ import { benvenutoAttuale } from "@/libs/prototipo/benvenuto";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 import { CoachAssistant } from "./CoachAssistant";
 import { BASE, navigate, ROUTES } from "./nav";
+import { BARRA_LATO } from "./leo/costanti";
 import { NotificationsButton, SearchButton, SearchPalette } from "./TopBarTools";
 
 export { BASE, ROUTES, navigate };
@@ -207,6 +208,9 @@ function AmbientBackdrop() {
 
 export function Sidebar() {
   const section = useSection();
+  // fuori dalla home la barra si allunga: in fondo c'è la testa di Leo (CoachButton)
+  const conLeo = usePathname() !== ROUTES.oggi;
+  const altezza = conLeo ? BARRA_LATO.conLeo : BARRA_LATO.h;
   const [hover, setHover] = useState<string | null>(null);
   // Prima etichetta con un piccolo ritardo; spostandosi sulle icone vicine compaiono subito e senza animazione.
   const [warm, setWarm] = useState(false);
@@ -233,8 +237,15 @@ export function Sidebar() {
       animate={{ opacity: 1, transform: "translateX(0px)" }}
       transition={{ delay: 0.15, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       onMouseLeave={leaveBar}
-      className="mosso glass glass-3d absolute top-[calc(50%+40px)] left-[16px] z-20 flex h-[420px] w-[56px] -translate-y-1/2 flex-col items-center gap-[19px] rounded-full pt-[32px]"
+      style={{ height: altezza }}
+      className="mosso glass glass-3d absolute top-[calc(50%+40px)] left-[16px] z-20 flex w-[56px] -translate-y-1/2 flex-col items-center gap-[19px] rounded-full pt-[32px] transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
     >
+      {/* lineetta sopra Leo */}
+      <span
+        aria-hidden
+        className={`absolute left-[16px] right-[16px] h-px bg-ink/12 transition-opacity duration-300 ${conLeo ? "opacity-100 delay-200" : "opacity-0"}`}
+        style={{ top: altezza / 2 + BARRA_LATO.leoTop - 11 }}
+      />
       {sideItems.map(({ label, icon: Icon, href }) => {
         const isActive = section === label;
         return (

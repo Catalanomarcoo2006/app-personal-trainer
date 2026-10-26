@@ -33,3 +33,7 @@ export const clamp = (v: number, min: number, max: number) => Math.min(max, Math
 
 // la chat durante il viaggio: un riquadro piccolo in basso, Leo resta aggrappato al bordo
 export const COMPATTA = { w: 168, h: 150 };
+
+// Barra laterale: fuori dalla home si allunga e in fondo ospita la testa di Leo (sotto una lineetta).
+// leoTop: dove inizia la testa, misurato dal centro della barra (che sta a 50% + 40 px della tela).
+export const BARRA_LATO = { h: 420, conLeo: 484, leoTop: 180, leo: 44 };
