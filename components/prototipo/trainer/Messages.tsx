@@ -1,13 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowUp, Bot, Check, ExternalLink, FileText, Phone, Search, TriangleAlert, UserRound } from "lucide-react";
 import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { Attachment, conversations, progressOf } from "@/libs/prototipo/dati-finti";
+import { Attachment, conversations, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
 import { useTrovaCliente } from "@/libs/dati/selettori";
 import { MAX_MESSAGGIO } from "@/libs/dati/sportello";
 import { durataScrittura, TEMPI } from "@/libs/prototipo/leo-viaggio";
@@ -215,7 +215,9 @@ export function MessagesView({ search }: { search: string }) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + i * 0.05, duration: 0.4, ease: EASE_OUT }}
                 onClick={() => open(conv.clientId)}
-                className={`flex cursor-pointer items-center gap-[10px] rounded-[14px] px-[10px] py-[10px] text-left transition-colors ${active ? "bg-soft" : "hover:bg-soft/60"}`}
+                // al buio ogni chat prende il colore del cliente, come le sue schede (globals.css, .tinta-scuro)
+                style={{ "--tono": toneColors[c.tone].bg } as CSSProperties}
+                className={`tinta-scuro flex cursor-pointer items-center gap-[10px] rounded-[14px] px-[10px] py-[10px] text-left transition-colors ${active ? "bg-soft attiva" : "hover:bg-soft/60"}`}
               >
                 <ClientAvatar c={c} size={38} />
                 <div className="min-w-0 flex-1 leading-snug">
@@ -295,8 +297,9 @@ export function MessagesView({ search }: { search: string }) {
                   className={`flex max-w-[62%] flex-col ${m.from === "trainer" ? "items-end self-end" : "items-start self-start"}`}
                 >
                   <div
+                    style={m.from === "trainer" ? undefined : ({ "--tono": toneColors[client.tone].bg } as CSSProperties)}
                     className={`rounded-[18px] text-[12.5px] leading-snug ${m.attachment ? "p-[6px] pb-[9px]" : "px-[14px] py-[9px]"} ${
-                      m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "rounded-bl-[6px] bg-soft"
+                      m.from === "trainer" ? "rounded-br-[6px] bubble-trainer" : "tinta-scuro rounded-bl-[6px] bg-soft"
                     }`}
                   >
                     {m.attachment && <PdfMessage a={m.attachment} />}

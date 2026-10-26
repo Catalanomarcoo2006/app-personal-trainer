@@ -78,7 +78,7 @@ export function RevenueChart({ months = revenue.months }: { months?: Month[] }) 
                   style={{
                     background: isLast
                       ? "linear-gradient(180deg, color-mix(in srgb, var(--trainer) 72%, white), var(--trainer))"
-                      : `color-mix(in srgb, var(--trainer) ${hover === i ? 42 : 20}%, transparent)`,
+                      : hover === i ? "var(--trainer-velo-forte)" : "var(--trainer-velo)",
                     boxShadow: isLast ? "0 10px 22px -8px color-mix(in srgb, var(--trainer) 70%, transparent), inset 0 1px 0 rgba(255,255,255,0.45)" : undefined,
                   }}
                 >

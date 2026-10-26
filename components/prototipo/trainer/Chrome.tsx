@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   CalendarDays,
   Dumbbell,
-  FileText,
   House,
   MessageSquare,
   Moon,
@@ -18,18 +17,17 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { Avatar, FitCanvas } from "@/components/ui/basics";
+import { FitCanvas } from "@/components/ui/basics";
 import { Appear, EASE_OUT } from "@/components/ui/motion";
 import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
-import { trainer } from "@/libs/prototipo/dati-finti";
-import { useTrainerPhoto } from "@/libs/prototipo/stato";
 import { benvenutoAttuale } from "@/libs/prototipo/benvenuto";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 import { CoachAssistant } from "./CoachAssistant";
 import { BASE, navigate, ROUTES } from "./nav";
 import { BARRA_LATO } from "./leo/costanti";
-import { NotificationsButton, SearchButton, SearchPalette } from "./TopBarTools";
+import { RicercaInBarra } from "./TopBarTools";
+import { AzioniRapide, BarraVetro, SuoniButton } from "./BarraAlta";
 
 export { BASE, ROUTES, navigate };
 
@@ -68,12 +66,6 @@ function useSection(): Section {
   return found ?? "Oggi";
 }
 
-const navItems: NavItem[] = [
-  { label: "Oggi", icon: House, href: ROUTES.oggi },
-  { label: "Clienti", icon: Users, href: ROUTES.clienti },
-  { label: "Incassi", icon: FileText, href: ROUTES.incassi },
-  { label: "Impostazioni", icon: Settings, href: ROUTES.impostazioni },
-];
 
 // Interruttore del tema: il nuovo tema parte dal punto del clic.
 export function ThemeButton({ size = 15 }: { size?: number }) {
@@ -107,55 +99,29 @@ export function ThemeButton({ size = 15 }: { size?: number }) {
   );
 }
 
+// Barra in alto: al centro le azioni rapide (le sezioni sono già nella barra laterale), a destra tema, ricerca
+// e suoni. Avvisi e profilo non servono qui: le novità stanno negli urgenti, il profilo nella scheda a sinistra.
 export function TopBar() {
-  const section = useSection();
-
   return (
     <div className="grid h-[35px] grid-cols-[1fr_auto_1fr] items-center pr-[18px] pl-[20px]">
       <span />
-
-      <nav className="glass glass-3d relative flex h-[35px] w-[395px] items-center justify-between rounded-full px-[4px]">
-        {navItems.map(({ label, icon: Icon, href }) => {
-          const isActive = label === section;
-          return (
-            <motion.button
-              key={label}
-              type="button"
-              whileTap={{ scale: 0.95 }}
-              aria-current={isActive ? "page" : undefined}
-              onClick={() => {
-                navigate(href);
-                playSound("tap");
-              }}
-              className={`relative flex h-[27px] cursor-pointer items-center gap-[6px] rounded-full px-[14px] text-[12.5px] font-medium transition-colors duration-300 ${
-                isActive ? "text-ink" : "text-ink/60 [@media(hover:hover)]:hover:text-ink"
-              }`}
-            >
-              {isActive && <motion.span layoutId="goccia-menu" className="glass-drop absolute inset-0 rounded-full" transition={SPRING} />}
-              <Icon size={14} strokeWidth={1.9} className="relative" />
-              <span className="relative">{label}</span>
-            </motion.button>
-          );
-        })}
-      </nav>
-
+      <AzioniRapide />
       <TopBarRight />
     </div>
   );
 }
 
-// Tema, avvisi, ricerca e profilo: non dipendono dalla sezione, quindi cambiando pagina non si ridisegnano.
+// Non dipende dalla sezione: cambiando pagina non si ridisegna.
 const TopBarRight = memo(function TopBarRight() {
-  const photo = useTrainerPhoto();
   return (
-    <div className="glass glass-3d relative flex h-[35px] w-[147px] items-center justify-between justify-self-end rounded-full pr-[4px] pl-[14px] text-ink">
-      <ThemeButton />
-      <NotificationsButton />
-      <SearchButton />
-      <Link href={ROUTES.impostazioni} onClick={() => playSound("tap")} aria-label="Il tuo profilo" className="relative">
-        <Avatar initials={trainer.initials} src={photo} size={27} />
-      </Link>
-    </div>
+    <BarraVetro
+      className="justify-self-end px-[8px] text-ink"
+      voci={[
+        { chiave: "tema", nodo: <span className="grid size-[30px] place-items-center"><ThemeButton /></span> },
+        { chiave: "cerca", nodo: <span className="flex h-[30px] items-center px-[4px]"><RicercaInBarra /></span> },
+        { chiave: "suoni", nodo: <span className="grid size-[30px] place-items-center"><SuoniButton /></span> },
+      ]}
+    />
   );
 });
 
@@ -303,7 +269,6 @@ export function TrainerFrame({ children }: { children: ReactNode }) {
       <Sidebar />
       {children}
       <CoachAssistant />
-      <SearchPalette />
       <InstantLinks />
     </FitCanvas>
   );

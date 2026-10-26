@@ -110,9 +110,9 @@ export function GlassDays({
 }) {
   return (
     <div className="relative overflow-hidden rounded-[18px] bg-soft p-[6px]">
-      <span aria-hidden className="absolute top-[-30px] left-[8%] h-[90px] w-[34%] rounded-full opacity-45 blur-[22px]" style={{ background: "var(--trainer)" }} />
-      <span aria-hidden className="absolute bottom-[-40px] left-[42%] h-[90px] w-[30%] rounded-full opacity-35 blur-[22px]" style={{ background: "var(--color-sky-strong)" }} />
-      <span aria-hidden className="absolute top-[-20px] right-[2%] h-[80px] w-[26%] rounded-full opacity-35 blur-[22px]" style={{ background: "var(--color-mint-strong)" }} />
+      <span aria-hidden className="alone-giorni absolute top-[-30px] left-[8%] h-[90px] w-[34%] rounded-full opacity-45 blur-[22px]" style={{ background: "var(--trainer)" }} />
+      <span aria-hidden className="alone-giorni absolute bottom-[-40px] left-[42%] h-[90px] w-[30%] rounded-full opacity-35 blur-[22px]" style={{ background: "var(--color-sky-strong)" }} />
+      <span aria-hidden className="alone-giorni absolute top-[-20px] right-[2%] h-[80px] w-[26%] rounded-full opacity-35 blur-[22px]" style={{ background: "var(--color-mint-strong)" }} />
 
       <motion.div
         key={weekKey}

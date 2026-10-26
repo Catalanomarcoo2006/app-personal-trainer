@@ -14,6 +14,7 @@ import { Bubble, type Speech, tips, novita } from "./leo/Fumetti";
 import { useCoachChat, type Chat } from "./leo/useChatLeo";
 import { ChatPanel } from "./leo/ChatPanel";
 import { CoachButton } from "./leo/CoachButton";
+import { onApriLeo } from "./richieste";
 
 let novitaViste = false;
 // Quante vignette della home sono già uscite: tornando sulla home non ricominciano da capo.
@@ -116,6 +117,24 @@ function CoachStage({ home, chat, open, setOpen }: { home: boolean; chat: Chat; 
     }
     if (question) window.setTimeout(() => chat.ask(question), 380);
   };
+  // Azioni rapide della barra in alto: la chat si apre con la frase già scritta, il trainer la completa
+  const [bozza, setBozza] = useState<string | undefined>();
+  const apriChat = useRef(openChat);
+  apriChat.current = openChat;
+  useEffect(
+    () =>
+      onApriLeo((b) => {
+        setBozza(b);
+        setInfo(false);
+        apriChat.current();
+      }),
+    [],
+  );
+  // chiusa la chat (X, velo, Esc, link di Leo) la frase non serve più: la prossima volta si riapre vuota
+  useEffect(() => {
+    if (!open) setBozza(undefined);
+  }, [open]);
+
   const closeChat = () => {
     playSound("close");
     setOpen(false);
@@ -179,7 +198,7 @@ function CoachStage({ home, chat, open, setOpen }: { home: boolean; chat: Chat; 
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {open && !info && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} height={size.h} chat={chat} close={closeChat} dismiss={() => setOpen(false)} openInfo={openInfo} />}
+        {open && !info && <ChatPanel key="chat" left={panelLeft} origin={panelOrigin} height={size.h} chat={chat} close={closeChat} dismiss={() => setOpen(false)} openInfo={openInfo} bozza={bozza} />}
       </AnimatePresence>
       <AnimatePresence>{open && info && <LeoIdentikit key="identikit" onBack={closeInfo} onReplayIntro={replayIntro} />}</AnimatePresence>
 

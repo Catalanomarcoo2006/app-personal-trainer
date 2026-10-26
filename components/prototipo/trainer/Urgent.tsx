@@ -11,6 +11,7 @@ import { useClienti } from "@/libs/dati/selettori";
 import { useUrgenti } from "@/libs/dati/selettori";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
+import { NovitaRecenti } from "./TopBarTools";
 
 const kinds: Record<UrgentKind, { icon: LucideIcon; color: string; bg: string; group: string }> = {
   imminente: { icon: Clock, color: "#e0562b", bg: "rgba(224,86,43,0.14)", group: "Appuntamenti imminenti" },
@@ -139,6 +140,11 @@ export function UrgentBell() {
                   </div>
                 );
               })}
+              {/* cosa è successo di recente (prima stava nella campanella della barra in alto) */}
+              <div>
+                <p className="mb-[3px] text-[10px] font-semibold tracking-wide text-muted uppercase">Novità</p>
+                <NovitaRecenti onScelta={() => setOpen(false)} />
+              </div>
             </div>
           </motion.div>
         )}

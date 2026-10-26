@@ -16,6 +16,7 @@ import { stato, useStato, useFocusLeo } from "@/libs/prototipo/stato";
 import { navigate, ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { useFitDensity } from "./fit";
+import { onNuovaSeduta, prendiNuovaSeduta } from "./richieste";
 import { duration, endTime, GlassDays, statusOf, toMinutes, typeIcons, WeekArrows, weekOf, WeekDay } from "./Agenda";
 
 const types = Object.keys(appointmentColors) as AppointmentType[];
@@ -501,6 +502,18 @@ export function WeekCalendar() {
   const days: WeekDay[] = week.days.map((d, i) => ({ ...d, items: [...items[i]].sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) }));
   const total = days.reduce((s, d) => s + d.items.length, 0);
   const todayIndex = days.findIndex((d) => d.isToday);
+
+  // "Nuova seduta" dalla barra in alto (richieste.ts): torna a questa settimana e apre la finestra su oggi
+  useEffect(() => {
+    const apri = () => {
+      if (!prendiNuovaSeduta()) return;
+      setOffset(0);
+      const oggi = weekOf(0, stato.get().sedute).days.findIndex((d) => d.isToday);
+      setDraft({ day: Math.max(0, oggi), time: "17:00" });
+    };
+    apri();
+    return onNuovaSeduta(apri);
+  }, []);
 
   useEffect(() => {
     if (!focus?.id || focus.tipo === "messaggio") return;

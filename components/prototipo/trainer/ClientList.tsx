@@ -1,19 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
-import { EllipsisVertical, Search, UserPlus } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowDown, EllipsisVertical, Search, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 import { EASE_OUT, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
-import { Client, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
+import { Client, clients as clientiIniziali, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
 import { useClienti } from "@/libs/dati/selettori";
 import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 
 const unpaid = (c: Client) => c.payments.some((p) => !p.paid);
+
+// Clienti nuovi (aggiunti dopo i dati iniziali, per esempio da Leo): finché il trainer non li ha visti nell'elenco
+// in basso compare un avviso rosso che porta fin lì. "Visti" vale per questa visita.
+const iniziali = new Set(clientiIniziali.map((c) => c.id));
+const visti = new Set<string>();
 
 const filters = [
   { key: "tutti", label: "Tutti", test: () => true },
@@ -37,6 +42,60 @@ export function ClientList({ search }: { search: string }) {
     const q = query.trim().toLowerCase();
     return clients.filter((c) => test(c) && (!q || c.name.toLowerCase().includes(q) || c.goal.toLowerCase().includes(q)));
   }, [clients, filter, query]);
+
+  // ——— Scorrimento: barra laterale disegnata da noi e avviso dei clienti nuovi ———
+  const scroller = useRef<HTMLDivElement>(null);
+  const [barra, setBarra] = useState<{ top: number; h: number } | null>(null);
+  const [, setVisti] = useState(0);
+  const daVedere = shown.filter((c) => !iniziali.has(c.id) && !visti.has(c.id));
+  const chiaveDaVedere = daVedere.map((c) => c.id).join();
+
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const misura = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      if (scrollHeight <= clientHeight + 2) return setBarra(null);
+      setBarra({ top: scrollTop / scrollHeight, h: clientHeight / scrollHeight });
+    };
+    misura();
+    el.addEventListener("scroll", misura, { passive: true });
+    const ro = new ResizeObserver(misura);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", misura);
+      ro.disconnect();
+    };
+  }, [shown.length]);
+
+  // un cliente nuovo conta come visto quando la sua scheda entra per buona parte nello schermo
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || !chiaveDaVedere) return;
+    const io = new IntersectionObserver(
+      (voci) =>
+        voci.forEach((v) => {
+          const id = (v.target as HTMLElement).dataset.cliente;
+          if (v.intersectionRatio >= 0.6 && id && !visti.has(id)) {
+            visti.add(id);
+            setVisti((n) => n + 1);
+          }
+        }),
+      { root: el, threshold: [0.6] },
+    );
+    chiaveDaVedere.split(",").forEach((id) => {
+      const card = el.querySelector(`[data-cliente="${CSS.escape(id)}"]`);
+      if (card) io.observe(card);
+    });
+    return () => io.disconnect();
+  }, [chiaveDaVedere]);
+
+  const vaiAlNuovo = () => {
+    const card = scroller.current?.querySelector(`[data-cliente="${CSS.escape(daVedere[0].id)}"]`);
+    playSound("tap");
+    card?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] flex flex-col pr-[18px] pl-[80px]">
@@ -89,17 +148,68 @@ export function ClientList({ search }: { search: string }) {
         </div>
       </div>
 
-      <div className="mt-[12px] grid min-h-0 flex-1 grid-cols-4 grid-rows-2 gap-[12px]">
-        {shown.map((c, i) => (
-          <ClientTile key={`${filter}-${c.id}`} c={c} i={i} />
-        ))}
-        {shown.length === 0 && <p className="col-span-4 mt-[40px] text-center text-[13px] text-muted">Nessun cliente corrisponde alla ricerca.</p>}
+      {/* Schede tutte alte uguali (due righe per schermata); dalla nona in poi si scorre. Il padding lascia spazio
+          alla scheda che si alza al passaggio del mouse. */}
+      <div className="relative mt-[8px] min-h-0 flex-1">
+        <div ref={scroller} className="h-full overflow-y-auto pt-[4px] pb-[4px] [container-type:size] [scrollbar-width:none]">
+          <div className="grid grid-cols-4 auto-rows-[calc((100cqh-20px)/2)] gap-[12px]">
+            {shown.map((c, i) => (
+              <ClientTile key={`${filter}-${c.id}`} c={c} i={i} nuovo={!iniziali.has(c.id)} />
+            ))}
+            {shown.length === 0 && <p className="col-span-4 mt-[40px] text-center text-[13px] text-muted">Nessun cliente corrisponde alla ricerca.</p>}
+          </div>
+        </div>
+
+        {/* barra laterale: dice che sotto ci sono altri clienti e dove si è arrivati */}
+        <AnimatePresence>
+          {barra && (
+            <motion.div
+              key="barra"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              aria-hidden
+              className="pointer-events-none absolute top-[8px] -right-[11px] bottom-[8px] w-[4px] rounded-full bg-ink/10"
+            >
+              <span
+                className="absolute inset-x-0 rounded-full transition-[top] duration-100"
+                style={{ top: `${barra.top * 100}%`, height: `${barra.h * 100}%`, background: "color-mix(in srgb, var(--trainer) 75%, transparent)" }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* clienti nuovi più in basso: avviso rosso con il numero, porta alla scheda */}
+        <AnimatePresence>
+          {daVedere.length > 0 && (
+            <motion.div
+              key="nuovi"
+              initial={{ opacity: 0, y: 12, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ type: "spring", duration: 0.45, bounce: 0.3 }}
+              className="pointer-events-none absolute inset-x-0 bottom-[14px] z-10 flex justify-center"
+            >
+              <button
+                type="button"
+                onClick={vaiAlNuovo}
+                className="pointer-events-auto flex cursor-pointer items-center gap-[7px] rounded-full bg-card py-[6px] pr-[12px] pl-[6px] text-[12px] font-semibold whitespace-nowrap text-ink shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
+              >
+                <span className="grid size-[20px] place-items-center rounded-full bg-[#e5484d] text-[11px] font-bold text-white tabular-nums">{daVedere.length}</span>
+                {daVedere.length === 1 ? "Nuovo cliente" : "Nuovi clienti"}
+                <motion.span animate={{ y: [0, 3, 0] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} className="grid">
+                  <ArrowDown size={13} strokeWidth={2.4} />
+                </motion.span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </main>
   );
 }
 
-function ClientTile({ c, i }: { c: Client; i: number }) {
+function ClientTile({ c, i, nuovo }: { c: Client; i: number; nuovo?: boolean }) {
   const tone = toneColors[c.tone];
   const percent = progressOf(c);
   const weight = c.weights[c.weights.length - 1];
@@ -114,6 +224,7 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
       initial={{ opacity: 0, transform: "translateY(14px) scale(0.98)" }}
       animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
       transition={{ delay: 0.06 + i * 0.05, duration: 0.5, ease: EASE_OUT }}
+      data-cliente={c.id}
       className="mosso min-h-0 transition-[translate] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-[4px]"
     >
       <Link
@@ -123,7 +234,10 @@ function ClientTile({ c, i }: { c: Client; i: number }) {
         style={{ background: tone.bg }}
       >
         <div className="flex items-center justify-between">
-          <span className="rounded-full bg-card/90 px-[7px] py-[2.5px] text-[9.5px] leading-none font-semibold text-ink/85">{c.since}</span>
+          <span className="flex items-center gap-[5px]">
+            <span className="rounded-full bg-card/90 px-[7px] py-[2.5px] text-[9.5px] leading-none font-semibold text-ink/85">{c.since}</span>
+            {nuovo && <span className="rounded-full bg-[#e5484d] px-[7px] py-[2.5px] text-[9.5px] leading-none font-bold text-white">Nuovo</span>}
+          </span>
           <EllipsisVertical size={13} className="text-ink/60" />
         </div>
         <div className="mt-[10px] flex items-center gap-[10px]">

@@ -3,10 +3,8 @@
 import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Bell,
   CalendarDays,
   CalendarPlus,
-  CheckCheck,
   ChevronRight,
   Dumbbell,
   House,
@@ -17,6 +15,7 @@ import {
   SquarePen,
   Users,
   Wallet,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
@@ -24,159 +23,60 @@ import { playSound } from "@/libs/ui/sound";
 import { notifications, NotificationKind } from "@/libs/prototipo/dati-finti";
 import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { navigate, ROUTES } from "./nav";
+import { chiediNuovaSeduta } from "./richieste";
 import { ClientAvatar } from "./shared";
 
-const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
-
-// ——— Campanello: cosa è successo di recente ———
+// ——— Novità: cosa è successo di recente (nel pannello degli urgenti, sotto "Da fare subito") ———
 
 const kindIcon: Record<NotificationKind, LucideIcon> = { allenamento: Dumbbell, messaggio: MessageSquare, pagamento: Wallet, misure: Ruler, scheda: SquarePen };
 
-export function NotificationsButton() {
+export function NovitaRecenti({ onScelta }: { onScelta: () => void }) {
   const clientById = useTrovaCliente();
-  const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(3);
-  const box = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => {
-      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", esc);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", esc);
-    };
-  }, [open]);
-
   const hrefOf = (n: (typeof notifications)[number]) =>
     n.to === "messaggi" ? `${ROUTES.messaggi}?cliente=${n.clientId}` : n.to === "incassi" ? ROUTES.incassi : ROUTES.cliente(n.clientId);
 
   return (
-    <div ref={box} className="relative grid">
-      <motion.button
-        type="button"
-        {...tap}
-        aria-label="Avvisi"
-        aria-expanded={open}
-        title="Avvisi"
-        onClick={() => {
-          playSound(open ? "close" : "open");
-          setOpen((o) => !o);
-        }}
-        className="relative cursor-pointer"
-      >
-        <Bell size={15} strokeWidth={1.9} />
-        <AnimatePresence>
-          {unread > 0 && (
-            <motion.span
-              key="pallino"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: [1, 1.5, 1], opacity: 1 }}
-              exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.15 } }}
-              transition={{ duration: 1.8, repeat: Infinity }}
-              className="absolute -top-[2px] right-[0px] size-[5px] rounded-full bg-[#e5484d]"
-            />
-          )}
-        </AnimatePresence>
-      </motion.button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.97, transition: { duration: 0.14 } }}
-            transition={{ duration: 0.2, ease: EASE_OUT }}
-            className="absolute top-[30px] -right-[60px] z-50 w-[340px] origin-top-right rounded-[20px] bg-card p-[14px] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+    <div className="flex flex-col gap-[4px]">
+      {notifications.map((n, i) => {
+        const c = clientById(n.clientId);
+        const Icon = kindIcon[n.kind];
+        return (
+          <motion.button
+            key={n.text}
+            type="button"
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.03 + i * 0.035, duration: 0.25, ease: EASE_OUT }}
+            onClick={() => {
+              playSound("tap");
+              onScelta();
+              navigate(hrefOf(n));
+            }}
+            className="group flex cursor-pointer items-center gap-[10px] rounded-[13px] px-[8px] py-[7px] text-left transition-colors hover:bg-soft"
           >
-            <div className="flex items-center justify-between">
-              <p className="text-[14px] font-bold">Avvisi</p>
-              <button
-                type="button"
-                disabled={unread === 0}
-                onClick={() => {
-                  playSound("tap");
-                  setUnread(0);
-                }}
-                className="flex cursor-pointer items-center gap-[4px] text-[11px] font-semibold text-muted transition-colors hover:text-ink disabled:cursor-default disabled:opacity-50 disabled:hover:text-muted"
-              >
-                <CheckCheck size={13} /> {unread ? "Segna come letti" : "Tutto letto"}
-              </button>
-            </div>
-            <div className="mt-[10px] flex flex-col gap-[4px]">
-              {notifications.map((n, i) => {
-                const c = clientById(n.clientId);
-                const Icon = kindIcon[n.kind];
-                const isNew = i < unread;
-                return (
-                  <motion.button
-                    key={n.text}
-                    type="button"
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.03 + i * 0.035, duration: 0.25, ease: EASE_OUT }}
-                    onClick={() => {
-                      playSound("tap");
-                      setOpen(false);
-                      navigate(hrefOf(n));
-                    }}
-                    className="group flex cursor-pointer items-center gap-[10px] rounded-[13px] px-[8px] py-[7px] text-left transition-colors hover:bg-soft"
-                  >
-                    <span className="relative shrink-0">
-                      {c && <ClientAvatar c={c} size={32} />}
-                      <span className="absolute -right-[3px] -bottom-[3px] grid size-[17px] place-items-center rounded-full border-2 border-card text-white" style={{ background: "var(--trainer)" }}>
-                        <Icon size={9} strokeWidth={2.4} />
-                      </span>
-                    </span>
-                    <span className="min-w-0 flex-1 leading-snug">
-                      <span className="block text-[12px]">
-                        <b className="font-bold">{c?.name.split(" ")[0]}</b> {n.text}
-                      </span>
-                      <span className="mt-[1px] block text-[10.5px] text-muted">{n.when}</span>
-                    </span>
-                    {isNew ? (
-                      <span className="size-[7px] shrink-0 rounded-full" style={{ background: "var(--trainer)" }} />
-                    ) : (
-                      <ChevronRight size={14} className="shrink-0 text-ink/30 transition-transform group-hover:translate-x-[2px]" />
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <span className="relative shrink-0">
+              {c && <ClientAvatar c={c} size={32} />}
+              <span className="absolute -right-[3px] -bottom-[3px] grid size-[17px] place-items-center rounded-full border-2 border-card text-white" style={{ background: "var(--trainer)" }}>
+                <Icon size={9} strokeWidth={2.4} />
+              </span>
+            </span>
+            <span className="min-w-0 flex-1 leading-snug">
+              <span className="block text-[12px]">
+                <b className="font-bold">{c?.name.split(" ")[0]}</b> {n.text}
+              </span>
+              <span className="mt-[1px] block text-[10.5px] text-muted">{n.when}</span>
+            </span>
+            <ChevronRight size={14} className="shrink-0 text-ink/30 transition-transform group-hover:translate-x-[2px]" />
+          </motion.button>
+        );
+      })}
     </div>
   );
 }
 
-// ——— Ricerca: clienti, sezioni e azioni rapide (anche con Ctrl+K) ———
+// ——— Ricerca: la lente si apre dentro la barra in un campo (anche con Ctrl+K); i risultati scendono sotto ———
 
-const OPEN_SEARCH = "apri-ricerca";
-
-export function SearchButton() {
-  return (
-    <motion.button
-      type="button"
-      {...tap}
-      aria-label="Cerca"
-      title="Cerca (Ctrl+K)"
-      onClick={() => {
-        playSound("open");
-        window.dispatchEvent(new Event(OPEN_SEARCH));
-      }}
-      className="relative grid cursor-pointer"
-    >
-      <Search size={15} strokeWidth={1.9} />
-    </motion.button>
-  );
-}
-
-type Result = { group: "Clienti" | "Sezioni" | "Azioni"; label: string; detail: string; href: string; icon?: LucideIcon; clientId?: string };
+type Result = { group: "Clienti" | "Sezioni" | "Azioni"; label: string; detail: string; href: string; icon?: LucideIcon; clientId?: string; prima?: () => void };
 
 const sections: Result[] = [
   { group: "Sezioni", label: "Oggi", detail: "La tua giornata", href: ROUTES.oggi, icon: House },
@@ -190,15 +90,16 @@ const sections: Result[] = [
 
 const actions: Result[] = [
   { group: "Azioni", label: "Nuova scheda", detail: "Crea una scheda di allenamento", href: ROUTES.schede, icon: SquarePen },
-  { group: "Azioni", label: "Nuova seduta", detail: "Fissa un appuntamento", href: ROUTES.calendario, icon: CalendarPlus },
+  { group: "Azioni", label: "Nuova seduta", detail: "Fissa un appuntamento", href: ROUTES.calendario, icon: CalendarPlus, prima: chiediNuovaSeduta },
   { group: "Azioni", label: "Registra un pagamento", detail: "Segna un incasso", href: ROUTES.incassi, icon: Wallet },
 ];
-
 
 // minuscole e senza accenti: "lunedi" trova "Lunedì"
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-export function SearchPalette() {
+const MOLLA = { type: "spring" as const, stiffness: 380, damping: 30 };
+
+export function RicercaInBarra() {
   const clientById = useTrovaCliente();
   const clients = useClienti();
   const clientResults: Result[] = useMemo(() => clients.map((c) => ({ group: "Clienti", label: c.name, detail: `${c.goal} · ${c.pkg.left}`, href: ROUTES.cliente(c.id), clientId: c.id })), [clients]);
@@ -206,29 +107,39 @@ export function SearchPalette() {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLDivElement>(null);
 
+  const apri = () => {
+    setQuery("");
+    setActive(0);
+    setOpen(true);
+  };
+  const chiudi = () => setOpen(false);
+
+  // Ctrl+K apre la ricerca da qualsiasi pagina; un clic fuori la chiude
   useEffect(() => {
-    const show = () => {
-      setQuery("");
-      setActive(0);
-      setOpen(true);
-    };
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        show();
+        playSound("open");
+        apri();
+        input.current?.focus();
       }
     };
-    window.addEventListener(OPEN_SEARCH, show);
     window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener(OPEN_SEARCH, show);
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
-
   useEffect(() => {
-    if (open) window.setTimeout(() => input.current?.focus(), 10);
+    if (!open) return;
+    const t = window.setTimeout(() => input.current?.focus(), 30);
+    const fuori = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", fuori);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener("mousedown", fuori);
+    };
   }, [open]);
 
   const results = useMemo(() => {
@@ -241,6 +152,7 @@ export function SearchPalette() {
     if (!r) return;
     playSound("tap");
     setOpen(false);
+    r.prima?.();
     navigate(r.href);
   };
 
@@ -255,29 +167,38 @@ export function SearchPalette() {
       e.preventDefault();
       choose(results[active]);
     } else if (e.key === "Escape") {
-      setOpen(false);
+      playSound("close");
+      chiudi();
     }
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div key="ricerca" className="absolute inset-0 z-[70]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.15 } }} transition={{ duration: 0.18 }}>
-          <button type="button" aria-label="Chiudi la ricerca" onClick={() => {
-            playSound("close");
-            setOpen(false);
-          }} className="absolute inset-0 cursor-default bg-black/10 backdrop-blur-[5px]" />
-          <motion.div
-            role="dialog"
-            aria-label="Cerca"
-            initial={{ opacity: 0, y: -10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.22, ease: EASE_OUT }}
-            className="absolute top-[80px] left-1/2 w-[540px] -translate-x-1/2 overflow-hidden rounded-[22px] bg-card shadow-[0_30px_80px_rgba(0,0,0,0.22)]"
-          >
-            <div className="flex items-center gap-[10px] border-b border-line px-[18px]">
-              <Search size={17} strokeWidth={2} className="shrink-0 text-muted" />
+    <div ref={box} className="relative flex items-center">
+      {/* la lente si allunga in un campo: la barra cresce con lei e spinge le altre icone */}
+      <motion.div
+        initial={false}
+        animate={{ width: open ? 214 : 22 }}
+        transition={MOLLA}
+        className="flex h-[27px] items-center overflow-hidden rounded-full"
+        style={open ? { background: "var(--color-card)", boxShadow: "inset 0 0 0 1.5px color-mix(in srgb, var(--trainer) 75%, transparent)" } : undefined}
+      >
+        <button
+          type="button"
+          aria-label="Cerca"
+          title="Cerca (Ctrl+K)"
+          onClick={() => {
+            if (open) return input.current?.focus();
+            playSound("open");
+            apri();
+          }}
+          className="grid size-[22px] shrink-0 cursor-pointer place-items-center"
+          style={open ? { color: "var(--trainer)", marginLeft: 4 } : undefined}
+        >
+          <Search size={open ? 13 : 15} strokeWidth={open ? 2.2 : 1.9} />
+        </button>
+        <AnimatePresence>
+          {open && (
+            <motion.div key="campo" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.08 } }} exit={{ opacity: 0, transition: { duration: 0.08 } }} className="flex min-w-0 flex-1 items-center gap-[4px] pr-[4px]">
               <input
                 ref={input}
                 value={query}
@@ -286,12 +207,37 @@ export function SearchPalette() {
                   setActive(0);
                 }}
                 onKeyDown={onKeyDown}
-                placeholder="Cerca un cliente, una sezione o un'azione"
-                className="h-[54px] flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted"
+                placeholder="Cerca clienti, sezioni…"
+                className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-muted"
               />
-              <kbd className="rounded-[6px] border border-line px-[6px] py-[2px] text-[10px] font-semibold text-muted">Esc</kbd>
-            </div>
+              <kbd className="rounded-[5px] bg-soft px-[4px] py-[1px] text-[8.5px] font-bold text-muted">ESC</kbd>
+              <button
+                type="button"
+                aria-label="Chiudi la ricerca"
+                onClick={() => {
+                  playSound("close");
+                  chiudi();
+                }}
+                className="grid size-[18px] shrink-0 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink"
+              >
+                <X size={11} strokeWidth={2.4} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="dialog"
+            aria-label="Risultati della ricerca"
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97, transition: { duration: 0.14 } }}
+            transition={{ duration: 0.22, ease: EASE_OUT }}
+            className="absolute top-[38px] -right-[46px] z-50 w-[380px] origin-top-right overflow-hidden rounded-[20px] bg-card shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+          >
             <div className="max-h-[400px] overflow-y-auto p-[8px] [scrollbar-width:none]">
               {results.length === 0 && <p className="px-[12px] py-[26px] text-center text-[13px] text-muted">Nessun risultato per “{query}”</p>}
               {results.map((r, i) => {
@@ -323,15 +269,14 @@ export function SearchPalette() {
                 );
               })}
             </div>
-
-            <div className="flex items-center gap-[14px] border-t border-line px-[18px] py-[9px] text-[10.5px] text-muted">
+            <div className="flex items-center gap-[14px] border-t border-line px-[16px] py-[8px] text-[10.5px] text-muted">
               <span>↑ ↓ per muoverti</span>
               <span>Invio per aprire</span>
               <span className="ml-auto">Ctrl K per riaprire</span>
             </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

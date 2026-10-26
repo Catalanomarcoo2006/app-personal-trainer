@@ -70,6 +70,7 @@ export function ChatPanel({
   close,
   dismiss,
   openInfo,
+  bozza,
 }: {
   left: number;
   origin: string;
@@ -78,14 +79,16 @@ export function ChatPanel({
   close: () => void;
   dismiss: () => void;
   openInfo: () => void;
+  bozza?: string; // frase già scritta nella casella (azioni rapide della barra in alto)
 }) {
   const { messages, typing, thinking, ask: askChat, conferma, confermaTutte, segnaModifica, rifiuta, annulla, torna, partenza, compatta } = chat;
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(bozza ?? "");
   const scrive = draft.trim().length > 0;
   const reduce = useReducedMotion();
   const scroller = useRef<HTMLDivElement>(null);
   // la prima volta Leo si presenta; scrivere una domanda vale come "salta"
-  const [intro, setIntro] = useState(() => !introSeen());
+  // con una frase già scritta il trainer sa cosa vuole fare: niente presentazione
+  const [intro, setIntro] = useState(() => !bozza && !introSeen());
   const [introStep, setIntroStep] = useState(0);
   const endIntro = () => {
     setIntroSeen(true);
@@ -126,6 +129,14 @@ export function ChatPanel({
   const campo = useRef<HTMLFormElement>(null);
   // la casella cresce con il testo (anche mentre si detta) fino a ~6 righe, poi scorre; Maiusc+Invio va a capo
   const barra = useRef<HTMLTextAreaElement>(null);
+  // frase già scritta (azioni rapide): il cursore va in fondo, così il trainer continua a scrivere dopo
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const el = barra.current;
+      if (bozza && el) el.setSelectionRange(el.value.length, el.value.length);
+    }, 30);
+    return () => window.clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [alta, setAlta] = useState(false);
   useLayoutEffect(() => {
     const el = barra.current;

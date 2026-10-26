@@ -120,34 +120,50 @@
   --trainer: #ff6b2c;
 }
 
-/* Tema scuro: stessi nomi, valori diversi */
+/* velo del colore del trainer (barre del grafico degli incassi) */
+:root {
+  --trainer-velo: color-mix(in srgb, var(--trainer) 20%, transparent);
+  --trainer-velo-forte: color-mix(in srgb, var(--trainer) 42%, transparent);
+}
+
+/* Tema scuro: stessi nomi, valori diversi. Fondo nero pece, pannelli di vetro con bordo chiaro e colori
+   schiariti: sul nero un colore a metà sembra sporco, uno chiaro si accende (scelta di Marco del 26/10). */
 .dark {
   color-scheme: dark;
-  --color-salvia: #0f1214;
-  --color-card: #16181b;
+  --color-salvia: #040405;
+  --color-card: #0e0e10;
   --color-ink: #ecece9;
-  --color-muted: #8a8e94;
-  --color-line: #26292e;
-  --color-soft: #1f2226;
-  --color-pill: #1f2226;
+  --color-muted: #8f9399;
+  --color-line: #232326;
+  --color-soft: #161618;
+  --color-pill: #161618;
   --color-contrast: #e6e6e2;
   --color-on-contrast: #111214;
 
-  --color-peach: #241e16;
-  --color-peach-track: #3d3222;
-  --color-sky: #131f28;
-  --color-sky-track: #1e3747;
-  --color-rose: #251a1e;
-  --color-rose-track: #43262f;
-  --color-violet: #1b192c;
-  --color-violet-track: #312b55;
-  --color-mint: #12211a;
-  --color-mint-track: #1d3d2d;
+  --color-peach-strong: #ffc776;
+  --color-sky-strong: #7fcaff;
+  --color-rose-strong: #ff8fab;
+  --color-violet-strong: #b5a8ff;
+  --color-mint-strong: #6ee7b0;
+  --color-peach: color-mix(in srgb, #ffc776 24%, #0b0b0d);
+  --color-sky: color-mix(in srgb, #7fcaff 24%, #0b0b0d);
+  --color-rose: color-mix(in srgb, #ff8fab 24%, #0b0b0d);
+  --color-violet: color-mix(in srgb, #b5a8ff 24%, #0b0b0d);
+  --color-mint: color-mix(in srgb, #6ee7b0 24%, #0b0b0d);
+  --color-peach-track: color-mix(in srgb, #ffc776 38%, #0b0b0d);
+  --color-sky-track: color-mix(in srgb, #7fcaff 38%, #0b0b0d);
+  --color-rose-track: color-mix(in srgb, #ff8fab 38%, #0b0b0d);
+  --color-violet-track: color-mix(in srgb, #b5a8ff 38%, #0b0b0d);
+  --color-mint-track: color-mix(in srgb, #6ee7b0 38%, #0b0b0d);
 
-  --color-cal-default: #1f2226;
+  --color-cal-default: #141416;
   --color-cal-done: #333a47;
   --color-ok-soft: #12281c;
   --color-ok-line: #1c4a30;
+
+  /* velo del colore del trainer (barre del grafico): al buio schiarito verso il bianco, se no diventa marrone */
+  --trainer-velo: color-mix(in srgb, color-mix(in srgb, var(--trainer) 72%, white) 30%, transparent);
+  --trainer-velo-forte: color-mix(in srgb, color-mix(in srgb, var(--trainer) 72%, white) 52%, transparent);
 }
 
 /* Vetro stile Apple (Liquid Glass): sfoca e ravviva ciò che c'è dietro,
@@ -164,12 +180,14 @@
     0 2px 6px rgba(30, 48, 36, 0.06);
 }
 .dark .glass {
-  background: linear-gradient(180deg, rgba(44, 47, 52, 0.58), rgba(20, 22, 25, 0.42));
-  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)),
+    rgba(8, 8, 10, 0.66);
+  border-color: rgba(255, 255, 255, 0.17);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 14px 34px rgba(0, 0, 0, 0.45),
-    0 2px 6px rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 40px -16px rgba(0, 0, 0, 0.9);
 }
 /* Versione in rilievo per la barra laterale: spigolo di luce, riflesso interno, ombra profonda */
 .glass-3d {
@@ -255,15 +273,15 @@
     0 2px 5px rgba(20, 40, 28, 0.05);
 }
 .dark .panel {
+  /* fondo pieno sotto il velo: i riquadri che galleggiano (identikit di Leo) non lasciano vedere quello che c'è dietro */
   background:
-    radial-gradient(120% 70% at 0% 0%, rgba(255, 255, 255, 0.075), transparent 60%),
-    linear-gradient(180deg, rgba(50, 54, 61, 0.78), rgba(27, 29, 33, 0.72));
-  border-color: rgba(255, 255, 255, 0.15);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025)),
+    #09090b;
+  border-color: rgba(255, 255, 255, 0.17);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-    0 18px 40px -16px rgba(0, 0, 0, 0.65),
-    0 2px 6px rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 40px -16px rgba(0, 0, 0, 0.9);
 }
 
 /* Righe in vetro dentro un riquadro (le chat della home): lastra chiara con bordo bianco e riflesso in alto */
@@ -277,23 +295,20 @@
     0 1px 2px rgba(20, 40, 28, 0.06);
 }
 .dark .glass-row {
-  background:
-    radial-gradient(90% 120% at 10% 0%, rgba(255, 255, 255, 0.09), transparent 55%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03));
-  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025));
+  border-color: rgba(255, 255, 255, 0.17);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 8px 18px -10px rgba(0, 0, 0, 0.7);
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 40px -16px rgba(0, 0, 0, 0.9);
 }
 .glass-row-alert {
   background: linear-gradient(180deg, rgba(255, 244, 245, 0.97), rgba(255, 228, 232, 0.8));
   border-color: rgba(255, 255, 255, 1);
 }
 .dark .glass-row-alert {
-  background:
-    radial-gradient(90% 120% at 10% 0%, rgba(255, 255, 255, 0.08), transparent 55%),
-    linear-gradient(180deg, rgba(229, 72, 77, 0.2), rgba(229, 72, 77, 0.1));
-  border-color: rgba(255, 140, 150, 0.3);
+  background: linear-gradient(180deg, rgba(255, 110, 125, 0.34), rgba(255, 110, 125, 0.16));
+  border-color: rgba(255, 150, 160, 0.55);
 }
 
 /* Sezione visibile dell'area trainer: tornandoci compare con una dissolvenza brevissima */
@@ -330,6 +345,19 @@
   background: color-mix(in srgb, var(--trainer) 14%, var(--color-card));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--trainer) 34%, transparent);
 }
+/* Al buio le chat (elenco e fumetti del cliente) prendono il colore del cliente, come le sue schede:
+   nere si perdevano sul fondo (Messages.tsx passa il colore in --tono). Col tema chiaro restano come sono. */
+.dark .tinta-scuro {
+  background: var(--tono);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.dark .tinta-scuro:hover {
+  filter: brightness(1.12);
+}
+.dark .tinta-scuro.attiva {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 0 0 1.5px rgba(255, 255, 255, 0.32);
+}
+
 /* Messaggi scritti dal trainer nelle chat */
 .bubble-trainer {
   background: var(--trainer);
@@ -395,11 +423,12 @@
     0 2px 4px rgba(20, 40, 28, 0.06);
 }
 .dark .glass-tile {
-  background: linear-gradient(180deg, rgba(52, 56, 62, 0.62), rgba(24, 26, 30, 0.46));
-  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025));
+  border-color: rgba(255, 255, 255, 0.17);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 10px 20px -10px rgba(0, 0, 0, 0.7);
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 40px -16px rgba(0, 0, 0, 0.9);
 }
 
 /* Macchie di colore sfocate nel fondo: danno al vetro qualcosa da sfocare */
@@ -415,7 +444,11 @@
   animation: deriva 16s cubic-bezier(0.77, 0, 0.175, 1) infinite alternate;
 }
 .dark .ambient-blob {
-  opacity: 0.3;
+  opacity: 0.22;
+}
+/* aloni colorati dietro i giorni dell'agenda: al buio, dietro il vetro trasparente, diventerebbero blocchi pieni */
+.dark .alone-giorni {
+  opacity: 0.16 !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .ambient-blob {
