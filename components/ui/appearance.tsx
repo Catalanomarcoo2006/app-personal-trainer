@@ -3,7 +3,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { KEY_ACCENT, KEY_THEME } from "@/libs/ui/appearance-boot";
-import { conMacchia } from "@/libs/ui/macchia";
+import { conOnda } from "@/libs/ui/macchia";
 import { isSoundEnabled, setSoundEnabled } from "@/libs/ui/sound";
 import { registraAspetto } from "@/libs/dati/aspetto";
 
@@ -58,8 +58,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
         write(KEY_THEME, next);
       };
 
-      // Il nuovo tema si allarga come una macchia dal punto del clic fino a coprire lo schermo.
-      conMacchia(apply, origin);
+      // Il nuovo tema arriva come un'onda che parte dal punto del clic e attraversa lo schermo.
+      conOnda(apply, origin);
     },
     [theme],
   );

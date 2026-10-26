@@ -1,3 +1,5 @@
+import { formeOnda } from "@/libs/ui/onda";
+
 // Transizione "a macchia d'olio": il nuovo aspetto della pagina si allarga con una macchia irregolare
 // che parte dal punto indicato (cambio tema, link di Leo). La forma della macchia è in app/globals.css
 // (::view-transition-new(root)). Senza View Transitions o con "riduci movimento" la pagina cambia e basta.
@@ -28,4 +30,34 @@ export function conMacchia(aggiorna: () => void | Promise<void>, origine?: { x: 
     .catch(() => {
       // transizione saltata (per esempio un'altra è partita subito dopo): la pagina è già aggiornata
     });
+}
+
+// Cambio tema: come conMacchia, ma con l'onda del video di riferimento (libs/ui/onda.ts). La classe "onda" su <html>
+// spegne la maschera tonda di globals.css finché l'onda è in corso. Senza clip-path: path() torna la macchia.
+export function conOnda(aggiorna: () => void | Promise<void>, origine?: { x: number; y: number }, durata = 630): void {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!document.startViewTransition || reduce) {
+    void aggiorna();
+    return;
+  }
+  if (!CSS.supports("clip-path", "path('M 0 0 L 1 1 Z')")) {
+    conMacchia(aggiorna, origine);
+    return;
+  }
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const forme = formeOnda(w, h, origine ?? { x: w / 2, y: h / 2 });
+  const html = document.documentElement;
+  html.classList.add("onda");
+  const transition = document.startViewTransition(aggiorna);
+  transition.ready
+    .then(() => {
+      html.animate(
+        { clipPath: forme },
+        { duration: durata, easing: "linear", fill: "forwards", pseudoElement: "::view-transition-new(root)" },
+      );
+    })
+    .catch(() => {});
+  transition.finished.finally(() => html.classList.remove("onda"));
 }

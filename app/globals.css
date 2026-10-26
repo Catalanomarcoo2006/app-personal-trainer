@@ -452,6 +452,10 @@ textarea {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M147 36c22 17 37 44 37 70 0 27-13 52-35 68-21 16-49 22-74 15-26-7-49-26-58-51-9-24-4-53 11-74 14-20 38-33 63-36 20-2 40 0 56 8z' fill='black'/%3E%3C/svg%3E");
   mask-repeat: no-repeat;
 }
+/* cambio tema: la forma la dà l'onda (clip-path da libs/ui/onda.ts), niente maschera tonda */
+html.onda::view-transition-new(root) {
+  mask-image: none;
+}
 
 html,
 body {
