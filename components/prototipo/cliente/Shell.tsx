@@ -127,9 +127,10 @@ export function Guscio({
 
   const profilo = () => navigate(ROTTE_CLIENTE.profilo);
 
+  // sul computer il telefono si adatta all'altezza della finestra: si vede sempre per intero, dentro si scorre
   return (
-    <div className="grid min-h-[100dvh] place-items-center bg-salvia sm:py-[28px]">
-      <div className="relative h-[100dvh] w-full overflow-hidden bg-salvia text-ink sm:h-[844px] sm:w-[390px] sm:rounded-[54px] sm:border-[11px] sm:border-[#111] sm:shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+    <div className="grid min-h-[100dvh] place-items-center bg-salvia sm:py-[16px]">
+      <div className="relative h-[100dvh] w-full overflow-hidden bg-salvia text-ink sm:h-[min(844px,calc(100dvh-32px))] sm:w-[390px] sm:rounded-[54px] sm:border-[11px] sm:border-[#111] sm:shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
         <Sfondo />
         <BarraDiStato />
 
