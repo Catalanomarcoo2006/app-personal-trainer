@@ -46,3 +46,4 @@ docs/riferimenti/*.mkv
 
 # Immagini e video generati con Gemini (sorgenti, non versionati)
 /IMMAGINI APP/
+.superpowers/

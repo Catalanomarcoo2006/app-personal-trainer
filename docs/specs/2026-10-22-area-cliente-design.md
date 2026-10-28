@@ -11,7 +11,8 @@ Portare `/prototipo/cliente` allo stesso livello dell'area trainer, per la demo:
 - le 4 schede in basso (Oggi, Progressi, Chat, Documenti) e il Profilo funzionano, a 375 px di larghezza e dentro la cornice del telefono sul computer;
 - con l'area trainer e l'area cliente aperte in due finestre dello stesso browser, quello che fa il cliente (allenamento, spostamento, messaggio, dolore, misure, documento) compare subito al trainer, e i messaggi e le schede del trainer compaiono subito al cliente;
 - se il trainer cambia colore nelle Impostazioni, l'app del cliente si ricolora senza ricaricare;
-- niente tasti neri, tema scuro funzionante, `prefers-reduced-motion` rispettato.
+- niente tasti neri, tema scuro funzionante, `prefers-reduced-motion` rispettato;
+- **estetica premium allo stesso livello dell'area trainer da computer** (richiesta di Marco del 26/10, ci tiene moltissimo): stesso tema chiaro con i pastelli e stesso scuro nero pece con vetro e bordo chiaro, `glass` / `btn-trainer` / `sel-trainer`, Leo con le sue animazioni, suoni al tocco, transizioni fluide (fogli, pillola della barra, cambio sezione), cura dei dettagli come nel benvenuto. Non un'app "più semplice" del trainer: è quella che il cliente vede ogni giorno.
 
 ## 2. Fuori ambito
 

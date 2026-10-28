@@ -22,7 +22,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Da fare (TODO)
 - Leo: foto e scansioni (serve un modello che vede le immagini), import dei clienti a fine onboarding con inviti (spec sua, serve il backend), trascrittore dei vocali sul server UE (`MediaRecorder` + rotta `api/leo/voce`, variabili `AI_STT_*`), area trainer da telefono.
 - Fase 1, con le chiavi Supabase: schema (Task 3), RLS con test (Task 4), `getAccess` e middleware (Task 6), pannello admin (Task 7).
-- Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate).
+- Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate); video con Opus per presentare la piattaforma (da fare quando l'app è pronta, utile anche per la landing).
 - Marco: chiavi Supabase (progetto UE) e Resend; email di supporto e dominio del prodotto (`config.ts`).
 
 ## Decisioni prese
@@ -44,7 +44,8 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Informativa, DPA e termini da far rivedere a un professionista; l'informativa deve dire che l'assistente (fornitore UE) tratta nomi e dati dei clienti. Anche la voce dei vocali: **niente vocali con clienti veri finché non c'è il trascrittore UE** (la dettatura del browser manda l'audio a Google).
 
 ## Prossimi passi immediati (da qui si riparte)
-1. Area cliente (spec e piano pronti, 10 task, inline): serve il via di Marco. Tutto è online (ultimo push 26/10, `dcc52f7`).
+1. Area cliente: in corso il brainstorming dell'estetica da telefono (27/10). Scelte di Marco: estetica premium e coerente col PC; barra in basso = pillola `glass-3d` con goccia, 4 voci Home · Allenamento · Progressi · Messaggi (Profilo dalla foto in alto); tasto principale a colore pieno (`btn-trainer`), secondari in vetro; home come il riferimento `docs/riferimenti/cliente-home-mobile.png` ma senza ultimo messaggio e con il nostro Leo affacciato dalla scheda "Chiedi a Leo". Modello da telefono "non male": https://claude.ai/artifact/HRTkmKRdBiY2y1Es2xLT3g. Da decidere: intestazione quando si scorre, poi fogli, campi, schermate; poi spec estetica, aggiornare piano (vecchio: usa `stato.ts`, non `libs/dati/`; Leo ora in `trainer/leo/`). Font vero dell'app: Inter.
+   Nome del prodotto (27/10): **Spotter** provvisorio (Marco, 27/10; dominio e marchio da controllare, si può ancora cambiare) (piace a Marco; scartati Vetta, Grinta, Hey Leo, Fulcro, Forge e simili). Da controllare dominio e marchio. Logo provvisorio (da rivedere col nome definitivo), scelto da Marco: Leo dentro anello di avanzamento arancione, vetro su salvia (`public/brand/logo-leo-anello.svg`, vettoriale; prove in https://claude.ai/artifact/JnpHq7uPDrLLRMF5Ykgj5a). Frecce provate con Gemini: scartate (sembrano borsa/upload).
 2. Poi backend: Marco crea il progetto Supabase UE → schema, RLS con test, accessi, admin → aree su database → assistente, account demo → landing vera → area trainer da telefono.
 3. Prima del primo cliente vero: ricerca e scelta fornitore AI + trascrizione in UE (la fa Claude se Marco la chiede), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto, chiavi Resend, dominio.
 4. Estetica che resta: Leo che si siede al buio (chiazze del pavimento; una pulizia dei fotogrammi rovinava il chiaro, tornati agli originali), fluidità, macchia da "Salta per ora", area trainer da telefono. Voci in `docs/DA-CAMBIARE.md`.
