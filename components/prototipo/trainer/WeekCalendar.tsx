@@ -400,7 +400,7 @@ function Cell({
   deps: unknown[];
   onAdd: () => void;
   onOpen: (a: Appointment) => void;
-  leo: { acceso: boolean; volo: boolean; nuova?: string; fantasma?: Appointment; ridotto: boolean };
+  leo: { acceso: boolean; volo: boolean; nuova?: string; fantasma?: Seduta; ridotto: boolean };
 }) {
   const box = useRef<HTMLDivElement>(null);
   const density = useFitDensity(box, 2, [...deps, items.length]);
@@ -453,7 +453,7 @@ function Cell({
           return items.flatMap((a, i) => {
             const out = [];
             if (i === nowAt) out.push(<NowMark key="adesso" />);
-            if (ghost && i === ghostAt) out.push(<Fantasma key="fantasma" a={ghost} />);
+            if (ghost && i === ghostAt) out.push(<Fantasma key={`fantasma-${ghost.id}`} a={ghost} />);
             const id = "id" in a ? (a as Seduta).id : undefined;
             out.push(
               <SessionCard
@@ -468,7 +468,7 @@ function Cell({
               />,
             );
             return out;
-          }).concat(ghost && ghostAt === -1 ? [<Fantasma key="fantasma" a={ghost} />] : []);
+          }).concat(ghost && ghostAt === -1 ? [<Fantasma key={`fantasma-${ghost.id}`} a={ghost} />] : []);
         })()}
       </AnimatePresence>
       {showNow && (nowAt === -1 || items.length === 0) && <NowMark />}

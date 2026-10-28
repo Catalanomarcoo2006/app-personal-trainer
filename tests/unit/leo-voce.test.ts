@@ -50,6 +50,19 @@ describe("sessione del vocale", () => {
     expect(ultimo()).toMatchObject({ fase: "fermo", errore: null });
   });
 
+  it("lascia: il tasto si spegne subito, senza aspettare che il browser chiuda la dettatura", async () => {
+    let chiudi: (d: Dettato) => void = () => {};
+    const { t } = finto({ ferma: new Promise<Dettato>((ok) => (chiudi = ok)) });
+    const { s, onFine, ultimo } = sessione(t);
+    await s.premi();
+    const fine = s.lascia();
+    expect(ultimo().fase).toBe("fermo");
+    expect(onFine).not.toHaveBeenCalled();
+    chiudi({ testo: "Luca ha pagato", parziale: false });
+    await fine;
+    expect(onFine).toHaveBeenCalledWith({ testo: "Luca ha pagato", parziale: false });
+  });
+
   it("senza voce (tocco velocissimo): niente testo e 'nessuna voce'", async () => {
     const { t } = finto({ testo: "   " });
     const { s, onFine, ultimo } = sessione(t);

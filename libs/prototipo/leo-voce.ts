@@ -89,6 +89,8 @@ export function creaSessioneVoce(t: Trascrittore, o: Opzioni): { premi(): Promis
     }
     fase = "fermo";
     chiudendo = true;
+    // il tasto si spegne subito: il browser può metterci fino a 3 secondi a chiudere la dettatura
+    stato();
     let d: Dettato;
     try {
       d = await t.ferma();
