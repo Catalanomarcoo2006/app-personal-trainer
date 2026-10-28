@@ -34,7 +34,7 @@ describe("datiIniziali", () => {
     expect(pacchettoDi("sara-conti")).toMatchObject({ lessonsTotal: 10, lessonsUsed: 9 });
   });
 
-  it("misure come righe datate: il peso di ogni settimana, le circonferenze alla prima e all'ultima", () => {
+  it("misure come righe datate: il peso di ogni settimana, le circonferenze ogni due settimane e all'ultima", () => {
     const giulia = clients.find((c) => c.id === "giulia-bianchi")!;
     const righe = misureDi("giulia-bianchi");
     expect(righe).toHaveLength(8);
@@ -44,6 +44,10 @@ describe("datiIniziali", () => {
     expect(righe[0]).toMatchObject({ waistCm: 86, hipsCm: 104, chestCm: 95, armCm: 31, thighCm: 60 });
     expect(righe[7]).toMatchObject({ waistCm: 82, hipsCm: 101, chestCm: 93, armCm: 30, thighCm: 58 });
     expect(righe[3].waistCm).toBeUndefined();
+    // in mezzo calano poco a poco, al mezzo centimetro
+    expect(righe[2].waistCm).toBe(85);
+    expect(righe[4].waistCm! * 2 % 1).toBe(0);
+    expect(righe[6].waistCm).toBeGreaterThan(82);
   });
 
   it("clienti con obiettivo e note come nella demo", () => {

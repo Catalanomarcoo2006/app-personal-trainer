@@ -5,6 +5,9 @@ import { ChartLine, Dumbbell, House, MessageCircle, type LucideIcon } from "luci
 
 export const BASE_CLIENTE = "/prototipo/cliente";
 
+// Dove si agganciano fogli e caselle che stanno sopra tutto dentro il telefono, fuori dallo scorrimento (Shell.tsx).
+export const ID_FOGLI = "fogli-cliente";
+
 export const ROTTE_CLIENTE = {
   home: BASE_CLIENTE,
   allenamento: `${BASE_CLIENTE}/allenamento`,

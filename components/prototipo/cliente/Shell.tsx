@@ -9,7 +9,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from "motion/react"
 import { BatteryFull, Bell, Signal, Wifi } from "lucide-react";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { navigate } from "@/components/prototipo/trainer/nav";
-import { ROTTE_CLIENTE, VOCI_BARRA, type SezioneCliente } from "./nav";
+import { ID_FOGLI, ROTTE_CLIENTE, VOCI_BARRA, type SezioneCliente } from "./nav";
 
 export const FOTO_CLIENTE = "/prototipo/cliente-giulia.jpg";
 const SPRING = { type: "spring", stiffness: 520, damping: 40 } as const;
@@ -213,6 +213,8 @@ export function Guscio({
 
         <BarraCliente attiva={sezione} nonLetti={nonLetti} />
         {fuori}
+        {/* qui si agganciano i fogli delle sezioni (createPortal): sopra tutto, dentro il telefono */}
+        <div id={ID_FOGLI} />
       </div>
     </div>
   );

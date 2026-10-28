@@ -13,12 +13,11 @@ import { client, trainer } from "@/libs/prototipo/dati-finti";
 import { giornoDi, isoDi, LONG, SHORT } from "@/libs/prototipo/calendario";
 import { useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
 import { navigate } from "@/components/prototipo/trainer/nav";
-import { useTodayWorkout } from "./Sections";
 import { useSpunte } from "./spunte";
 import { ROTTE_CLIENTE } from "./nav";
+import { CLIENTE_DEMO, giornoDetto, OGGI, useScheda } from "./scheda";
 
-export const CLIENTE_DEMO = "giulia-bianchi";
-const OGGI = 2; // mercoledì 21 ottobre, come in tutta la demo
+export { CLIENTE_DEMO };
 const GIORNI = [0, 1, 2, 3, 4]; // da lunedì a venerdì, come il riferimento
 
 // Entrata a cascata delle schede: ognuna 60 ms dopo la precedente.
@@ -61,52 +60,74 @@ function useSeduteDiGiulia() {
       .sort((a, b) => a.time.localeCompare(b.time));
 }
 
+// L'allenamento è la cosa più importante della Home (Marco, 28/10): quello di oggi o, se oggi non c'è, il prossimo.
+// Tutta la parte alta è un tasto: apre la scheda intera in Allenamento.
 function AllenamentoDiOggi() {
-  const workout = useTodayWorkout();
-  const [fatte] = useSpunte(workout.exercises.length);
+  const { giorni, prossimo, esercizio } = useScheda();
+  const giorno = prossimo ? giorni[prossimo.giorno] : undefined;
+  const [fatte] = useSpunte(prossimo?.oggi && giorno ? giorno.rows.length : 0);
   const quante = fatte.filter(Boolean).length;
   const percento = Math.round((quante / Math.max(1, fatte.length)) * 100);
-  const prossimo = workout.exercises[fatte.findIndex((f) => !f)] ?? workout.exercises[workout.exercises.length - 1];
-  const sedute = useSeduteDiGiulia()(OGGI);
-  const [giorno, focus] = workout.title.split(" · ");
+  const riga = giorno?.rows[Math.max(0, fatte.findIndex((f) => !f))] ?? giorno?.rows[0];
+  const primo = riga ? esercizio(riga) : null;
+  const apri = () => navigate(ROTTE_CLIENTE.allenamento);
+  const sfondo = { background: "linear-gradient(135deg, color-mix(in srgb, var(--trainer) 22%, transparent), color-mix(in srgb, var(--trainer) 6%, transparent))" };
+
+  if (!prossimo || !giorno)
+    return (
+      <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={apri} className="panel flex w-full cursor-pointer items-center justify-between rounded-[24px] px-[16px] py-[16px] text-left">
+        <span className="leading-none">
+          <span className="block text-[16px] font-extrabold">Nessun allenamento in programma</span>
+          <span className="mt-[6px] block text-[12.5px] text-muted">{trainer.name.split(" ")[0]} ti fisserà la prossima seduta</span>
+        </span>
+        <ChevronRight size={18} className="text-ink/40" />
+      </motion.button>
+    );
 
   return (
     <section className="panel overflow-hidden rounded-[24px]">
-      <div className="flex items-start justify-between gap-[10px] px-[16px] pt-[14px] pb-[12px]" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--trainer) 22%, transparent), color-mix(in srgb, var(--trainer) 6%, transparent))" }}>
-        <div className="min-w-0 leading-none">
-          <p className="text-[17px] font-extrabold tracking-[-0.02em]">Allenamento di oggi 🏋️‍♀️</p>
-          <p className="mt-[6px] truncate text-[12.5px] text-ink/70">
-            {giorno}
-            {focus ? ` · ${focus}` : ""}
-          </p>
+      <motion.button type="button" whileTap={{ scale: 0.99 }} onClick={apri} aria-label="Apri la scheda intera" className="block w-full cursor-pointer text-left">
+        <div className="flex items-start justify-between gap-[10px] px-[16px] pt-[14px] pb-[12px]" style={sfondo}>
+          <div className="min-w-0 leading-none">
+            <p className="text-[17px] font-extrabold tracking-[-0.02em]">{prossimo.oggi ? "Allenamento di oggi 🏋️‍♀️" : "Prossimo allenamento"}</p>
+            <p className="mt-[6px] truncate text-[12.5px] text-ink/70">
+              {giorno.label}
+              {giorno.focus ? ` · ${giorno.focus}` : ""}
+            </p>
+          </div>
+          <div className="shrink-0 text-right leading-none">
+            {!prossimo.oggi && <p className="mb-[4px] text-[11.5px] font-semibold text-ink/60">{giornoDetto(prossimo.seduta.date)}</p>}
+            <p className="text-[22px] font-extrabold tabular-nums tracking-[-0.03em]">{prossimo.seduta.time}</p>
+          </div>
         </div>
-        {sedute[0] && <p className="text-[22px] leading-none font-extrabold tabular-nums tracking-[-0.03em]">{sedute[0].time}</p>}
-      </div>
-      <div className="px-[16px] pt-[12px] pb-[14px]">
-        <div className="flex items-center gap-[12px]">
+        <div className="flex items-center gap-[12px] px-[16px] pt-[12px]">
           <span className="relative grid size-[46px] shrink-0 place-items-center overflow-hidden rounded-[12px]" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--trainer) 55%, #1a1a1a), #1a1a1a)" }}>
             <Play size={16} fill="#fff" strokeWidth={0} />
           </span>
           <div className="min-w-0 flex-1 leading-none">
-            <p className="truncate text-[14px] font-bold">{prossimo?.name}</p>
-            <p className="mt-[5px] truncate text-[11.5px] text-muted">{prossimo?.detail}</p>
+            <p className="truncate text-[14px] font-bold">{primo?.nome}</p>
+            <p className="mt-[5px] truncate text-[11.5px] text-muted">{prossimo.oggi ? primo?.dettaglio : `${giorno.rows.length} esercizi · oggi riposo 😌`}</p>
           </div>
-          <div className="w-[92px] shrink-0 text-right leading-none">
-            <p className="text-[12px]">
-              <b className="text-[15px] font-extrabold tabular-nums">{percento}%</b> <span className="text-muted">fatto</span>
-            </p>
-            <div className="mt-[7px] h-[6px] overflow-hidden rounded-full bg-ink/8">
-              <motion.div className="h-full rounded-full" style={{ background: "var(--trainer)" }} initial={{ width: 0 }} animate={{ width: `${percento}%` }} transition={{ delay: 0.35, duration: 0.8, ease: EASE_OUT }} />
+          {prossimo.oggi ? (
+            <div className="w-[92px] shrink-0 text-right leading-none">
+              <p className="text-[12px]">
+                <b className="text-[15px] font-extrabold tabular-nums">{percento}%</b> <span className="text-muted">fatto</span>
+              </p>
+              <div className="mt-[7px] h-[6px] overflow-hidden rounded-full bg-ink/8">
+                <motion.div className="h-full rounded-full" style={{ background: "var(--trainer)" }} initial={{ width: 0 }} animate={{ width: `${percento}%` }} transition={{ delay: 0.35, duration: 0.8, ease: EASE_OUT }} />
+              </div>
             </div>
-          </div>
+          ) : (
+            <ChevronRight size={18} className="shrink-0 text-ink/40" />
+          )}
         </div>
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.97 }}
-          onClick={() => navigate(ROTTE_CLIENTE.allenamento)}
-          className="btn-trainer mt-[14px] flex h-[46px] w-full cursor-pointer items-center justify-center gap-[6px] rounded-full text-[14px] font-bold"
-        >
-          {quante === 0 ? "Avvia allenamento" : quante === fatte.length ? "Rivedi l'allenamento" : "Continua l'allenamento"} <ChevronRight size={16} strokeWidth={2.4} />
+        <p className="flex items-center gap-[3px] px-[16px] pt-[10px] text-[12px] font-semibold" style={{ color: "var(--trainer)" }}>
+          Vedi tutta la scheda <ChevronRight size={13} strokeWidth={2.4} />
+        </p>
+      </motion.button>
+      <div className="px-[16px] pt-[10px] pb-[14px]">
+        <motion.button type="button" whileTap={{ scale: 0.97 }} onClick={apri} className="btn-trainer flex h-[46px] w-full cursor-pointer items-center justify-center gap-[6px] rounded-full text-[14px] font-bold">
+          {!prossimo.oggi ? "Guarda cosa farai" : quante === 0 ? "Avvia allenamento" : quante === fatte.length ? "Rivedi l'allenamento" : "Continua l'allenamento"} <ChevronRight size={16} strokeWidth={2.4} />
         </motion.button>
       </div>
     </section>

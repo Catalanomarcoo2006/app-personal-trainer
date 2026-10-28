@@ -15,6 +15,8 @@ import { EASE_OUT } from "@/components/ui/motion";
 
 type Msg = { id: number; da: "cliente" | "leo" | "avviso"; testo: string };
 const nomeTrainer = trainer.name.split(" ")[0];
+// in leo-bordo.webp (560 × 339) il bordo è alla riga 283: in proporzione alla larghezza, 283 / 560
+const LEO_BORDO = 283 / 560;
 
 function useChatCliente() {
   const [messaggi, setMessaggi] = useState<Msg[]>([]);
@@ -171,21 +173,23 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
             transition={{ duration: 0.42, ease: EASE_OUT }}
             className="absolute inset-x-0 bottom-0 flex h-[80%] flex-col"
           >
-            {/* Leo si affaccia dal bordo alto: la testa sopra, il resto dietro il foglio */}
+            {/* Leo si affaccia dal bordo alto come da dietro un muretto (leo-bordo.webp, ritagliato dalla foto di Marco
+                del 28/10): la riga del bordo della foto sta all'83,5% dell'altezza e combacia con il bordo del foglio;
+                le dita scendono sopra il foglio. Sta sopra il foglio, quindi entra solo con una dissolvenza breve. */}
             <motion.img
-              src="/prototipo/coach/in-piedi.webp"
+              src="/prototipo/coach/leo-bordo.webp"
               alt=""
               aria-hidden
               draggable={false}
-              initial={{ y: reduce ? 0 : 60 }}
-              animate={{ y: 0 }}
-              transition={{ delay: 0.25, type: "spring", stiffness: 240, damping: 20 }}
-              className="pointer-events-none absolute -top-[74px] right-[26px] h-[260px] w-auto select-none"
+              initial={{ opacity: 0, y: reduce ? 0 : 14, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, x: "-50%" }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 260, damping: 22 }}
+              className="pointer-events-none absolute left-1/2 z-10 w-[176px] select-none"
+              style={{ top: -LEO_BORDO * 176 }}
             />
             {/* fondo pieno: dietro ci sono il corpo di Leo e la pagina, non devono trasparire */}
             <div className="panel relative flex min-h-0 flex-1 flex-col rounded-t-[30px] rounded-b-none pb-[max(12px,env(safe-area-inset-bottom))]" style={{ background: "var(--color-card)" }}>
-              <span aria-hidden className="mx-auto mt-[8px] h-[5px] w-[40px] rounded-full bg-ink/15" />
-              <div className="flex items-center justify-between px-[18px] pt-[8px]">
+              <div className="flex items-center justify-between px-[18px] pt-[22px]">
                 <div className="leading-none">
                   <p className="text-[18px] font-extrabold tracking-[-0.02em]">Leo</p>
                   <p className="mt-[4px] text-[12px] text-muted">Il tuo assistente · risponde subito</p>
@@ -222,7 +226,7 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2 }}
-                        className={`max-w-[85%] rounded-[18px] px-[13px] py-[10px] text-[14px] leading-snug break-words whitespace-pre-wrap ${m.da === "cliente" ? "ml-auto rounded-br-[6px] text-white" : "glass-row rounded-bl-[6px]"}`}
+                        className={`max-w-[85%] rounded-[18px] px-[13px] py-[10px] text-[14px] leading-snug whitespace-pre-wrap [overflow-wrap:anywhere] ${m.da === "cliente" ? "ml-auto rounded-br-[6px] text-white" : "glass-row rounded-bl-[6px]"}`}
                         style={m.da === "cliente" ? { background: "var(--trainer)" } : undefined}
                       >
                         {m.testo}

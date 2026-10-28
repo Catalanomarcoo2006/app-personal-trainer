@@ -1,17 +1,18 @@
 "use client";
 
 // App del cliente: sceglie la sezione dall'indirizzo e la mette nel guscio con il suo titolo.
-// Home è fatta (28/10); Allenamento e Progressi usano per ora le schede di prima (Sections.tsx), Messaggi e Profilo
-// sono i prossimi lavori.
+// Fatte (28/10): Home, Allenamento (la scheda intera), Progressi, Messaggi e Leo; il Profilo è il prossimo lavoro.
 
-import { ReactNode, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Hammer } from "lucide-react";
-import { client, conversations } from "@/libs/prototipo/dati-finti";
+import { client } from "@/libs/prototipo/dati-finti";
 import { Guscio } from "./Shell";
 import { LeoCliente } from "./LeoCliente";
-import { CLIENTE_DEMO, Home, TrainerDiGiulia } from "./Home";
-import { GoalCard, WeightCard, WorkoutCard } from "./Sections";
+import { Home, TrainerDiGiulia } from "./Home";
+import { Progressi } from "./Progressi";
+import { Messaggi, useNonLettiCliente } from "./Messaggi";
+import { Allenamento } from "./Allenamento";
 import { sezioneDa, type SezioneCliente } from "./nav";
 
 const TITOLI: Record<SezioneCliente, { titolo: string; breve: string }> = {
@@ -34,30 +35,23 @@ function InArrivo({ cosa }: { cosa: string }) {
   );
 }
 
-const Colonna = ({ children }: { children: ReactNode }) => <div className="mt-[16px] flex flex-col gap-[10px]">{children}</div>;
-
 export function ClientApp() {
   const sezione = sezioneDa(usePathname());
   const [leo, setLeo] = useState(false);
   const chiudiLeo = useCallback(() => setLeo(false), []);
-  const nonLetti = conversations.find((c) => c.clientId === CLIENTE_DEMO)?.unread ?? 0;
+  const nonLetti = useNonLettiCliente(sezione === "messaggi");
   const t = TITOLI[sezione];
 
   return (
     <Guscio sezione={sezione} titolo={t.titolo} titoloBreve={t.breve} sotto={sezione === "home" ? <TrainerDiGiulia /> : undefined} nonLetti={nonLetti} fuori={<LeoCliente aperto={leo} onChiudi={chiudiLeo} />}>
       {sezione === "home" && <Home onLeo={() => setLeo(true)} />}
       {sezione === "allenamento" && (
-        <Colonna>
-          <WorkoutCard />
-        </Colonna>
+        <Allenamento />
       )}
       {sezione === "progressi" && (
-        <Colonna>
-          <GoalCard />
-          <WeightCard />
-        </Colonna>
+        <Progressi />
       )}
-      {sezione === "messaggi" && <InArrivo cosa="La chat con Marco" />}
+      {sezione === "messaggi" && <Messaggi />}
       {sezione === "profilo" && <InArrivo cosa="Il profilo con i tuoi documenti" />}
     </Guscio>
   );

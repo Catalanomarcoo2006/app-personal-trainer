@@ -42,18 +42,23 @@ function pacchetto(c: Client, id: string): Pacchetto {
   return { ...base, kind: "lessons", lessonsTotal: totali, lessonsUsed: totali - rimaste, endsOn: null };
 }
 
+// Il peso ogni settimana; le circonferenze ogni due settimane e all'ultima, in calo graduale dalla partenza a oggi
+// (arrotondate al mezzo centimetro): lo storico della demo nei Progressi del cliente.
 function misure(c: Client, prossimo: () => string): Misura[] {
-  const valori = (quale: "start" | "current") => {
-    const v = (label: string) => c.measures.find((m) => m.label === label)?.[quale];
+  const ultima = c.weights.length - 1;
+  const valori = (t: number) => {
+    const v = (label: string) => {
+      const m = c.measures.find((x) => x.label === label);
+      return m ? Math.round((m.start + (m.current - m.start) * t) * 2) / 2 : undefined;
+    };
     return { waistCm: v("Vita"), hipsCm: v("Fianchi"), chestCm: v("Petto"), armCm: v("Braccio"), thighCm: v("Coscia") };
   };
-  const ultima = c.weights.length - 1;
   return c.weights.map((w, i) => ({
     id: prossimo(),
     clientId: c.id,
     takenOn: settimane(OGGI, i - ultima),
     weightKg: w,
-    ...(i === 0 ? valori("start") : i === ultima ? valori("current") : {}),
+    ...(i % 2 === 0 || i === ultima ? valori(ultima ? i / ultima : 1) : {}),
   }));
 }
 
