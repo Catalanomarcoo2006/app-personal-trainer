@@ -9,8 +9,8 @@ import { creaFila } from "@/libs/prototipo/leo-fila";
 import { aspettoAttuale, corpoRichiesta } from "@/libs/prototipo/leo-richiesta";
 import { bloccoAllegato } from "@/libs/prototipo/leo-file";
 import { clientiAttuali } from "@/libs/dati/selettori";
-import { durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
-import { stato } from "@/libs/prototipo/stato";
+import { cancellazioniInsieme, durataScrittura, sezioneDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
+import { stato, type FocusLeo } from "@/libs/prototipo/stato";
 import { type SchedaAzione } from "../LeoAzioni";
 import { conModifica, daConfermareTutte, titoloModificato, type Modifica } from "@/libs/prototipo/leo-modifica";
 import { dipendeDaNuovo, ordinaNuoviPrima, risolviDipendenza, sulNuovoCliente, type NuovoCliente } from "@/libs/prototipo/leo-dipendenze";
@@ -154,6 +154,36 @@ export function useCoachChat(): Chat {
             const r = risolviDipendenza(s.azione, dip, clientiAttuali());
             if ("motivo" in r) cambia(msgId, s.key, { stato: "rifiutato", motivo: r.motivo, dipendeDa: undefined });
             else cambia(msgId, s.key, { azione: r.azione, titolo: riassunto(r.azione, datiLeo()), primaDopo: primaDopo(r.azione, datiLeo()), dipendeDa: undefined });
+            continue;
+          }
+          // più cancellazioni di fila nella stessa settimana: un solo viaggio e il vetro si rompe su tutte insieme
+          const lista = schede.current.get(msgId) ?? [];
+          const insieme = cancellazioniInsieme(lista, lista.indexOf(s), stato.get().sedute);
+          if (insieme.length > 1) {
+            const valide = insieme.filter((g) => {
+              const v = verificaAzione(g.azione, datiLeo());
+              if ("motivo" in v) cambia(msgId, g.key, { stato: "rifiutato", motivo: v.motivo });
+              return !("motivo" in v);
+            });
+            if (!valide.length) continue;
+            await viaggia(msgId, valide[0].azione);
+            viaggiato = true;
+            const tolte: NonNullable<FocusLeo["gruppo"]> = [];
+            for (const g of valide) {
+              const esito = await eseguiAzione(g.azione);
+              if ("motivo" in esito) {
+                cambia(msgId, g.key, { stato: "rifiutato", motivo: esito.motivo });
+                continue;
+              }
+              const f = stato.get().focus;
+              if (f?.id && f.da) tolte.push({ id: f.id, ...f.da });
+              cambia(msgId, g.key, { stato: "fatto", annulla: esito.annulla, fattaAlle: Date.now() });
+            }
+            if (tolte.length) {
+              stato.setFocus({ tipo: "cancella", id: tolte[0].id, da: { date: tolte[0].date, time: tolte[0].time }, gruppo: tolte });
+              playSound(SUONI.cancella_appuntamento);
+              await attesa(tempoAzione("cancella_appuntamento", ridotto()));
+            }
             continue;
           }
           const verifica = verificaAzione(s.azione, datiLeo());

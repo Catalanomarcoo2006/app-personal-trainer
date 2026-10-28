@@ -461,7 +461,7 @@ function Cell({
   deps: unknown[];
   onAdd: () => void;
   onOpen: (a: Appointment) => void;
-  leo: { acceso: boolean; volo: boolean; nuova?: string; fantasma?: Seduta; ridotto: boolean };
+  leo: { acceso: boolean; volo: boolean; nuova?: string; fantasmi: Seduta[]; ridotto: boolean };
 }) {
   const box = useRef<HTMLDivElement>(null);
   const density = useFitDensity(box, 2, [...deps, items.length]);
@@ -509,12 +509,13 @@ function Cell({
       )}
       <AnimatePresence mode="popLayout" initial={false}>
         {(() => {
-          const ghost = leo.fantasma;
-          const ghostAt = ghost ? items.findIndex((a) => toMinutes(a.time) > toMinutes(ghost.time)) : -2;
+          // le sedute appena cancellate da Leo (anche più insieme), ognuna al suo posto tra quelle che restano
+          const ghosts = leo.fantasmi.map((g) => ({ g, at: items.findIndex((a) => toMinutes(a.time) > toMinutes(g.time)) }));
+          const fantasma = (g: Seduta) => <Fantasma key={`fantasma-${g.id}`} a={g} />;
           return items.flatMap((a, i) => {
             const out = [];
             if (i === nowAt) out.push(<NowMark key="adesso" />);
-            if (ghost && i === ghostAt) out.push(<Fantasma key={`fantasma-${ghost.id}`} a={ghost} />);
+            for (const x of ghosts) if (x.at === i) out.push(fantasma(x.g));
             const id = "id" in a ? (a as Seduta).id : undefined;
             out.push(
               <SessionCard
@@ -529,7 +530,7 @@ function Cell({
               />,
             );
             return out;
-          }).concat(ghost && ghostAt === -1 ? [<Fantasma key={`fantasma-${ghost.id}`} a={ghost} />] : []);
+          }).concat(ghosts.filter((x) => x.at === -1).map((x) => fantasma(x.g)));
         })()}
       </AnimatePresence>
       {showNow && (nowAt === -1 || items.length === 0) && <NowMark />}
@@ -553,7 +554,8 @@ export function WeekCalendar() {
   const viste = useRef(new Map<string, Seduta>());
   sedute.forEach((s) => viste.current.set(s.id, s));
   // dove sta agendo Leo: la cella si accende e la seduta atterra, vola o svanisce
-  const [leo, setLeo] = useState<{ tipo: string; id: string; date: string; time: string } | null>(null);
+  // gruppo: le sedute toccate (una sola, o più cancellate insieme)
+  const [leo, setLeo] = useState<{ tipo: string; id: string; gruppo: { id: string; date: string; time: string }[] } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [open, setOpen] = useState<{ day: number; a: Appointment } | null>(null);
 
@@ -589,7 +591,7 @@ export function WeekCalendar() {
     });
     setOpen(null);
     setDraft(null);
-    setLeo({ tipo: focus.tipo, id: focus.id, date, time });
+    setLeo({ tipo: focus.tipo, id: focus.id, gruppo: focus.gruppo ?? [{ id: focus.id, date, time }] });
     const t = window.setTimeout(() => setLeo(null), 2600);
     return () => window.clearTimeout(t);
   }, [focus]);
@@ -693,9 +695,11 @@ export function WeekCalendar() {
                     onAdd={() => setDraft({ day: di, time: band.start })}
                     onOpen={(a) => setOpen({ day: di, a })}
                     leo={(() => {
-                      const qui = !!leo && inStore && leo.date === isoDi(giornoDi(offset, di)) && bandOf({ time: leo.time } as Appointment) === bi;
-                      const fantasma = qui && leo.tipo === "cancella" ? viste.current.get(leo.id) : undefined;
-                      return { acceso: qui, volo: !!leo && (leo.tipo === "sposta" || leo.tipo === "cancella"), nuova: qui && leo.tipo === "fissa" ? leo.id : undefined, fantasma, ridotto };
+                      const giorno = isoDi(giornoDi(offset, di));
+                      const quiTutte = leo && inStore ? leo.gruppo.filter((g) => g.date === giorno && bandOf({ time: g.time } as Appointment) === bi) : [];
+                      const qui = quiTutte.length > 0;
+                      const fantasmi = leo?.tipo === "cancella" ? quiTutte.flatMap((g): Seduta[] => { const v = viste.current.get(g.id); return v ? [v] : []; }) : [];
+                      return { acceso: qui, volo: !!leo && (leo.tipo === "sposta" || leo.tipo === "cancella"), nuova: qui && leo?.tipo === "fissa" ? leo.id : undefined, fantasmi, ridotto };
                     })()}
                   />
                 )),

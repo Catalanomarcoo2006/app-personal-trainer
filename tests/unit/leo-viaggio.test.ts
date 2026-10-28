@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { durataScrittura, sezioneDi, settimanaDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
+import { cancellazioniInsieme, durataScrittura, sezioneDi, settimanaDi, TEMPI, tempoAzione, testoDaScrivere } from "@/libs/prototipo/leo-viaggio";
 import { datiIniziali } from "@/libs/dati/iniziali";
-import type { Seduta } from "@/libs/prototipo/leo-azioni";
+import type { AzioneLeo, Seduta } from "@/libs/prototipo/leo-azioni";
 
 describe("viaggio di Leo", () => {
   it("porta al calendario per le sedute e ai messaggi per scrivere", () => {
@@ -65,5 +65,28 @@ describe("viaggio di Leo", () => {
     expect(tempoAzione("scrivi_messaggio", false)).toBe(900);
     expect(tempoAzione("cancella_appuntamento", true)).toBe(600);
     expect(tempoAzione("sposta_appuntamento", true)).toBe(300);
+  });
+
+  describe("cancellazioni insieme", () => {
+    const seduta = (id: string, date: string): Seduta => ({ id, date, time: "10:00", minutes: 60, clientId: "sara-conti", type: "Workout", place: "" });
+    const sedute = [seduta("A", "2026-10-20"), seduta("B", "2026-10-21"), seduta("C", "2026-10-22"), seduta("D", "2026-10-27")];
+    const canc = (id: string, stato = "in-corso") => ({ stato, azione: { nome: "cancella_appuntamento", dati: { id } } as AzioneLeo });
+    const msg = { stato: "in-corso", azione: { nome: "scrivi_messaggio", dati: { cliente: "sara-conti", testo: "Ciao" } } as AzioneLeo };
+
+    it("le cancellazioni di fila nella stessa settimana partono insieme", () => {
+      const lista = [canc("A"), canc("B"), canc("C")];
+      expect(cancellazioniInsieme(lista, 0, sedute)).toEqual(lista);
+    });
+
+    it("si ferma a un'azione diversa, a una da confermare o a un'altra settimana", () => {
+      expect(cancellazioniInsieme([canc("A"), msg, canc("B")], 0, sedute)).toHaveLength(1);
+      expect(cancellazioniInsieme([canc("A"), canc("B", "da-confermare")], 0, sedute)).toHaveLength(1);
+      expect(cancellazioniInsieme([canc("A"), canc("B"), canc("D")], 0, sedute)).toHaveLength(2);
+    });
+
+    it("un'azione che non è una cancellazione resta da sola", () => {
+      expect(cancellazioniInsieme([msg, canc("A")], 0, sedute)).toEqual([msg]);
+      expect(cancellazioniInsieme([canc("Z"), canc("A")], 0, sedute)).toHaveLength(1); // seduta che non c'è più
+    });
   });
 });

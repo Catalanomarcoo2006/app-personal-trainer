@@ -2,7 +2,7 @@
 // La chat si fa piccola, l'app va alla sezione, l'azione si vede accadere, poi la chat torna grande.
 
 import { ROUTES } from "@/components/prototipo/trainer/nav";
-import type { AzioneLeo, DatiLeo } from "./leo-azioni";
+import type { AzioneLeo, DatiLeo, Seduta } from "./leo-azioni";
 import { testoSollecito } from "@/libs/dati/testi";
 
 export const TEMPI = {
@@ -33,6 +33,27 @@ export function sezioneDi(a: AzioneLeo, d?: DatiLeo): string | null {
 
 // 0 = questa settimana (19–25 ottobre), 1 = la prossima.
 export const settimanaDi = (date: string): 0 | 1 => (date >= "2026-10-26" ? 1 : 0);
+
+// Le cancellazioni in fila, a partire da quella in posizione da: tutte le schede "in-corso" di seguito che
+// cancellano una seduta della stessa settimana. Partono insieme (un viaggio, il vetro si rompe su tutte): con
+// tante cancellazioni il trainer non aspetta un'animazione per ognuna. Se la prima non è una cancellazione, resta da sola.
+export function cancellazioniInsieme<T extends { stato: string; azione: AzioneLeo }>(lista: T[], da: number, sedute: Seduta[]): T[] {
+  const primo = lista[da];
+  if (!primo) return [];
+  const settimana = (a: AzioneLeo) => {
+    if (a.nome !== "cancella_appuntamento") return null;
+    const s = sedute.find((x) => x.id === a.dati.id);
+    return s ? settimanaDi(s.date) : null;
+  };
+  const sua = settimana(primo.azione);
+  if (sua === null) return [primo];
+  const gruppo = [primo];
+  for (const s of lista.slice(da + 1)) {
+    if (s.stato !== "in-corso" || settimana(s.azione) !== sua) break;
+    gruppo.push(s);
+  }
+  return gruppo;
+}
 
 export const durataScrittura = (testo: string, ridotto: boolean) => (ridotto ? 0 : Math.min(testo.length * TEMPI.carattere, TEMPI.scritturaMax));
 

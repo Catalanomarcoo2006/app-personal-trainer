@@ -42,6 +42,7 @@ export const demoVideo = (name: string) => `https://www.youtube.com/results?sear
 // seq cresce a ogni azione, così la stessa seduta si può evidenziare due volte di fila.
 // daScrivere: la chat dei messaggi scrive il testo nella barra prima che il messaggio parta.
 // multiplo: lo stesso messaggio a più clienti (clientiIds), la chat mostra quanti l'hanno ricevuto.
+// gruppo: più sedute cancellate insieme da Leo, il calendario rompe il vetro su tutte nello stesso momento.
 // alle: quando è stato dato; vale solo per qualche secondo (focusRecente), così una sezione aperta più tardi
 // non ripete l'ultima azione di Leo.
 export type FocusLeo = {
@@ -56,6 +57,7 @@ export type FocusLeo = {
   da?: { date: string; time: string };
   testo?: string;
   daScrivere?: boolean;
+  gruppo?: { id: string; date: string; time: string }[];
 };
 
 export const planReply = "Grazie! La guardo subito, i video sono comodissimi 💪";
