@@ -149,6 +149,7 @@ export function Guscio({
   titoloBreve,
   sotto,
   nonLetti,
+  fuori,
   children,
 }: {
   sezione: SezioneCliente;
@@ -156,6 +157,7 @@ export function Guscio({
   titoloBreve: string;
   sotto?: ReactNode;
   nonLetti: number;
+  fuori?: ReactNode; // sopra tutto, dentro la cornice (fogli come Leo): non scorre con il contenuto
   children: ReactNode;
 }) {
   const scorre = useRef<HTMLDivElement>(null);
@@ -210,6 +212,7 @@ export function Guscio({
         </div>
 
         <BarraCliente attiva={sezione} nonLetti={nonLetti} />
+        {fuori}
       </div>
     </div>
   );

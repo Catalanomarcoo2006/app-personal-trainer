@@ -4,12 +4,12 @@
 // Home è fatta (28/10); Allenamento e Progressi usano per ora le schede di prima (Sections.tsx), Messaggi e Profilo
 // sono i prossimi lavori.
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Hammer } from "lucide-react";
-import { AssistantPanel } from "@/components/ui/Assistant";
-import { assistantAnswers, assistantFallback, assistantSuggestions, client, conversations, trainer } from "@/libs/prototipo/dati-finti";
+import { client, conversations } from "@/libs/prototipo/dati-finti";
 import { Guscio } from "./Shell";
+import { LeoCliente } from "./LeoCliente";
 import { CLIENTE_DEMO, Home, TrainerDiGiulia } from "./Home";
 import { GoalCard, WeightCard, WorkoutCard } from "./Sections";
 import { sezioneDa, type SezioneCliente } from "./nav";
@@ -39,11 +39,12 @@ const Colonna = ({ children }: { children: ReactNode }) => <div className="mt-[1
 export function ClientApp() {
   const sezione = sezioneDa(usePathname());
   const [leo, setLeo] = useState(false);
+  const chiudiLeo = useCallback(() => setLeo(false), []);
   const nonLetti = conversations.find((c) => c.clientId === CLIENTE_DEMO)?.unread ?? 0;
   const t = TITOLI[sezione];
 
   return (
-    <Guscio sezione={sezione} titolo={t.titolo} titoloBreve={t.breve} sotto={sezione === "home" ? <TrainerDiGiulia /> : undefined} nonLetti={nonLetti}>
+    <Guscio sezione={sezione} titolo={t.titolo} titoloBreve={t.breve} sotto={sezione === "home" ? <TrainerDiGiulia /> : undefined} nonLetti={nonLetti} fuori={<LeoCliente aperto={leo} onChiudi={chiudiLeo} />}>
       {sezione === "home" && <Home onLeo={() => setLeo(true)} />}
       {sezione === "allenamento" && (
         <Colonna>
@@ -58,7 +59,6 @@ export function ClientApp() {
       )}
       {sezione === "messaggi" && <InArrivo cosa="La chat con Marco" />}
       {sezione === "profilo" && <InArrivo cosa="Il profilo con i tuoi documenti" />}
-      <AssistantPanel open={leo} onClose={() => setLeo(false)} suggestions={assistantSuggestions} answers={assistantAnswers} fallback={assistantFallback} trainerName={trainer.name.split(" ")[0]} />
     </Guscio>
   );
 }

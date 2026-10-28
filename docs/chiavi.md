@@ -4,7 +4,7 @@ Elenco delle chiavi API del progetto: **quali esistono e dove sono usate, mai i 
 I valori stanno solo in `.env.local` (sul computer di Marco, escluso da git) e nelle Environment Variables di Vercel.
 Aggiornare questa tabella ogni volta che si crea, si sposta o si cancella una chiave.
 
-**Ultimo aggiornamento:** 2026-10-25
+**Ultimo aggiornamento:** 2026-10-28
 
 ## Chiavi attive
 
@@ -12,6 +12,8 @@ Aggiornare questa tabella ogni volta che si crea, si sposta o si cancella una ch
 |---|---|---|---|---|
 | DeepSeek (AI di Leo) | quella del computer | `AI_API_KEY` | `.env.local` sul PC di Marco | 22/10/2026 |
 | DeepSeek (AI di Leo) | `vercel-online` | `AI_API_KEY` | Vercel → progetto `app-personal-trainer` → Environment Variables → Production (tipo Secret) | 23/10/2026 |
+
+Le stesse variabili `AI_*` servono a **due rotte**: Leo del trainer (`app/prototipo/api/leo`) e, dal 28/10, Leo del cliente (`app/prototipo/api/leo-cliente`). Nessuna chiave nuova: si usa quella che c'è già (sul computer e su Vercel). Le due rotte sono aperte a chiunque abbia l'indirizzo: tenere un limite di spesa sul pannello di DeepSeek.
 
 ## Da creare più avanti
 

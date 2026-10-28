@@ -52,6 +52,7 @@ Il colore del trainer passa già da `localStorage` (`appearance.tsx`): basta asc
 > - Intestazione: titolo grande ("Ciao, Giulia! 👋", poi il nome della sezione) che scorrendo si **rimpicciolisce come su iOS** in una barra sottile di vetro con titolo piccolo e foto.
 > - Home come `docs/riferimenti/cliente-home-mobile.png`, senza l'ultimo messaggio: allenamento di oggi con avanzamento e "Avvia allenamento", agenda con i giorni e la seduta del giorno scelto, "Chiedi a Leo" con Leo affacciato dal bordo (`spunta.webp`).
 > - Ordine di lavoro: prima l'estetica di tutte le schermate con i dati finti, il collegamento dal vivo con l'area trainer dopo (con Supabase si rifà comunque).
+> - Leo del cliente **con l'AI** (richiesta di Marco del 28/10, solo con dati finti come per il trainer): rotta `app/prototipo/api/leo-cliente` senza azioni, istruzioni con i dati di Giulia e le regole (niente diete, prudenza sul dolore con avviso al trainer tramite `[[avvisa-trainer]]`, 112 per le emergenze); senza chiave le risposte fisse. L'avviso al trainer per ora compare solo nella chat del cliente: arriverà al trainer con il collegamento dal vivo.
 > - Fatti il 28/10: pagina unica (`app/prototipo/cliente/[[...sezione]]`), guscio (`cliente/Shell.tsx`), Home (`cliente/Home.tsx`). Allenamento e Progressi usano per ora le schede di prima (`Sections.tsx`), Messaggi e Profilo sono "in arrivo".
 
 
