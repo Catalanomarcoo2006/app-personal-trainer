@@ -4,7 +4,7 @@
 // sul fondo come l'area trainer, intestazione grande che scorrendo si rimpicciolisce in una barra di vetro (come le app
 // Apple, scelta di Marco del 28/10) e barra in basso a pillola di vetro con la goccia che scivola sulla voce attiva.
 
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, RefObject, useEffect, useRef } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { BatteryFull, Bell, Signal, Wifi } from "lucide-react";
 import { trainer } from "@/libs/prototipo/dati-finti";
@@ -95,6 +95,52 @@ function BarraCliente({ attiva, nonLetti }: { attiva: SezioneCliente; nonLetti: 
   );
 }
 
+// Sul computer si scorre anche trascinando con il mouse, come col dito sul telefono (la rotellina va già da sola).
+// Il trascinamento parte dopo 5 px: un clic fermo resta un clic; dopo un trascinamento il clic si annulla.
+function useTrascina(ref: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let inizio: { y: number; top: number } | null = null;
+    let mosso = false;
+    const giu = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      inizio = { y: e.clientY, top: el.scrollTop };
+      mosso = false;
+    };
+    const muovi = (e: PointerEvent) => {
+      if (!inizio) return;
+      const dy = e.clientY - inizio.y;
+      if (!mosso && Math.abs(dy) < 5) return;
+      mosso = true;
+      e.preventDefault(); // niente testo selezionato mentre si trascina
+      el.scrollTop = inizio.top - dy;
+    };
+    const su = () => {
+      inizio = null;
+    };
+    const clic = (e: MouseEvent) => {
+      if (!mosso) return;
+      mosso = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const noDrag = (e: DragEvent) => e.preventDefault(); // le foto non partono come immagini trascinate
+    el.addEventListener("pointerdown", giu);
+    window.addEventListener("pointermove", muovi);
+    window.addEventListener("pointerup", su);
+    el.addEventListener("click", clic, true);
+    el.addEventListener("dragstart", noDrag);
+    return () => {
+      el.removeEventListener("pointerdown", giu);
+      window.removeEventListener("pointermove", muovi);
+      window.removeEventListener("pointerup", su);
+      el.removeEventListener("click", clic, true);
+      el.removeEventListener("dragstart", noDrag);
+    };
+  }, [ref]);
+}
+
 // L'intestazione grande sta in cima al contenuto e scorre via; quando è quasi uscita compare in alto la barra
 // sottile di vetro con il titolo piccolo e la foto. Il titolo grande intanto rimpicciolisce e sfuma, come su iOS.
 export function Guscio({
@@ -115,6 +161,7 @@ export function Guscio({
   const scorre = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollY } = useScroll({ container: scorre });
+  useTrascina(scorre);
   const barra = useTransform(scrollY, [36, 60], [0, 1]);
   const grande = useTransform(scrollY, [0, 60], [1, reduce ? 1 : 0.9]);
   const grandeVisibile = useTransform(scrollY, [0, 36], [1, 0]);
