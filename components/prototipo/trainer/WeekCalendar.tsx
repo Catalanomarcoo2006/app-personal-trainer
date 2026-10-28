@@ -7,6 +7,7 @@ import { CalendarClock, CalendarPlus, Check, MapPin, MessageCircle, Plus, Trash2
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
+import { crepe, IMPATTO, schegge } from "@/libs/ui/vetro";
 import { Appointment, appointmentColors, AppointmentType, trainer } from "@/libs/prototipo/dati-finti";
 import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { giornoDi, isoDi, SETTIMANE_LEO } from "@/libs/prototipo/calendario";
@@ -106,27 +107,32 @@ function SessionCard({ day, a, i, density, onOpen, layoutId, atterra }: { day: W
 
 const ROSSO = "#e5484d";
 const VERDE = { spento: "0 0 0 0px rgba(31,157,85,0)", acceso: "0 0 0 4px rgba(31,157,85,0.35)" };
-// i 6 pezzi (3 × 2) in cui si spezza la seduta: ritaglio e direzione in cui vola ciascuno
-const PEZZI = [0, 1, 2, 3, 4, 5].map((n) => {
-  const col = n % 3;
-  const riga = Math.floor(n / 3);
-  return {
-    clip: `inset(${riga * 50}% ${(2 - col) * 33.34}% ${(1 - riga) * 50}% ${col * 33.33}%)`,
-    x: (col - 1) * 26 + (riga ? 6 : -6),
-    y: riga ? 22 : -18,
-    r: (col - 1) * 28 + (riga ? 14 : -14),
-  };
-});
+// le schegge e le crepe del vetro (libs/ui/vetro.ts): fisse, si calcolano una volta
+const SCHEGGE = schegge();
+const CREPE = crepe();
+const ROTTURA = 0.62; // s: le crepe sono fatte, il vetro cade
 
-// Dove c'era la seduta appena cancellata da Leo: la seduta diventa rossa e trema, poi si spezza in 6 pezzi che volano
-// via; resta un attimo il contorno tratteggiato rosso. Con "riduci movimento" diventa rossa e sbiadisce.
+// Dove c'era la seduta appena cancellata da Leo: la seduta diventa vetro rosso, un colpo la fa tremare, le crepe
+// partono dal punto d'impatto e il vetro cade in schegge; resta un attimo il contorno tratteggiato rosso.
+// Con "riduci movimento" diventa vetro rosso e sbiadisce.
 function Fantasma({ a }: { a: Appointment }) {
   const clientById = useTrovaCliente();
   const reduce = useReducedMotion();
   const contenuto = (
-    <span className="block rounded-[11px] border-2 px-[9px] py-[7px] text-[10px] leading-tight font-bold text-white" style={{ background: ROSSO, borderColor: ROSSO }}>
-      {a.time} · {clientById(a.clientId)?.name.split(" ")[0]}
-      <span className="mt-[3px] block text-[9px] font-semibold opacity-80">{a.type}</span>
+    <span
+      className="relative block overflow-hidden rounded-[11px] border px-[10px] py-[8px] text-[10px] leading-tight font-bold text-white"
+      style={{
+        background: `linear-gradient(180deg, color-mix(in srgb, ${ROSSO} 88%, transparent), color-mix(in srgb, ${ROSSO} 66%, transparent))`,
+        borderColor: "rgba(255,255,255,0.55)",
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 1px rgba(0,0,0,0.08)`,
+      }}
+    >
+      {/* riflesso del vetro: una banda chiara in diagonale */}
+      <span aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(125deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.08) 34%, transparent 35%, transparent 62%, rgba(255,255,255,0.14) 63%, transparent 78%)" }} />
+      <span className="relative">
+        {a.time} · {clientById(a.clientId)?.name.split(" ")[0]}
+      </span>
+      <span className="relative mt-[3px] block text-[9px] font-semibold opacity-80">{a.type}</span>
     </span>
   );
   if (reduce)
@@ -147,24 +153,79 @@ function Fantasma({ a }: { a: Appointment }) {
         transition={{ delay: 0.9, duration: 1.1, times: [0, 0.3, 1] }}
       />
       <span className="invisible block">{contenuto}</span>
+      {/* il colpo: una scossa breve, non un tremolio lungo */}
       <motion.div
         className="absolute inset-0"
         initial={{ x: 0 }}
-        animate={{ x: [0, -4, 4, -3, 3, -1, 0] }}
-        transition={{ duration: 0.45, delay: 0.1, ease: "easeInOut" }}
+        animate={{ x: [0, -2.5, 2, -1.5, 1, 0] }}
+        transition={{ duration: 0.3, delay: 0.12, ease: "easeOut" }}
       >
-        {PEZZI.map((p, n) => (
-          <motion.div
-            key={n}
-            className="absolute inset-0"
-            style={{ clipPath: p.clip }}
-            initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
-            animate={{ x: p.x, y: p.y, rotate: p.r, opacity: 0 }}
-            transition={{ delay: 0.6 + n * 0.03, duration: 0.75, ease: [0.3, 0, 0.6, 1] }}
-          >
-            {contenuto}
-          </motion.div>
-        ))}
+        {SCHEGGE.map((s, n) => {
+          const via = { delay: ROTTURA + s.ritardo, duration: 0.85 };
+          return (
+            <motion.div
+              key={n}
+              className="absolute inset-0"
+              style={{ clipPath: s.clip, transformOrigin: `${s.centro.x}% ${s.centro.y}%` }}
+              initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
+              animate={{ x: s.x, y: s.caduta, rotate: s.r, opacity: [1, 1, 0] }}
+              transition={{
+                x: { ...via, ease: EASE_OUT },
+                rotate: { ...via, ease: EASE_OUT },
+                y: { ...via, ease: [0.45, 0, 0.9, 0.6] }, // la gravità: parte piano e accelera
+                opacity: { ...via, times: [0, 0.55, 1] },
+              }}
+            >
+              {contenuto}
+            </motion.div>
+          );
+        })}
+        {/* le crepe: partono dall'impatto verso i bordi, poi l'anello; spariscono quando il vetro cade */}
+        <motion.svg
+          aria-hidden
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 size-full rounded-[11px]"
+          style={{ clipPath: "inset(0 round 11px)" }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ delay: ROTTURA + 0.04, duration: 0.16 }}
+        >
+          {CREPE.raggi.map((d, k) => (
+            <motion.path
+              key={k}
+              d={d}
+              fill="none"
+              stroke="rgba(255,255,255,0.92)"
+              strokeWidth={1}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ delay: 0.16 + k * 0.012, duration: 0.22, ease: EASE_OUT }}
+            />
+          ))}
+          <motion.path
+            d={CREPE.anello}
+            fill="none"
+            stroke="rgba(255,255,255,0.7)"
+            strokeWidth={0.8}
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ delay: 0.3, duration: 0.24, ease: EASE_OUT }}
+          />
+        </motion.svg>
+        {/* il lampo nel punto del colpo */}
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute size-[14px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ left: `${IMPATTO.x}%`, top: `${IMPATTO.y}%`, background: "radial-gradient(circle, rgba(255,255,255,0.95), rgba(255,255,255,0) 70%)" }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: [0, 1.6, 2], opacity: [0, 1, 0] }}
+          transition={{ delay: 0.14, duration: 0.35, times: [0, 0.3, 1] }}
+        />
       </motion.div>
     </div>
   );
