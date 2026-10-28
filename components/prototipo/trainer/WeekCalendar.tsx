@@ -8,6 +8,7 @@ import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
 import { crepe, IMPATTO, schegge } from "@/libs/ui/vetro";
+import { SelettoreOra } from "@/components/ui/Rotella";
 import { Appointment, appointmentColors, AppointmentType, trainer } from "@/libs/prototipo/dati-finti";
 import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { giornoDi, isoDi, SETTIMANE_LEO } from "@/libs/prototipo/calendario";
@@ -296,38 +297,64 @@ function SessionForm({ days, draft, onClose, onSave }: { days: WeekDay[]; draft:
         }}
       >
         <p className="mt-[14px] mb-[6px] text-[11px] font-semibold text-muted">Giorno</p>
-        <div className="grid grid-cols-7 gap-[5px]">
+        {/* selettore a segmenti come su iOS: la pillola scivola sotto il giorno scelto */}
+        <div role="radiogroup" aria-label="Giorno" className="grid grid-cols-7 gap-[2px] rounded-[14px] bg-soft p-[3px]">
           {days.map((d, i) => (
             <button
               key={i}
               type="button"
-              onClick={() => setDay(i)}
-              className={`flex cursor-pointer flex-col items-center rounded-[11px] py-[6px] leading-none transition-colors ${i === day ? "sel-trainer" : "bg-soft hover:bg-line"}`}
+              role="radio"
+              aria-checked={i === day}
+              onClick={() => {
+                if (i !== day) playSound("tap");
+                setDay(i);
+              }}
+              className="relative flex cursor-pointer flex-col items-center rounded-[11px] py-[6px] leading-none"
             >
-              <span className="text-[9.5px] text-muted">{d.short}</span>
-              <span className="mt-[3px] text-[14px] font-bold">{d.n}</span>
+              {i === day && (
+                <motion.span
+                  layoutId="giorno-scelto"
+                  aria-hidden
+                  className="sel-trainer absolute inset-0 rounded-[11px] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)]"
+                  transition={{ type: "spring", stiffness: 520, damping: 38 }}
+                />
+              )}
+              <span className="relative text-[9.5px] text-muted">{d.short}</span>
+              <span className="relative mt-[3px] text-[14px] font-bold">{d.n}</span>
             </button>
           ))}
         </div>
 
-        <div className="mt-[12px] grid grid-cols-[1fr_110px] gap-[10px]">
-          <label className="block">
-            <span className="mb-[6px] block text-[11px] font-semibold text-muted">Cliente</span>
-            <select value={clientId} disabled={moving} onChange={(e) => setClientId(e.target.value)} className={`${field} disabled:cursor-default disabled:opacity-70`}>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
+        <div className="mt-[12px] grid grid-cols-[1fr_auto] gap-[12px]">
+          <div>
+            <label className="block">
+              <span className="mb-[6px] block text-[11px] font-semibold text-muted">Cliente</span>
+              <select value={clientId} disabled={moving} onChange={(e) => setClientId(e.target.value)} className={`${field} disabled:cursor-default disabled:opacity-70`}>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-[10px] block">
+              <span className="mb-[6px] block text-[11px] font-semibold text-muted">Durata</span>
+              <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className={field}>
+                {[30, 40, 45, 50, 60, 90].map((m) => (
+                  <option key={m} value={m}>
+                    {duration(m)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div>
             <span className="mb-[6px] block text-[11px] font-semibold text-muted">Ora</span>
-            <input type="time" value={time} step={900} required onChange={(e) => setTime(e.target.value)} className={field} />
-          </label>
+            <SelettoreOra valore={time} onChange={setTime} />
+          </div>
         </div>
 
-        <p className="mt-[12px] mb-[6px] text-[11px] font-semibold text-muted">Tipo e durata</p>
+        <p className="mt-[12px] mb-[6px] text-[11px] font-semibold text-muted">Tipo</p>
         <div className="flex flex-wrap gap-[6px]">
           {types.map((t) => {
             const Icon = typeIcons[t];
@@ -342,13 +369,6 @@ function SessionForm({ days, draft, onClose, onSave }: { days: WeekDay[]; draft:
               </button>
             );
           })}
-          <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="ml-auto h-[30px] cursor-pointer rounded-full border border-line bg-card px-[10px] text-[11.5px] font-semibold outline-none">
-            {[30, 40, 45, 50, 60, 90].map((m) => (
-              <option key={m} value={m}>
-                {duration(m)}
-              </option>
-            ))}
-          </select>
         </div>
 
         <motion.button type="submit" whileTap={{ scale: 0.97 }} className="btn-trainer mt-[18px] flex h-[40px] w-full cursor-pointer items-center justify-center gap-[6px] rounded-full text-[13px] font-semibold">

@@ -345,6 +345,13 @@
   background: color-mix(in srgb, var(--trainer) 14%, var(--color-card));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--trainer) 34%, transparent);
 }
+/* Rotella dell'orario (components/ui/Rotella.tsx): si scorre ma la barra di scorrimento non si vede, come su iOS */
+.rotella {
+  scrollbar-width: none;
+}
+.rotella::-webkit-scrollbar {
+  display: none;
+}
 /* Al buio le chat (elenco e fumetti del cliente) prendono il colore del cliente, come le sue schede:
    nere si perdevano sul fondo (Messages.tsx passa il colore in --tono). Col tema chiaro restano come sono. */
 .dark .tinta-scuro {
