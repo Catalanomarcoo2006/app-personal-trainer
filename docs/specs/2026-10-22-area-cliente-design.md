@@ -47,6 +47,14 @@ Il colore del trainer passa già da `localStorage` (`appearance.tsx`): basta asc
 
 ## 4. Schermate del cliente
 
+> **Aggiornamento del 28/10 (decisioni di Marco, valgono sopra il resto di questa sezione):**
+> - Barra in basso: pillola di vetro in rilievo (`glass glass-3d`) con 4 voci **Home · Allenamento · Progressi · Messaggi** e la goccia (`glass-drop`, come la barra laterale del trainer) che scivola sulla voce attiva; il **Profilo** si apre dalla foto in alto e contiene anche **i documenti** (niente voce Documenti nella barra).
+> - Intestazione: titolo grande ("Ciao, Giulia! 👋", poi il nome della sezione) che scorrendo si **rimpicciolisce come su iOS** in una barra sottile di vetro con titolo piccolo e foto.
+> - Home come `docs/riferimenti/cliente-home-mobile.png`, senza l'ultimo messaggio: allenamento di oggi con avanzamento e "Avvia allenamento", agenda con i giorni e la seduta del giorno scelto, "Chiedi a Leo" con Leo affacciato dal bordo (`spunta.webp`).
+> - Ordine di lavoro: prima l'estetica di tutte le schermate con i dati finti, il collegamento dal vivo con l'area trainer dopo (con Supabase si rifà comunque).
+> - Fatti il 28/10: pagina unica (`app/prototipo/cliente/[[...sezione]]`), guscio (`cliente/Shell.tsx`), Home (`cliente/Home.tsx`). Allenamento e Progressi usano per ora le schede di prima (`Sections.tsx`), Messaggi e Profilo sono "in arrivo".
+
+
 **Guscio.** In alto: logo del trainer nel suo colore, "Ciao, Giulia", sotto "con Marco Rossi"; a destra campanella con il numero degli avvisi per il cliente (scheda nuova, risposta del trainer), che apre l'elenco (ogni voce porta alla Chat), e foto di Giulia che apre il Profilo. In basso: pillola in vetro con 4 voci (icona + etichetta) Oggi · Progressi · Chat · Documenti; la Chat mostra i non letti; la voce attiva ha una pillola nel colore tenue del trainer che scivola da una voce all'altra. Sul telefono: niente zoom sui campi (testo ≥ 16 px), niente lampeggio al tocco, margini per la tacca, altezza `100dvh`.
 
 **Oggi**, dall'alto:

@@ -10,9 +10,10 @@ import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { client, trainer, workout } from "@/libs/prototipo/dati-finti";
 import { rowName, useStato, videoByName } from "@/libs/prototipo/stato";
+import { useSpunte } from "./spunte";
 
 const tint = (p: number) => `color-mix(in srgb, var(--trainer) ${p}%, white)`;
-const card = "rounded-[20px] bg-card";
+const card = "panel rounded-[22px]";
 
 export function ClientHeader() {
   return (
@@ -173,7 +174,7 @@ export function NextSession() {
 }
 
 // L'allenamento di oggi: l'ultima scheda inviata dal trainer (primo giorno), altrimenti quella della demo.
-function useTodayWorkout() {
+export function useTodayWorkout() {
   const sent = useStato((s) => s.sent);
   const videos = useStato((s) => s.videos);
   const last = [...sent].reverse().find((p) => p.clientId === "giulia-bianchi");
@@ -193,13 +194,12 @@ function useTodayWorkout() {
 
 export function WorkoutCard() {
   const workout = useTodayWorkout();
-  const [done, setDone] = useState<boolean[]>(workout.exercises.map((_, i) => i === 0));
+  const [done, cambia] = useSpunte(workout.exercises.length);
   const count = done.filter(Boolean).length;
   const all = count === done.length;
 
   const toggle = (i: number) => {
-    const next = done.map((v, k) => (k === i ? !v : v));
-    setDone(next);
+    const next = cambia(i);
     if (next.every(Boolean)) playSound("complete");
     else playSound(next[i] ? "confirm" : "tap");
   };
