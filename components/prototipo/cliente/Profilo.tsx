@@ -17,14 +17,14 @@ import { stato, useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
 import { controllaFile, rimpicciolisciFoto, type Documento } from "@/libs/prototipo/documenti";
 import { useCliente } from "@/libs/dati/selettori";
 import { impostaPesata } from "@/libs/dati/sportello";
-import { OGGI } from "@/libs/dati/iniziali";
+import { oggi as giornoDiOggi } from "@/libs/orologio";
 import { dataBreve, dataLunga } from "@/libs/dati/vista";
 import { FREQUENZE } from "@/libs/domain/pesate";
 import { navigate } from "@/components/prototipo/trainer/nav";
 import { Foglio } from "./Foglio";
 import { apriFile, pdfScheda } from "./apri-file";
 import { usePesata, quandoPesata } from "./pesata";
-import { CLIENTE_DEMO } from "./scheda";
+import { CLIENTE_IO } from "./scheda";
 import { FOTO_CLIENTE } from "./Shell";
 import { ID_FOGLI, ROTTE_CLIENTE } from "./nav";
 
@@ -80,13 +80,13 @@ function Informativa() {
 }
 
 export function Profilo() {
-  const c = useCliente(CLIENTE_DEMO);
+  const c = useCliente(CLIENTE_IO);
   const foto = useTrainerPhoto();
   const documenti = useStato((s) => s.documenti);
-  const giorni = useStato((s) => s.plans[CLIENTE_DEMO]) ?? [];
+  const giorni = useStato((s) => s.plans[CLIENTE_IO]) ?? [];
   const videos = useStato((s) => s.videos);
-  const pacchetto = useStato((s) => s.dati.pacchetti.find((p) => p.clientId === CLIENTE_DEMO));
-  const proposto = useStato((s) => s.dati.clienti.find((x) => x.id === CLIENTE_DEMO)?.obiettivoProposto);
+  const pacchetto = useStato((s) => s.dati.pacchetti.find((p) => p.clientId === CLIENTE_IO));
+  const proposto = useStato((s) => s.dati.clienti.find((x) => x.id === CLIENTE_IO)?.obiettivoProposto);
   const pesata = usePesata();
   const { theme, setTheme } = useAppearance();
   const [suoni, setSuoni] = useState(true);
@@ -110,7 +110,7 @@ export function Profilo() {
     if ("motivo" in v) return toast.error(v.motivo);
     try {
       const file = v.tipo === "foto" ? await rimpicciolisciFoto(f) : f;
-      stato.addDocumento({ nome: v.tipo === "foto" ? f.name.replace(/\.\w+$/, ".jpg") : f.name, tipo: v.tipo, da: "cliente", data: OGGI, file });
+      stato.addDocumento({ nome: v.tipo === "foto" ? f.name.replace(/\.\w+$/, ".jpg") : f.name, tipo: v.tipo, da: "cliente", data: giornoDiOggi(), file });
       playSound("complete");
       toast.success(`Caricato: ${nomeTrainer} lo trova tra i tuoi documenti`);
     } catch {
@@ -189,7 +189,7 @@ export function Profilo() {
                   onClick={() => {
                     if (qui) return;
                     playSound("tap");
-                    void impostaPesata(CLIENTE_DEMO, x.f);
+                    void impostaPesata(CLIENTE_IO, x.f);
                   }}
                   className={`h-[38px] cursor-pointer rounded-full text-[12.5px] font-semibold ${qui ? "sel-trainer" : "bg-ink/5 text-ink/65"}`}
                 >
@@ -209,7 +209,7 @@ export function Profilo() {
             key={d.id}
             icona={d.tipo === "pdf" ? <FileText size={17} /> : <Foto size={17} />}
             titolo={d.nome}
-            sotto={`${DA[d.da]} · ${d.data === OGGI ? "oggi" : dataBreve(d.data)}`}
+            sotto={`${DA[d.da]} · ${d.data === giornoDiOggi() ? "oggi" : dataBreve(d.data)}`}
             destra={
               d.da === "cliente" && typeof d.file !== "string" ? (
                 <button

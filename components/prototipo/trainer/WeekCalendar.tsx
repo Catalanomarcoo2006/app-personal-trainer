@@ -12,6 +12,7 @@ import { SelettoreOra } from "@/components/ui/Rotella";
 import { Appointment, appointmentColors, AppointmentType, trainer } from "@/libs/prototipo/dati-finti";
 import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { giornoDi, isoDi, SETTIMANE_LEO } from "@/libs/prototipo/calendario";
+import { inDemo } from "@/libs/orologio";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
 import { settimanaDi } from "@/libs/prototipo/leo-viaggio";
 import { stato, useStato, useFocusLeo } from "@/libs/prototipo/stato";
@@ -580,7 +581,8 @@ export function WeekCalendar() {
   const [open, setOpen] = useState<{ day: number; a: Appointment } | null>(null);
 
   const week = weekOf(offset, sedute);
-  const inStore = SETTIMANE_LEO.includes(offset);
+  // nella demo lo store ha solo questa settimana e la prossima; nella versione vera tutte
+  const inStore = !inDemo() || SETTIMANE_LEO.includes(offset);
   const items = (!inStore && edits[offset]) || week.days.map((d) => d.items);
   const days: WeekDay[] = week.days.map((d, i) => ({ ...d, items: [...items[i]].sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) }));
   const total = days.reduce((s, d) => s + d.items.length, 0);
@@ -628,7 +630,7 @@ export function WeekCalendar() {
       <section className="flex h-full min-h-0 flex-col panel rounded-[18px] px-[16px] pt-[14px] pb-[14px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[10px]">
-            <WeekArrows label={`${week.label} 2026`} onMove={move} size={30} className="text-[15px] font-bold" />
+            <WeekArrows label={`${week.label} ${giornoDi(offset, 6).getFullYear()}`} onMove={move} size={30} className="text-[15px] font-bold" />
             <span className="rounded-full bg-soft px-[10px] py-[5px] text-[11px] font-semibold">{conta(total, "seduta", "sedute")}</span>
             {offset !== 0 && (
               <button

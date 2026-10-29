@@ -7,12 +7,13 @@ import { collectedCents, outstandingCents } from "@/libs/domain/payments";
 import { revenue, type Client, type Payment } from "@/libs/prototipo/dati-finti";
 import { conta } from "@/libs/ui/testo";
 import { datiIniziali, MESI, MESI_LUNGHI, OGGI } from "./iniziali";
+import { inDemo, oggi } from "@/libs/orologio";
 import type { DatiClienti, Misura, Pacchetto, Pagamento } from "./tipi";
 
 export type PagamentoVista = Payment & { id: string };
 export type ClienteVista = Omit<Client, "payments"> & { payments: PagamentoVista[] };
 
-const MESE_DEMO = OGGI.slice(0, 7);
+const MESE_DEMO = OGGI.slice(0, 7); // il mese della demo (ottobre 2026)
 const PESI_IN_VISTA = 8;
 const CIRCONFERENZE: [keyof Misura, string][] = [
   ["waistCm", "Vita"],
@@ -35,7 +36,7 @@ export function rimastePacchetto(p: Pacchetto): string {
 
 function inScadenza(p: Pacchetto): boolean {
   const fatte = Array.from({ length: p.lessonsUsed }, (_, i) => ({ id: `s${i}`, status: "done" as const }));
-  return isPackageExpiring({ kind: p.kind, lessons_total: p.lessonsTotal, ends_on: p.endsOn }, fatte, new Date(`${OGGI}T12:00:00Z`));
+  return isPackageExpiring({ kind: p.kind, lessons_total: p.lessonsTotal, ends_on: p.endsOn }, fatte, new Date(`${oggi()}T12:00:00Z`));
 }
 
 const pagamentoVista = (p: Pagamento): PagamentoVista => ({ id: p.id, date: dataBreve(p.paidOn ?? p.dueOn), label: p.description, amount: p.amountCents / 100, paid: !!p.paidOn });
@@ -81,9 +82,11 @@ export function vistaCliente(d: DatiClienti, id: string): ClienteVista | undefin
 export const vistaClienti = (d: DatiClienti): ClienteVista[] => d.clienti.map((c) => vistaCliente(d, c.id)!);
 
 // Gli incassi della demo comprendono anche movimenti che non sono tra i pagamenti dei clienti:
-// la base resta fissa, i pagamenti segnati nell'app ci si aggiungono.
+// la base resta fissa, i pagamenti segnati nell'app ci si aggiungono. Nella versione vera contano solo i pagamenti
+// del mese di oggi.
 let baseOttobre: number | undefined;
 export function calcolaIncassi(d: DatiClienti): { collectedCents: number; outstandingCents: number } {
+  if (!inDemo()) return { collectedCents: collectedCents(d.pagamenti, oggi().slice(0, 7)), outstandingCents: outstandingCents(d.pagamenti) };
   baseOttobre ??= revenue.collected * 100 - collectedCents(datiIniziali().pagamenti, MESE_DEMO);
   return { collectedCents: baseOttobre + collectedCents(d.pagamenti, MESE_DEMO), outstandingCents: outstandingCents(d.pagamenti) };
 }

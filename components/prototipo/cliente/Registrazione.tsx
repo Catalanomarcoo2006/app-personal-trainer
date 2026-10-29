@@ -16,7 +16,7 @@ import { useCliente } from "@/libs/dati/selettori";
 import { impostaPesata, proponiObiettivo } from "@/libs/dati/sportello";
 import { FREQUENZE, type Frequenza } from "@/libs/domain/pesate";
 import { Telefono } from "./Shell";
-import { CLIENTE_DEMO } from "./scheda";
+import { CLIENTE_IO } from "./scheda";
 import { ROTTE_CLIENTE } from "./nav";
 
 const CHIAVE = "registrazione-cliente";
@@ -78,7 +78,7 @@ function CampoPeso({ label, valore, onChange }: { label: string; valore: string;
 export function Registrazione({ onFatta }: { onFatta: () => void }) {
   const reduce = useReducedMotion();
   const foto = useTrainerPhoto();
-  const c = useCliente(CLIENTE_DEMO);
+  const c = useCliente(CLIENTE_IO);
   const [passo, setPasso] = useState(0);
   const [consenso, setConsenso] = useState(false);
   // il peso da cui è partito con il trainer, se c'è già (Giulia: 72); un cliente nuovo lo scrive lui
@@ -91,10 +91,10 @@ export function Registrazione({ onFatta }: { onFatta: () => void }) {
   const avanti = async () => {
     setErrore(null);
     if (passo === 2) {
-      const esito = await proponiObiettivo(CLIENTE_DEMO, leggi(start), leggi(target));
+      const esito = await proponiObiettivo(CLIENTE_IO, leggi(start), leggi(target));
       if ("motivo" in esito) return setErrore(Number.isNaN(leggi(start)) || Number.isNaN(leggi(target)) ? "Scrivi tutti e due i pesi, per esempio 68,5" : esito.motivo);
     }
-    if (passo === 3) await impostaPesata(CLIENTE_DEMO, frequenza);
+    if (passo === 3) await impostaPesata(CLIENTE_IO, frequenza);
     if (passo === PASSI - 1) {
       playSound("complete");
       return onFatta();

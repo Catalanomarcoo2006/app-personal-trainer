@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ADESSO,
   daConfermare,
-  GIORNI_LEO,
+  giorniLeo,
   inChiaro,
   leggiAzione,
   luogoPredefinito,
@@ -156,9 +156,9 @@ describe("altre regole", () => {
     expect(luogoPredefinito("Corsa")).toBe("Parco di Meolo");
   });
   it("le giornate di Leo sono le 14 di questa settimana e della prossima", () => {
-    expect(GIORNI_LEO).toHaveLength(14);
-    expect(GIORNI_LEO[0]).toBe("2026-10-19");
-    expect(GIORNI_LEO[13]).toBe("2026-11-01");
+    expect(giorniLeo()).toHaveLength(14);
+    expect(giorniLeo()[0]).toBe("2026-10-19");
+    expect(giorniLeo()[13]).toBe("2026-11-01");
     expect(ADESSO.data).toBe("2026-10-21");
   });
   it("riassume l'azione con i nomi veri", () => {

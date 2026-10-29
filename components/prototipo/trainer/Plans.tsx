@@ -1,5 +1,6 @@
 "use client";
 
+import { oggi } from "@/libs/orologio";
 import { FormEvent, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import toast from "react-hot-toast";
@@ -320,7 +321,7 @@ export function PlansView({ search }: { search: string }) {
         focus: d.focus,
         rows: d.rows.map((r) => ({ name: rowName(r), sets: r.sets, load: r.load, rest: r.rest, video: rowVideo(r, videos) })),
       }));
-      const blob = await buildPlanPdf({ clientName: client.name, trainerName: trainer.name, date: `${trainer.today.toLowerCase()} 2026`, color: trainer.color, days: pdfDays });
+      const blob = await buildPlanPdf({ clientName: client.name, trainerName: trainer.name, date: `${trainer.today.toLowerCase()} ${oggi().slice(0, 4)}`, color: trainer.color, days: pdfDays });
       const id = `scheda-${Date.now()}`;
       stato.addSent({
         id,

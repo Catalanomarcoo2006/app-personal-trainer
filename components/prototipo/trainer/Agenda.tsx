@@ -7,7 +7,8 @@ import { CalendarDays, CalendarPlus, Check, ChevronLeft, ChevronRight, Clipboard
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
-import { Appointment, appointmentColors, AppointmentType, TODAY_INDEX, trainer } from "@/libs/prototipo/dati-finti";
+import { Appointment, appointmentColors, AppointmentType, trainer } from "@/libs/prototipo/dati-finti";
+import { inDemo, indiceOggi } from "@/libs/orologio";
 import { useTrovaCliente } from "@/libs/dati/selettori";
 import { giornoDi, isoDi, LONG, MONTHS, seduteDemo, SETTIMANE_LEO, SHORT } from "@/libs/prototipo/calendario";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
@@ -38,15 +39,16 @@ export type WeekDay = { short: string; long: string; n: number; month: string; i
 export function weekOf(offset: number, sedute?: Seduta[]): { label: string; days: WeekDay[] } {
   const days = SHORT.map((short, i) => {
     const date = giornoDi(offset, i);
-    const items = sedute && SETTIMANE_LEO.includes(offset) ? sedute.filter((s) => s.date === isoDi(date)).sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) : seduteDemo(offset, i);
+    // nella demo lo store ha solo questa settimana e la prossima (le altre sono inventate); nella versione vera tutte
+    const items = sedute && (!inDemo() || SETTIMANE_LEO.includes(offset)) ? sedute.filter((s) => s.date === isoDi(date)).sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) : seduteDemo(offset, i);
     return {
       short,
       long: LONG[i],
       n: date.getDate(),
       month: MONTHS[date.getMonth()],
       items,
-      isToday: offset === 0 && i === TODAY_INDEX,
-      isPast: offset < 0 || (offset === 0 && i < TODAY_INDEX),
+      isToday: offset === 0 && i === indiceOggi(),
+      isPast: offset < 0 || (offset === 0 && i < indiceOggi()),
     };
   });
   const first = days[0];
@@ -256,7 +258,7 @@ function NowDivider() {
 export function AgendaCard() {
   const [offset, setOffset] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [selected, setSelected] = useState(TODAY_INDEX);
+  const [selected, setSelected] = useState(indiceOggi());
   const sedute = useStato((s) => s.sedute);
   const { label, days } = weekOf(offset, sedute);
   const day = days[selected];
@@ -271,7 +273,7 @@ export function AgendaCard() {
     const next = offset + step;
     setDirection(step);
     setOffset(next);
-    setSelected(next === 0 ? TODAY_INDEX : 0);
+    setSelected(next === 0 ? indiceOggi() : 0);
   };
 
   return (

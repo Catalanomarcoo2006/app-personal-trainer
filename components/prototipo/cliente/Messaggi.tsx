@@ -12,7 +12,7 @@ import { playSound } from "@/libs/ui/sound";
 import { trainer, type ChatMessage } from "@/libs/prototipo/dati-finti";
 import { stato, useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
 import { MAX_MESSAGGIO } from "@/libs/dati/sportello";
-import { CLIENTE_DEMO } from "./scheda";
+import { CLIENTE_IO } from "./scheda";
 import { ID_FOGLI } from "./nav";
 
 const visibili = (m: ChatMessage[]) => m.filter((x) => x.from !== "assistant");
@@ -21,7 +21,7 @@ const visibili = (m: ChatMessage[]) => m.filter((x) => x.from !== "assistant");
 // All'apertura dell'app quelli che ci sono già contano come visti.
 let visti: number | null = null;
 export function useNonLettiCliente(aperta: boolean): number {
-  const thread = useStato((s) => s.threads[CLIENTE_DEMO]) ?? [];
+  const thread = useStato((s) => s.threads[CLIENTE_IO]) ?? [];
   const delTrainer = thread.filter((m) => m.from === "trainer").length;
   if (visti === null) visti = delTrainer;
   useEffect(() => {
@@ -32,7 +32,7 @@ export function useNonLettiCliente(aperta: boolean): number {
 
 export function Messaggi() {
   const reduce = useReducedMotion();
-  const thread = visibili(useStato((s) => s.threads[CLIENTE_DEMO]) ?? []);
+  const thread = visibili(useStato((s) => s.threads[CLIENTE_IO]) ?? []);
   const foto = useTrainerPhoto();
   const [bozza, setBozza] = useState("");
   const fondo = useRef<HTMLDivElement>(null);
@@ -52,7 +52,7 @@ export function Messaggi() {
     e.preventDefault();
     const testo = bozza.trim().slice(0, MAX_MESSAGGIO);
     if (!testo) return;
-    stato.addMessage(CLIENTE_DEMO, {
+    stato.addMessage(CLIENTE_IO, {
       from: "client",
       text: testo,
       time: "Adesso",

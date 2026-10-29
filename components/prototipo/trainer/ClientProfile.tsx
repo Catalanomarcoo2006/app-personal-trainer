@@ -28,8 +28,9 @@ import { IconCircle } from "@/components/ui/basics";
 import { Appear, CountUp, EASE_OUT, formatEuro, ProgressBar } from "@/components/ui/motion";
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
-import { appointmentColors, progressOf, TODAY_INDEX, toneColors, trainer, week } from "@/libs/prototipo/dati-finti";
-import { settimanaDelCliente } from "@/libs/prototipo/calendario";
+import { appointmentColors, progressOf, toneColors, trainer } from "@/libs/prototipo/dati-finti";
+import { giornoDi, indiceOggi } from "@/libs/orologio";
+import { LONG, settimanaDelCliente } from "@/libs/prototipo/calendario";
 import { useStato, useFocusLeo } from "@/libs/prototipo/stato";
 import { segnaPagato } from "@/libs/dati/sportello";
 import type { ClienteVista } from "@/libs/dati/selettori";
@@ -289,12 +290,12 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
                 {upcoming.length === 0 && <p className="mt-[16px] text-center text-[11.5px] text-muted">Nessun appuntamento questa settimana.</p>}
                 {upcoming.map((a) => {
                   const col = appointmentColors[a.type];
-                  const past = a.d < TODAY_INDEX;
-                  const today = a.d === TODAY_INDEX;
+                  const past = a.d < indiceOggi();
+                  const today = a.d === indiceOggi();
                   return (
                     <div key={`${a.d}-${a.time}`} className={`flex items-center gap-[8px] rounded-[11px] px-[9px] py-[7px] ${past ? "opacity-50" : ""}`} style={{ background: col.bg }}>
                       <span className="w-[42px] shrink-0 leading-none">
-                        <span className="block text-[9.5px] text-ink/55">{week[a.d].long.slice(0, 3)} {week[a.d].n}</span>
+                        <span className="block text-[9.5px] text-ink/55">{LONG[a.d].slice(0, 3)} {giornoDi(0, a.d).getDate()}</span>
                         <b className="mt-[2px] block text-[12px] tabular-nums">{a.time}</b>
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold">{a.type}</span>

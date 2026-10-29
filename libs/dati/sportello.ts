@@ -13,7 +13,8 @@ import { aggiungiMesi } from "@/libs/domain/time";
 import type { Frequenza } from "@/libs/domain/pesate";
 import type { Tone } from "@/libs/prototipo/dati-finti";
 import { stato } from "@/libs/prototipo/stato";
-import { MESI, OGGI } from "./iniziali";
+import { MESI } from "./iniziali";
+import { oggi as giornoDiOggi } from "@/libs/orologio";
 import type { ClienteDati, DatiClienti, Misura, Notifiche, Pacchetto, Pagamento } from "./tipi";
 
 export type Esito = { ok: true; annulla?: () => Promise<Verifica>; id?: string } | { ok: false; motivo: string };
@@ -37,7 +38,7 @@ export { aggiungiMesi }; // sta in libs/domain/time.ts: serve anche al calcolo d
 
 // ——— Pagamenti e pacchetti ———
 
-export async function segnaPagato(pagamentoId: string, oggi = OGGI): Promise<Esito> {
+export async function segnaPagato(pagamentoId: string, oggi = giornoDiOggi()): Promise<Esito> {
   const v = controllaPagabile(dati().pagamenti.find((p) => p.id === pagamentoId));
   if (!v.ok) return fallito(v);
   cambiaPagamento(pagamentoId, { paidOn: oggi });
@@ -66,7 +67,7 @@ export async function registraPagamento(r: { clientId: string; amountCents: numb
 const togliPagamento = (id: string) => scrivi((d) => ({ ...d, pagamenti: d.pagamenti.filter((p) => p.id !== id) }));
 
 export async function rinnovaPacchetto(r: { clientId: string; lezioni?: number; mesi?: number; amountCents: number; oggi?: string }): Promise<Esito> {
-  const oggi = r.oggi ?? OGGI;
+  const oggi = r.oggi ?? giornoDiOggi();
   const c = cliente(r.clientId);
   if (!c) return { ok: false, motivo: "Cliente non trovato" };
   const prima = dati().pacchetti.find((p) => p.clientId === r.clientId);
@@ -97,7 +98,7 @@ export async function rinnovaPacchetto(r: { clientId: string; lezioni?: number; 
 
 // ——— Misure, obiettivo, note ———
 
-export async function aggiungiMisura(m: Omit<Misura, "id">, oggi = OGGI): Promise<Esito> {
+export async function aggiungiMisura(m: Omit<Misura, "id">, oggi = giornoDiOggi()): Promise<Esito> {
   const c = cliente(m.clientId);
   if (!c) return { ok: false, motivo: "Cliente non trovato" };
   const v = controllaMisura(m, oggi);
@@ -130,7 +131,7 @@ export async function aggiungiMisura(m: Omit<Misura, "id">, oggi = OGGI): Promis
 
 const CIRCONFERENZE_CLIENTE = ["waistCm", "hipsCm", "chestCm", "armCm", "thighCm"] as const;
 
-export async function misureDalCliente(m: Omit<Misura, "id" | "daConfermare">, oggi = OGGI): Promise<Esito & { inAttesa?: boolean }> {
+export async function misureDalCliente(m: Omit<Misura, "id" | "daConfermare">, oggi = giornoDiOggi()): Promise<Esito & { inAttesa?: boolean }> {
   const v = controllaMisura(m, oggi);
   if (!v.ok) return fallito(v);
   const giri = Object.fromEntries(CIRCONFERENZE_CLIENTE.flatMap((k) => (m[k] === undefined ? [] : [[k, m[k]]])));
@@ -163,7 +164,7 @@ export async function rifiutaMisura(id: string): Promise<Esito> {
 }
 
 // Alla registrazione il cliente propone peso di partenza e traguardo; vale quando il trainer lo conferma.
-export async function proponiObiettivo(clientId: string, start: number, target: number, oggi = OGGI): Promise<Esito> {
+export async function proponiObiettivo(clientId: string, start: number, target: number, oggi = giornoDiOggi()): Promise<Esito> {
   if (!cliente(clientId)) return { ok: false, motivo: "Cliente non trovato" };
   for (const [peso, nome] of [[start, "Il peso di oggi"], [target, "Il peso che vuoi raggiungere"]] as const) {
     const v = controllaMisura({ clientId, takenOn: oggi, weightKg: peso }, oggi);
@@ -227,7 +228,7 @@ export async function aggiornaObiettivo(clientId: string, patch: { goalLabel?: s
   };
 }
 
-export async function aggiungiNota(clientId: string, testo: string, oggi = OGGI): Promise<Esito> {
+export async function aggiungiNota(clientId: string, testo: string, oggi = giornoDiOggi()): Promise<Esito> {
   const c = cliente(clientId);
   if (!c) return { ok: false, motivo: "Cliente non trovato" };
   const t = testo.trim();
@@ -247,7 +248,7 @@ export async function aggiungiNota(clientId: string, testo: string, oggi = OGGI)
 
 // ——— Clienti e messaggi ———
 
-export async function creaCliente(r: { name: string; gender: "donna" | "uomo"; email?: string; goalLabel?: string }, oggi = OGGI): Promise<Esito> {
+export async function creaCliente(r: { name: string; gender: "donna" | "uomo"; email?: string; goalLabel?: string }, oggi = giornoDiOggi()): Promise<Esito> {
   const elenco = dati().clienti;
   const v = controllaNuovoCliente(r.name, elenco);
   if (!v.ok) return fallito(v);

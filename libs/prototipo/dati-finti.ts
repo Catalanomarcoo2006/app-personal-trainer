@@ -1,5 +1,10 @@
 // Dati inventati per il prototipo visivo (Task 1). Nessun dato reale.
-// "Oggi" nel prototipo è mercoledì 21 ottobre 2026, ore 10:20.
+// "Oggi" nel prototipo è mercoledì 21 ottobre 2026, ore 10:20 (libs/orologio.ts); nella versione vera
+// giorno e ora sono quelli di adesso: today, month e now si calcolano a ogni lettura.
+
+import { adesso, oggi } from "@/libs/orologio";
+
+const MESI_TITOLO = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 
 export const trainer = {
   name: "Marco Rossi",
@@ -7,9 +12,19 @@ export const trainer = {
   initials: "MR",
   photo: "/prototipo/trainer-foto.jpg",
   color: "#FF6B2C",
-  today: "21 Ottobre",
-  month: "Ottobre 2026",
-  now: "10:20",
+  // "21 Ottobre"
+  get today() {
+    const o = oggi();
+    return `${Number(o.slice(8, 10))} ${MESI_TITOLO[Number(o.slice(5, 7)) - 1]}`;
+  },
+  // "Ottobre 2026"
+  get month() {
+    const o = oggi();
+    return `${MESI_TITOLO[Number(o.slice(5, 7)) - 1]} ${o.slice(0, 4)}`;
+  },
+  get now() {
+    return adesso();
+  },
 };
 
 // ——— Clienti ———

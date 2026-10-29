@@ -20,7 +20,8 @@ import { ClientAvatar } from "../shared";
 import { navigate, ROUTES } from "../nav";
 import { fineDi, LinkTitoletto, minutiDi, Riga, Titoletto } from "./pezzi";
 
-const ORA = minutiDi(ADESSO.ora);
+// i minuti di adesso (nella demo le 10:20)
+const oraAdesso = () => minutiDi(ADESSO.ora);
 
 // 40 → "tra 40 minuti", 130 → "tra 2 h 10 min"
 function traQuanto(min: number): string {
@@ -36,7 +37,7 @@ export function OggiTelefono() {
     useStato((s) => s.sedute),
     ADESSO.data,
   );
-  const prossima = sedute.find((s) => minutiDi(s.time) + s.minutes > ORA);
+  const prossima = sedute.find((s) => minutiDi(s.time) + s.minutes > oraAdesso());
 
   return (
     <>
@@ -54,7 +55,7 @@ export function OggiTelefono() {
 function ProssimaSeduta({ s }: { s: Seduta }) {
   const c = useTrovaCliente()(s.clientId);
   const reduce = useReducedMotion();
-  const manca = minutiDi(s.time) - ORA;
+  const manca = minutiDi(s.time) - oraAdesso();
   const inCorso = manca <= 0;
   return (
     <motion.button
@@ -108,7 +109,7 @@ function GiornataFinita({ fatte }: { fatte: number }) {
 // Le sedute di oggi su una linea verticale: pallino pieno per quelle fatte, il segno di "adesso" al suo posto.
 function LineaDelTempo({ sedute }: { sedute: Seduta[] }) {
   const trova = useTrovaCliente();
-  const primaFutura = sedute.findIndex((s) => minutiDi(s.time) + s.minutes > ORA);
+  const primaFutura = sedute.findIndex((s) => minutiDi(s.time) + s.minutes > oraAdesso());
   const adessoPrima = primaFutura === -1 ? sedute.length : primaFutura;
 
   const Adesso = (
@@ -130,8 +131,8 @@ function LineaDelTempo({ sedute }: { sedute: Seduta[] }) {
       {sedute.map((s, i) => {
         const c = trova(s.clientId);
         const inizio = minutiDi(s.time);
-        const fatta = inizio + s.minutes <= ORA;
-        const ora = inizio <= ORA && !fatta;
+        const fatta = inizio + s.minutes <= oraAdesso();
+        const ora = inizio <= oraAdesso() && !fatta;
         return (
           <Fragment key={s.id}>
             {i === adessoPrima && !ora && Adesso}

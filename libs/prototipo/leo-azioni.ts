@@ -3,12 +3,13 @@
 // Con Supabase gli stessi schemi e controlli passeranno lato server.
 
 import { z } from "zod";
-import { clientById, trainer, type Appointment, type AppointmentType } from "./dati-finti";
+import { clientById, type Appointment, type AppointmentType } from "./dati-finti";
 import type { DatiClienti } from "@/libs/dati/tipi";
 import { cosaImpostazioni, riassuntoImpostazioni, SchemiImpostazioni, TOOLS_IMPOSTAZIONI, verificaImpostazioni, type AzioneImpostazioni } from "./leo-azioni-impostazioni";
 import { cosaClienti, eClienti, inChiaroClienti, primaDopoClienti, riassuntoClienti, SchemiClienti, suDatiCliente, TOOLS_CLIENTI, verificaClienti, type AzioneClienti } from "./leo-azioni-clienti";
 import { cosaSoldi, eSoldi, inChiaroSoldi, riassuntoSoldi, SchemiSoldi, TOOLS_SOLDI, verificaSoldi, type AzioneSoldi } from "./leo-azioni-soldi";
 import { giornoDi, isoDi } from "./calendario";
+import { adesso, oggi } from "@/libs/orologio";
 import { clienteDa } from "./leo-contesto";
 import { no, type Verifica } from "@/libs/domain/verifica";
 
@@ -31,9 +32,17 @@ export type DatiLeo = { sedute: Seduta[]; dati: DatiClienti };
 export const MAX_AZIONI = 10;
 export const TIPI: AppointmentType[] = ["Workout", "Valutazione", "Online", "Corsa"];
 
-// La demo è ferma a mercoledì 21 ottobre 2026; Leo agisce su questa settimana (19–25) e sulla prossima.
-export const ADESSO = { data: "2026-10-21", ora: trainer.now } as const;
-export const GIORNI_LEO: string[] = Array.from({ length: 14 }, (_, i) => isoDi(giornoDi(0, i)));
+// Giorno e ora di adesso (nella demo fermi a mercoledì 21 ottobre 2026, 10:20: libs/orologio.ts).
+// Leo agisce su questa settimana e sulla prossima.
+export const ADESSO = {
+  get data() {
+    return oggi();
+  },
+  get ora() {
+    return adesso();
+  },
+};
+export const giorniLeo = (): string[] => Array.from({ length: 14 }, (_, i) => isoDi(giornoDi(0, i)));
 
 const ORA_INIZIO = 6 * 60;
 const ORA_FINE = 22 * 60;
@@ -120,7 +129,7 @@ const esiste = (d: DatiLeo, id: string) => d.dati.clienti.some((c) => c.id === i
 export const personalizza = (testo: string, nomeCompleto: string) => testo.replaceAll("{nome}", nomeCompleto.split(" ")[0]);
 
 function controllaOrario(data: string, ora: string, durata: number, sedute: Seduta[], adesso: { data: string; ora: string }, esclusa?: string): Verifica {
-  if (!GIORNI_LEO.includes(data)) return no("Posso agire solo su questa settimana e sulla prossima");
+  if (!giorniLeo().includes(data)) return no("Posso agire solo su questa settimana e sulla prossima");
   const inizio = toMinutes(ora);
   if (data < adesso.data || (data === adesso.data && inizio < toMinutes(adesso.ora))) return no("Quell'orario è già passato");
   if (durata < DURATA.min || durata > DURATA.max) return no(`La durata va da ${DURATA.min} a ${DURATA.max} minuti`);

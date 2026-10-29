@@ -11,7 +11,7 @@ import { playSound } from "@/libs/ui/sound";
 import { useStato } from "@/libs/prototipo/stato";
 import { confermaMisura, confermaObiettivo, misureInAttesa, rifiutaMisura, rifiutaObiettivo, type Esito } from "@/libs/dati/sportello";
 import { dataBreve } from "@/libs/dati/vista";
-import { OGGI } from "@/libs/dati/iniziali";
+import { oggi as giornoDiOggi } from "@/libs/orologio";
 import type { Misura } from "@/libs/dati/tipi";
 
 const GIRI: [keyof Misura, string][] = [
@@ -80,7 +80,7 @@ export function DaConfermare({ clientId, nome, posto = "absolute right-[30px] bo
             {attesa.map((m) => (
               <li key={m.id} className="flex items-center gap-[8px] border-t border-line/70 py-[7px] text-[11.5px]">
                 <span className="min-w-0 flex-1 leading-snug">
-                  <b>{m.takenOn === OGGI ? "Oggi" : dataBreve(m.takenOn)}</b>:{" "}
+                  <b>{m.takenOn === giornoDiOggi() ? "Oggi" : dataBreve(m.takenOn)}</b>:{" "}
                   {GIRI.filter(([k]) => m[k] !== undefined)
                     .map(([k, l]) => `${l} ${numero(m[k] as number)}`)
                     .join(" · ")}{" "}

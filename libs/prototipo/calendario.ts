@@ -11,8 +11,9 @@ export const LONG = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì"
 // Le settimane su cui Leo può agire (e che vivono nello store): questa e la prossima.
 export const SETTIMANE_LEO = [0, 1];
 
-export const giornoDi = (offset: number, i: number) => new Date(2026, 9, 19 + offset * 7 + i);
-export const isoDi = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+// giornoDi(offset, i): il giorno i (0 = lunedì) della settimana di oggi spostata di offset settimane (libs/orologio.ts)
+export { giornoDi, isoDi } from "@/libs/orologio";
+import { giornoDi, isoDi } from "@/libs/orologio";
 
 // Le sedute della demo per un giorno: le altre settimane riusano i giorni feriali di questa, mescolati; la domenica resta libera.
 export function seduteDemo(offset: number, i: number): Appointment[] {

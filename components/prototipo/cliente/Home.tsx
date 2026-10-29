@@ -15,10 +15,11 @@ import { useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
 import { navigate } from "@/components/prototipo/trainer/nav";
 import { useSpunte } from "./spunte";
 import { ROTTE_CLIENTE } from "./nav";
-import { CLIENTE_DEMO, giornoDetto, OGGI, useScheda } from "./scheda";
+import { CLIENTE_IO, giornoDetto, useScheda } from "./scheda";
+import { indiceOggi } from "@/libs/orologio";
 import { PromemoriaPesata } from "./pesata";
 
-export { CLIENTE_DEMO };
+export { CLIENTE_IO };
 const GIORNI = [0, 1, 2, 3, 4]; // da lunedì a venerdì, come il riferimento
 
 // Entrata a cascata delle schede: ognuna 60 ms dopo la precedente.
@@ -57,7 +58,7 @@ function useSeduteDiGiulia() {
   const sedute = useStato((s) => s.sedute);
   return (giorno: number) =>
     sedute
-      .filter((s) => s.clientId === CLIENTE_DEMO && s.date === isoDi(giornoDi(0, giorno)))
+      .filter((s) => s.clientId === CLIENTE_IO && s.date === isoDi(giornoDi(0, giorno)))
       .sort((a, b) => a.time.localeCompare(b.time));
 }
 
@@ -136,6 +137,7 @@ function AllenamentoDiOggi() {
 }
 
 function Agenda() {
+  const OGGI = indiceOggi(); // 0 = lunedì
   const seduteDi = useSeduteDiGiulia();
   // si parte dal primo giorno, da oggi in poi, con una seduta; se non ce ne sono, da oggi
   const [scelto, setScelto] = useState(() => GIORNI.find((g) => g >= OGGI && seduteDi(g).length) ?? OGGI);

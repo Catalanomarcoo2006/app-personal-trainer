@@ -26,7 +26,8 @@ import { navigate, ROUTES } from "../nav";
 import { ClientAvatar } from "../shared";
 import { fineDi, minutiDi, Riga, Riquadro, Titoletto, Vuoto } from "./pezzi";
 
-const ORA = minutiDi(ADESSO.ora);
+// i minuti di adesso (nella demo le 10:20)
+const oraAdesso = () => minutiDi(ADESSO.ora);
 
 // Una seduta: ora e fine a sinistra (i numeri in evidenza), il cliente, il tipo e il posto.
 // Quelle già finite sono spente; quella in corso ha la scritta "Adesso".
@@ -34,8 +35,8 @@ function RigaSeduta({ s, onClick }: { s: Seduta; onClick: () => void }) {
   const c = useTrovaCliente()(s.clientId);
   const oggi = s.date === ADESSO.data;
   const inizio = minutiDi(s.time);
-  const finita = s.date < ADESSO.data || (oggi && inizio + s.minutes <= ORA);
-  const adesso = oggi && inizio <= ORA && ORA < inizio + s.minutes;
+  const finita = s.date < ADESSO.data || (oggi && inizio + s.minutes <= oraAdesso());
+  const adesso = oggi && inizio <= oraAdesso() && oraAdesso() < inizio + s.minutes;
   return (
     <Riga
       onClick={onClick}
@@ -58,7 +59,8 @@ function RigaSeduta({ s, onClick }: { s: Seduta; onClick: () => void }) {
   );
 }
 
-const GIORNI = [0, 1].map((w) => Array.from({ length: 7 }, (_, i) => giornoDi(w, i)));
+// questa settimana e la prossima (calcolate a ogni disegno: nella versione vera il giorno cambia)
+const settimane = () => [0, 1].map((w) => Array.from({ length: 7 }, (_, i) => giornoDi(w, i)));
 const DURATE = [30, 45, 60, 90];
 
 export const giornoLungo = (iso: string) => {
@@ -72,7 +74,7 @@ function Giorni({ scelto, onScegli }: { scelto: string; onScegli: (iso: string) 
   const sedute = useStato((s) => s.sedute);
   return (
     <div className="flex flex-col gap-[6px]">
-      {GIORNI.map((settimana, w) => (
+      {settimane().map((settimana, w) => (
         <div key={w} className="grid grid-cols-7 gap-[4px]">
           {settimana.map((d, i) => {
             const iso = isoDi(d);

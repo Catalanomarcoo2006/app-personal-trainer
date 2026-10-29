@@ -18,11 +18,11 @@ import { useStato } from "@/libs/prototipo/stato";
 import { impostaPesata, misureDalCliente, misureInAttesa } from "@/libs/dati/sportello";
 import { FREQUENZE } from "@/libs/domain/pesate";
 import { quandoPesata, usePesata } from "./pesata";
-import { OGGI } from "@/libs/dati/iniziali";
+import { oggi as giornoDiOggi } from "@/libs/orologio";
 import { dataBreve } from "@/libs/dati/vista";
 import type { Misura } from "@/libs/dati/tipi";
 import { Foglio } from "./Foglio";
-import { CLIENTE_DEMO } from "./scheda";
+import { CLIENTE_IO } from "./scheda";
 import { ID_FOGLI } from "./nav";
 
 const nomeTrainer = trainer.name.split(" ")[0];
@@ -47,7 +47,7 @@ function AggiungiMisure({ aperto, onChiudi }: { aperto: boolean; onChiudi: () =>
     onChiudi();
   };
   const salva = async () => {
-    const m: Omit<Misura, "id"> = { clientId: CLIENTE_DEMO, takenOn: OGGI };
+    const m: Omit<Misura, "id"> = { clientId: CLIENTE_IO, takenOn: giornoDiOggi() };
     for (const c of CAMPI) {
       const v = leggi(valori[c.k] ?? "");
       if (v !== undefined && Number.isNaN(v)) return setErrore(`${c.label}: scrivi solo il numero, per esempio 68,5`);
@@ -93,13 +93,13 @@ function AggiungiMisure({ aperto, onChiudi }: { aperto: boolean; onChiudi: () =>
 }
 
 export function Progressi() {
-  const c = useCliente(CLIENTE_DEMO);
+  const c = useCliente(CLIENTE_IO);
   const d = useStato((s) => s.dati);
   const tutte = d.misure;
-  const attesa = useMemo(() => misureInAttesa(d, CLIENTE_DEMO), [d]);
-  const proposto = d.clienti.find((x) => x.id === CLIENTE_DEMO)?.obiettivoProposto;
+  const attesa = useMemo(() => misureInAttesa(d, CLIENTE_IO), [d]);
+  const proposto = d.clienti.find((x) => x.id === CLIENTE_IO)?.obiettivoProposto;
   const pesata = usePesata();
-  const righe = useMemo(() => tutte.filter((m) => m.clientId === CLIENTE_DEMO && !m.daConfermare).sort((a, b) => b.takenOn.localeCompare(a.takenOn)), [tutte]);
+  const righe = useMemo(() => tutte.filter((m) => m.clientId === CLIENTE_IO && !m.daConfermare).sort((a, b) => b.takenOn.localeCompare(a.takenOn)), [tutte]);
   const [aggiungi, setAggiungi] = useState(false);
   // il punto d'aggancio dei fogli c'è solo dopo il primo disegno
   const [fogli, setFogli] = useState<HTMLElement | null>(null);
@@ -170,7 +170,7 @@ export function Progressi() {
                 onClick={() => {
                   if (x.f === pesata.frequenza) return;
                   playSound("tap");
-                  void impostaPesata(CLIENTE_DEMO, x.f);
+                  void impostaPesata(CLIENTE_IO, x.f);
                 }}
                 className={`cursor-pointer rounded-full px-[9px] py-[5px] text-[11px] font-semibold ${x.f === pesata.frequenza ? "sel-trainer" : "bg-ink/5 text-ink/60"}`}
               >
@@ -215,7 +215,7 @@ export function Progressi() {
           <ul className="mt-[6px]">
             {attesa.map((r) => (
               <li key={r.id} className="flex items-center gap-[10px] py-[8px] text-[12.5px]">
-                <span className="w-[52px] shrink-0 font-semibold text-muted">{r.takenOn === OGGI ? "Oggi" : dataBreve(r.takenOn)}</span>
+                <span className="w-[52px] shrink-0 font-semibold text-muted">{r.takenOn === giornoDiOggi() ? "Oggi" : dataBreve(r.takenOn)}</span>
                 <span className="min-w-0 flex-1 text-ink/75">
                   {CAMPI.slice(1)
                     .filter((x) => r[x.k] !== undefined)
@@ -238,7 +238,7 @@ export function Progressi() {
             const giri = CAMPI.slice(1).filter((x) => r[x.k] !== undefined);
             return (
               <li key={r.id} className="flex items-center gap-[10px] border-b border-line/70 py-[10px] last:border-0">
-                <span className="w-[52px] shrink-0 text-[12px] font-semibold text-muted">{r.takenOn === OGGI ? "Oggi" : dataBreve(r.takenOn)}</span>
+                <span className="w-[52px] shrink-0 text-[12px] font-semibold text-muted">{r.takenOn === giornoDiOggi() ? "Oggi" : dataBreve(r.takenOn)}</span>
                 <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink/75">{giri.length ? giri.map((x) => `${x.label} ${numero(r[x.k] as number)}`).join(" · ") : "Solo peso"}</span>
                 {r.weightKg !== undefined && <b className="shrink-0 text-[14px] font-extrabold tabular-nums">{numero(r.weightKg)} kg</b>}
               </li>

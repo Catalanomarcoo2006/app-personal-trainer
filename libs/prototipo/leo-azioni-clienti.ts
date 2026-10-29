@@ -7,7 +7,7 @@ import { z } from "zod";
 import { controllaNuovoCliente } from "@/libs/domain/clients";
 import { controllaMisura } from "@/libs/domain/measurements";
 import { no, OK, type Verifica } from "@/libs/domain/verifica";
-import { OGGI } from "@/libs/dati/iniziali";
+import { oggi as giornoDiOggi } from "@/libs/orologio";
 import type { DatiClienti, Misura } from "@/libs/dati/tipi";
 
 export type AzioneClienti =
@@ -67,7 +67,7 @@ const CAMPI = [
 
 // La rilevazione da salvare, con solo i valori presenti.
 export function misuraDa(a: Extract<AzioneClienti, { nome: "aggiorna_misure" }>): Omit<Misura, "id"> {
-  const m: Omit<Misura, "id"> = { clientId: a.dati.cliente, takenOn: a.dati.data ?? OGGI };
+  const m: Omit<Misura, "id"> = { clientId: a.dati.cliente, takenOn: a.dati.data ?? giornoDiOggi() };
   for (const [da, a_] of CAMPI) if (a.dati[da] !== undefined) m[a_] = a.dati[da];
   return m;
 }
@@ -79,7 +79,7 @@ export function verificaClienti(a: AzioneClienti, d: DatiClienti): Verifica {
   if (!clienteDi(d, a.dati.cliente)) return no("Cliente non trovato");
   switch (a.nome) {
     case "aggiorna_misure":
-      return controllaMisura(misuraDa(a), OGGI);
+      return controllaMisura(misuraDa(a), giornoDiOggi());
     case "aggiorna_obiettivo":
       return a.dati.descrizione || a.dati.traguardo !== undefined || a.dati.unita ? OK : no("Niente da cambiare nell'obiettivo");
     case "aggiungi_nota":

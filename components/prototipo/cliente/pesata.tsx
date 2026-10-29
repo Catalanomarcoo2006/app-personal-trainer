@@ -9,10 +9,10 @@ import toast from "react-hot-toast";
 import { playSound } from "@/libs/ui/sound";
 import { useStato } from "@/libs/prototipo/stato";
 import { misureDalCliente } from "@/libs/dati/sportello";
-import { OGGI } from "@/libs/dati/iniziali";
+import { oggi as giornoDiOggi } from "@/libs/orologio";
 import { dataBreve } from "@/libs/dati/vista";
 import { FREQUENZE, pesataDovuta, prossimaPesata, type Frequenza } from "@/libs/domain/pesate";
-import { CLIENTE_DEMO, giornoDetto } from "./scheda";
+import { CLIENTE_IO, giornoDetto } from "./scheda";
 
 const PESATA_DETTA: Record<Frequenza, string> = { giorno: "La pesata di oggi", settimana: "La pesata della settimana", mese: "La pesata del mese" };
 const numero = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
@@ -20,16 +20,16 @@ const numero = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits:
 export function usePesata() {
   const d = useStato((s) => s.dati);
   return useMemo(() => {
-    const frequenza: Frequenza = d.clienti.find((c) => c.id === CLIENTE_DEMO)?.pesata ?? "settimana";
-    const pesi = d.misure.filter((m) => m.clientId === CLIENTE_DEMO && m.weightKg !== undefined && !m.daConfermare).sort((a, b) => a.takenOn.localeCompare(b.takenOn));
+    const frequenza: Frequenza = d.clienti.find((c) => c.id === CLIENTE_IO)?.pesata ?? "settimana";
+    const pesi = d.misure.filter((m) => m.clientId === CLIENTE_IO && m.weightKg !== undefined && !m.daConfermare).sort((a, b) => a.takenOn.localeCompare(b.takenOn));
     const ultima = pesi[pesi.length - 1];
-    const prossima = ultima ? prossimaPesata(ultima.takenOn, frequenza) : OGGI;
-    return { frequenza, ultima, prossima, dovuta: pesataDovuta(ultima?.takenOn, OGGI, frequenza), detta: FREQUENZE.find((x) => x.f === frequenza)!.label.toLowerCase() };
+    const prossima = ultima ? prossimaPesata(ultima.takenOn, frequenza) : giornoDiOggi();
+    return { frequenza, ultima, prossima, dovuta: pesataDovuta(ultima?.takenOn, giornoDiOggi(), frequenza), detta: FREQUENZE.find((x) => x.f === frequenza)!.label.toLowerCase() };
   }, [d]);
 }
 
 // "Prossima pesata: mercoledì 28" / "oggi"
-export const quandoPesata = (iso: string) => (iso <= OGGI ? "oggi" : giornoDetto(iso).toLowerCase());
+export const quandoPesata = (iso: string) => (iso <= giornoDiOggi() ? "oggi" : giornoDetto(iso).toLowerCase());
 
 export function PromemoriaPesata() {
   const { dovuta, ultima, frequenza } = usePesata();
@@ -39,7 +39,7 @@ export function PromemoriaPesata() {
   const salva = async () => {
     const n = Number(peso.trim().replace(",", "."));
     if (!peso.trim() || Number.isNaN(n)) return setErrore("Scrivi il peso, per esempio 68,5");
-    const esito = await misureDalCliente({ clientId: CLIENTE_DEMO, takenOn: OGGI, weightKg: n });
+    const esito = await misureDalCliente({ clientId: CLIENTE_IO, takenOn: giornoDiOggi(), weightKg: n });
     if ("motivo" in esito) return setErrore(esito.motivo);
     playSound("complete");
     const diff = ultima?.weightKg !== undefined ? n - ultima.weightKg : 0;
