@@ -8,7 +8,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, ArrowUp, Mic, Paperclip, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Paperclip, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { ACCETTATI, leggiFile } from "@/libs/prototipo/leo-file";
@@ -40,7 +40,7 @@ function Puntini({ ragiona }: { ragiona: boolean }) {
   );
 }
 
-// bozza e voce arrivano da fuori: il vocale parte anche tenendo premuta la faccia di Leo, a foglio chiuso.
+// bozza e voce arrivano da TrainerTelefono (la casella resta uguale chiudendo e riaprendo il foglio).
 export function LeoTelefono({ chat, aperto, onChiudi, bozza, setBozza, voce }: { chat: Chat; aperto: boolean; onChiudi: () => void; bozza: string; setBozza: (t: string) => void; voce: VoceLeo }) {
   const reduce = useReducedMotion();
   const { messages, typing, thinking, ask, conferma, confermaTutte, segnaModifica, rifiuta, annulla, compatta } = chat;
@@ -141,7 +141,7 @@ export function LeoTelefono({ chat, aperto, onChiudi, bozza, setBozza, voce }: {
                   {!messages.length && (
                     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                       <p className="glass-row max-w-[88%] rounded-[18px] rounded-bl-[6px] px-[13px] py-[10px] text-[14px] leading-snug">
-                        Ciao {primo}! Dimmi cosa fare: fisso e sposto sedute, scrivo ai clienti, aggiorno misure e note. Anche a voce: tieni premuta la mia faccia e parla 🎙️ Pagamenti e pacchetti li trovi sul computer.
+                        Ciao {primo}! Dimmi cosa fare: fisso e sposto sedute, scrivo ai clienti, aggiorno misure e note. Anche a voce: tieni premuta la mia faccia, dimmi cosa fare e lo faccio 🎙️ Pagamenti e pacchetti li trovi sul computer.
                       </p>
                       <div className="mt-[12px] flex flex-wrap gap-[7px]">
                         {PRONTE.map((d) => (
@@ -264,128 +264,3 @@ export function LeoTelefono({ chat, aperto, onChiudi, bozza, setBozza, voce }: {
     </>
   );
 }
-
-// Il tasto di Leo che resta a portata di pollice in tutte le sezioni (tranne dove c'è la casella dei messaggi).
-// Un tocco apre la chat; tenendo premuto parte il vocale (Marco, 30/10), lasciando finisce e si apre la chat con
-// il messaggio e la risposta. Lasciato prima che il microfono sia acceso, il vocale si annulla.
-// Senza dettatura nel browser (Firefox) tenere premuto apre la chat come un tocco.
-const TIENI_MS = 320;
-
-export function TastoLeo({ voce, testo, onApri }: { voce: VoceLeo; testo: string; onApri: () => void }) {
-  const reduce = useReducedMotion();
-  const timer = useRef(0);
-  const [tenuto, setTenuto] = useState(false);
-  const tenutoRef = useRef(false);
-  const [consiglio, setConsiglio] = useState(false);
-  const acceso = voce.fase === "in-ascolto";
-
-  // il consiglio "tieni premuto per parlare" compare una volta per scheda del browser, poco dopo l'apertura
-  useEffect(() => {
-    if (!voce.disponibile || consiglioVisto) return;
-    consiglioVisto = true;
-    const su = window.setTimeout(() => setConsiglio(true), 1200);
-    const giu = window.setTimeout(() => setConsiglio(false), 6500);
-    return () => {
-      window.clearTimeout(su);
-      window.clearTimeout(giu);
-    };
-  }, [voce.disponibile]);
-
-  const giu = () => {
-    window.clearTimeout(timer.current);
-    if (!voce.disponibile || voce.bloccato) return;
-    timer.current = window.setTimeout(() => {
-      tenutoRef.current = true;
-      setTenuto(true);
-      setConsiglio(false);
-      navigator.vibrate?.(15);
-      voce.tasto.onClick(); // inizia
-    }, TIENI_MS);
-  };
-  const su = () => {
-    window.clearTimeout(timer.current);
-    if (!tenutoRef.current) return;
-    tenutoRef.current = false;
-    setTenuto(false);
-    if (voce.fase === "in-ascolto") voce.tasto.onClick(); // finisce: il testo va a Leo (o resta da rivedere)
-    else voce.annulla();
-    onApri();
-  };
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-
-  return (
-    <>
-      <AnimatePresence>
-        {(tenuto || consiglio) && (
-          <motion.div
-            key={tenuto ? "ascolto" : "consiglio"}
-            initial={{ opacity: 0, y: 8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.96 }}
-            transition={{ duration: 0.2 }}
-            className="glass glass-3d pointer-events-none absolute right-[18px] z-40 max-w-[260px] origin-bottom-right rounded-[18px] rounded-br-[6px] px-[13px] py-[9px] text-[13px] leading-snug"
-            style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 142px)" }}
-          >
-            {tenuto ? (
-              <>
-                <p className="flex items-center gap-[6px] font-bold" style={{ color: "var(--trainer)" }}>
-                  <span className="size-[8px] animate-pulse rounded-full" style={{ background: "var(--trainer)" }} />
-                  {acceso ? "Ti ascolto… lascia per mandare" : "Accendo il microfono…"}
-                </p>
-                {acceso && testo && <p className="mt-[4px] line-clamp-3 text-ink/80">{testo}</p>}
-              </>
-            ) : (
-              <p>
-                <b>Tocca</b> per scrivere a Leo, <b>tieni premuto</b> per parlargli
-              </p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <motion.button
-        type="button"
-        aria-label="Leo: tocca per scrivere, tieni premuto per un vocale"
-        initial={{ scale: reduce ? 1 : 0.6, opacity: 0 }}
-        animate={{ scale: tenuto && !reduce ? 1.18 : 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 420, damping: 24 }}
-        onPointerDown={giu}
-        onPointerUp={su}
-        onPointerCancel={su}
-        onPointerLeave={() => tenutoRef.current || window.clearTimeout(timer.current)}
-        onContextMenu={(e) => e.preventDefault()}
-        onClick={() => {
-          if (tenuto) return;
-          playSound("open");
-          onApri();
-        }}
-        className="glass glass-3d absolute right-[18px] z-40 grid size-[56px] cursor-pointer touch-none place-items-center rounded-full select-none [-webkit-touch-callout:none]"
-        style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 76px)", boxShadow: "0 10px 26px -8px color-mix(in srgb, var(--trainer) 70%, transparent)" }}
-      >
-        {/* le onde mentre ascolta */}
-        {acceso &&
-          !reduce &&
-          [0, 0.5].map((r) => (
-            <motion.span
-              key={r}
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full"
-              style={{ background: "var(--trainer)" }}
-              initial={{ scale: 1, opacity: 0.35 }}
-              animate={{ scale: 1.9, opacity: 0 }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: r }}
-            />
-          ))}
-        <span className="relative">
-          <CoachFace size={40} />
-        </span>
-        {acceso && (
-          <span className="absolute -top-[2px] -right-[2px] grid size-[20px] place-items-center rounded-full text-white" style={{ background: "var(--trainer)" }}>
-            <Mic size={11} strokeWidth={2.6} />
-          </span>
-        )}
-      </motion.button>
-    </>
-  );
-}
-
-let consiglioVisto = false;

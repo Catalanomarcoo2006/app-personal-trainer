@@ -23,7 +23,9 @@ export type VoceLeo = {
   tasto: { onClick(): void }; // un tocco inizia, il tocco dopo finisce
 };
 
-export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: string): void; invia(testo: string): void }): VoceLeo {
+// sempreInvia: il testo dettato parte sempre, senza la scelta "subito / rivedi" (il vocale tenendo premuta la faccia
+// di Leo da telefono: Leo esegue e basta).
+export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: string): void; invia(testo: string): void; sempreInvia?: boolean }): VoceLeo {
   const [scelta, salvaScelta] = useSceltaVocali();
   const [disponibile, setDisponibile] = useState(false);
   const [fase, setFase] = useState<StatoVoce["fase"]>("fermo");
@@ -71,7 +73,7 @@ export function useVoceLeo(o: { bloccato: boolean; draft: string; setDraft(t: st
         const { setDraft, invia, scelta: scelto } = ultimi.current;
         if (!d) return setDraft(base.current);
         if (d.parziale) setErrore(messaggioErrore("interrotto"));
-        const cosa = cosaFare(scelto, d, base.current.trim() !== "");
+        const cosa = ultimi.current.sempreInvia ? "invia" : cosaFare(scelto, d, base.current.trim() !== "");
         if (cosa === "invia") {
           setDraft("");
           invia(d.testo);

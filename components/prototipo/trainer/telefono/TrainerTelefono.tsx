@@ -24,7 +24,8 @@ import { OggiTelefono } from "./Oggi";
 import { ClienteNonTrovato, ClientiTelefono, ProfiloTelefono } from "./Clienti";
 import { ChatCliente, ElencoMessaggi } from "./Messaggi";
 import { CalendarioTelefono, giornoLungo, NuovaSeduta } from "./Calendario";
-import { LeoTelefono, TastoLeo } from "./LeoTelefono";
+import { LeoTelefono } from "./LeoTelefono";
+import { TastoLeo } from "./TastoLeo";
 import { useNonLetti } from "./nonLetti";
 import { passaA } from "./forma";
 
@@ -83,7 +84,7 @@ export function TrainerTelefono() {
 
   const chat = useCoachChat({ senzaSoldi: true });
   const [leo, setLeo] = useState(false);
-  // la casella di Leo e il microfono stanno qui: il vocale parte anche dalla faccia di Leo, a foglio chiuso
+  // la casella di Leo e il suo microfono stanno qui (la faccia di Leo ha il suo: tenendola premuta Leo esegue e basta)
   const [bozza, setBozza] = useState("");
   const voce = useVoceLeo({ bloccato: chat.typing, draft: bozza, setDraft: setBozza, invia: (t) => chat.ask(t) });
   const apriLeo = useCallback(() => setLeo(true), []);
@@ -152,7 +153,7 @@ export function TrainerTelefono() {
       indietro={indietro}
       fuori={
         <>
-          {!conCliente && !leo && <TastoLeo voce={voce} testo={bozza} onApri={apriLeo} />}
+          {!conCliente && !leo && <TastoLeo chat={chat} onApri={apriLeo} />}
           <NuovaSeduta aperta={!!nuova} clientId={nuova?.clientId} date={nuova?.date} onChiudi={chiudiNuova} />
           <Account aperto={account} onChiudi={() => setAccount(false)} />
           <LeoTelefono chat={chat} aperto={leo} onChiudi={chiudiLeo} bozza={bozza} setBozza={setBozza} voce={voce} />
@@ -163,7 +164,7 @@ export function TrainerTelefono() {
       <div data-sezione={path} className="section-live sezione-telefono">
         {contenuto}
         {/* spazio per il tasto di Leo: l'ultima riga non resta sotto */}
-        {!conCliente && <div aria-hidden className="h-[56px]" />}
+        {!conCliente && <div aria-hidden className="h-[72px]" />}
       </div>
     </Guscio>
   );
