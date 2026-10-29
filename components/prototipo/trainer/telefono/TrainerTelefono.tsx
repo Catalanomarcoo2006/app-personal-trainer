@@ -26,6 +26,7 @@ import { ChatCliente, ElencoMessaggi } from "./Messaggi";
 import { CalendarioTelefono, giornoLungo, NuovaSeduta } from "./Calendario";
 import { LeoTelefono } from "./LeoTelefono";
 import { TastoLeo } from "./TastoLeo";
+import { IngressoLeo } from "@/components/prototipo/cliente/IngressoLeo";
 import { useNonLetti } from "./nonLetti";
 import { passaA } from "./forma";
 
@@ -156,6 +157,7 @@ export function TrainerTelefono() {
           {!conCliente && !leo && <TastoLeo chat={chat} onApri={apriLeo} />}
           <NuovaSeduta aperta={!!nuova} clientId={nuova?.clientId} date={nuova?.date} onChiudi={chiudiNuova} />
           <Account aperto={account} onChiudi={() => setAccount(false)} />
+          <IngressoLeo />
           <LeoTelefono chat={chat} aperto={leo} onChiudi={chiudiLeo} bozza={bozza} setBozza={setBozza} voce={voce} />
         </>
       }

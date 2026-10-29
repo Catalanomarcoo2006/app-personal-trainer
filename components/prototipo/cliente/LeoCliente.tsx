@@ -25,7 +25,9 @@ export const LEO_FOTO = "/prototipo/coach/leo-sbircia.webp";
 export const LEO_BORDO = 378 / 560;
 export const LEO_LARGO = 132; // px: piccolo, si aggrappa al bordo senza coprire lo schermo
 
-function useChatCliente() {
+// La chat con Leo del cliente: sta in ClientApp, così la usano sia il foglio sia la faccia di Leo (vocale tenuto premuto).
+export type ChatCliente = ReturnType<typeof useChatCliente>;
+export function useChatCliente() {
   const [messaggi, setMessaggi] = useState<Msg[]>([]);
   const [scrive, setScrive] = useState(false); // i tre puntini, finché non arriva il primo pezzo
   const occupato = useRef(false);
@@ -145,9 +147,9 @@ function Puntini() {
   );
 }
 
-export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: () => void }) {
+export function LeoCliente({ chat, aperto, onChiudi }: { chat: ChatCliente; aperto: boolean; onChiudi: () => void }) {
   const reduce = useReducedMotion();
-  const { messaggi, scrive, risponde, chiedi } = useChatCliente();
+  const { messaggi, scrive, risponde, chiedi } = chat;
   const [bozza, setBozza] = useState("");
   const lista = useRef<HTMLDivElement>(null);
   // vocali: come nella chat del trainer (la dettatura del browser: solo con dati finti, regole del progetto)

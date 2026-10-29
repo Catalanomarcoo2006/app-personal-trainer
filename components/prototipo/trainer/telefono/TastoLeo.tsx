@@ -1,44 +1,64 @@
 "use client";
 
-// La faccia di Leo in basso a destra, nel trainer da telefono (tranne nella chat con un cliente).
-// Un tocco apre la chat. Tenendola premuta si parla a Leo e Leo FA, senza aprire la chat (Marco, 30/10): lasciando,
-// il testo parte da solo e sopra la faccia un fumetto dice cosa hai detto, cosa risponde Leo e come vanno le azioni;
-// quelle da confermare (cancellare, scrivere ai clienti) si confermano lì. Il viaggio delle azioni (calendario,
-// messaggi, profilo) si vede nell'app come dalla chat.
+// La faccia di Leo in basso a destra, nelle app da telefono: trainer (dal 30/10) e cliente (dal 30/10, al posto del
+// riquadro "Chiedi a Leo": stesso Leo, stesso gesto).
+// Un tocco apre la chat. Tenendola premuta si parla a Leo senza aprire la chat (Marco, 30/10): lasciando, il testo parte
+// da solo e sopra la faccia un fumetto dice cosa hai detto e cosa risponde Leo. Nel trainer Leo fa: azioni e conferme
+// stanno nel fumetto, il viaggio si vede nell'app (TastoLeoTrainer). Nel cliente risponde (cliente/ClientApp.tsx).
 //
-// Il microfono è suo (non quello della chat): parte solo quando il browser dice che sta ascoltando ("Parla adesso",
+// Il microfono è suo (non quello della chat): si parla quando il browser dice che sta ascoltando ("Parla adesso",
 // con una vibrazione); lasciando, si ascolta ancora un attimo prima di chiudere, così le ultime parole non si perdono
 // (con lo stop immediato la dettatura del telefono spesso restituiva un testo vuoto: "Non ho sentito niente").
+// All'apertura dell'app la faccia arriva dall'animazione d'ingresso (cliente/IngressoLeo.tsx): fino ad allora è nascosta.
 
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, Clock, Loader2, Mic, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
+import { ID_FACCIA_LEO, useIngressoFatto } from "@/components/prototipo/cliente/IngressoLeo";
 import { useVoceLeo } from "../MicrofonoLeo";
 import { CoachFace } from "../leo/CoachFace";
 import type { Chat } from "../leo/useChatLeo";
 
 const TIENI_MS = 300; // da qui un tocco diventa "tieni premuto"
 const CODA_MS = 700; // quanto si ascolta ancora dopo aver lasciato
-const RESTA_MS = 7000; // il fumetto della risposta sparisce dopo, se non c'è niente da confermare
+const RESTA_MS = 7000; // il fumetto della risposta sparisce dopo, se non c'è più niente in arrivo o da confermare
 const NEON = "conic-gradient(from 0deg, var(--trainer), #ffcf5c, #7cf0d0, #7cc4ff, var(--trainer))";
 
 let consiglioVisto = false;
 
+// Il contenuto del fumetto dopo un comando: lo decide chi usa la faccia. resta: non sparire ancora.
+export type RispostaFumetto = { nodo: ReactNode; resta: boolean };
+
 type Fumetto = { tipo: "consiglio" } | { tipo: "errore"; testo: string } | { tipo: "comando"; detto: string; da: number } | null;
 
-export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
+export function FacciaLeo({
+  occupato,
+  quanti,
+  chiedi,
+  mostra,
+  consiglio,
+  onApri,
+}: {
+  occupato: boolean; // Leo sta già rispondendo: tenere premuto non parte
+  quanti: number; // messaggi nella chat adesso: la risposta al comando è dopo questi
+  chiedi: (testo: string) => void;
+  mostra: (da: number, apriChat: () => void) => RispostaFumetto;
+  consiglio: ReactNode;
+  onApri: () => void;
+}) {
   const reduce = useReducedMotion();
+  const arrivata = useIngressoFatto();
   const [bozza, setBozza] = useState("");
   const [fumetto, setFumetto] = useState<Fumetto>(null);
   const voce = useVoceLeo({
-    bloccato: chat.typing,
+    bloccato: occupato,
     draft: bozza,
     setDraft: setBozza,
     sempreInvia: true,
     invia: (t) => {
-      setFumetto({ tipo: "comando", detto: t, da: chat.messages.length }); // da: la risposta è dopo questi
-      chat.ask(t);
+      setFumetto({ tipo: "comando", detto: t, da: quanti });
+      chiedi(t);
     },
   });
   const timer = useRef(0);
@@ -47,17 +67,17 @@ export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
   const tenutoRef = useRef(false);
   const ascolta = voce.fase === "in-ascolto";
 
-  // il consiglio compare una volta per scheda del browser, poco dopo l'apertura
+  // il consiglio compare una volta per scheda del browser, poco dopo che Leo è arrivato al suo posto
   useEffect(() => {
-    if (!voce.disponibile || consiglioVisto) return;
+    if (!arrivata || !voce.disponibile || consiglioVisto) return;
     consiglioVisto = true;
-    const su = window.setTimeout(() => setFumetto((f) => f ?? { tipo: "consiglio" }), 1200);
-    const giu = window.setTimeout(() => setFumetto((f) => (f?.tipo === "consiglio" ? null : f)), 6500);
+    const su = window.setTimeout(() => setFumetto((f) => f ?? { tipo: "consiglio" }), 700);
+    const giu = window.setTimeout(() => setFumetto((f) => (f?.tipo === "consiglio" ? null : f)), 6000);
     return () => {
       window.clearTimeout(su);
       window.clearTimeout(giu);
     };
-  }, [voce.disponibile]);
+  }, [arrivata, voce.disponibile]);
 
   // il microfono è davvero acceso: vibrazione, da qui si parla
   useEffect(() => {
@@ -101,26 +121,20 @@ export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
   };
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  // la risposta di Leo a questo comando: il primo messaggio di Leo arrivato dopo
-  const risposta = fumetto?.tipo === "comando" ? chat.messages.slice(fumetto.da).find((m) => m.from === "coach") : undefined;
-  const schede = risposta?.schede ?? [];
-  const daConfermare = schede.filter((s) => s.stato === "da-confermare");
-  const inCorso = chat.typing || schede.some((s) => s.stato === "in-corso");
-
-  // finito tutto (niente da confermare, niente in corso) il fumetto se ne va da solo
-  useEffect(() => {
-    if (!fumetto || fumetto.tipo === "consiglio" || inCorso || daConfermare.length) return;
-    if (fumetto.tipo === "comando" && !risposta) return;
-    const t = window.setTimeout(() => setFumetto(null), fumetto.tipo === "errore" ? 4500 : RESTA_MS);
-    return () => window.clearTimeout(t);
-  }, [fumetto, inCorso, daConfermare.length, risposta]);
-
-  const chiudi = () => setFumetto(null);
   const apriChat = () => {
     setFumetto(null);
     playSound("open");
     onApri();
   };
+  const risposta = fumetto?.tipo === "comando" ? mostra(fumetto.da, apriChat) : null;
+  const resta = !!risposta?.resta;
+
+  // finito tutto il fumetto se ne va da solo
+  useEffect(() => {
+    if (!fumetto || fumetto.tipo === "consiglio" || resta) return;
+    const t = window.setTimeout(() => setFumetto(null), fumetto.tipo === "errore" ? 4500 : RESTA_MS);
+    return () => window.clearTimeout(t);
+  }, [fumetto, resta]);
 
   const inAscolto = tenuto || finisco;
 
@@ -150,9 +164,7 @@ export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
                 {bozza && <p className="mt-[5px] line-clamp-3 text-ink/80">{bozza}</p>}
               </>
             ) : fumetto?.tipo === "consiglio" ? (
-              <p>
-                <b>Tocca</b> per scrivere a Leo, <b>tieni premuto</b> e dimmi cosa fare: lo faccio io
-              </p>
+              <p>{consiglio}</p>
             ) : fumetto?.tipo === "errore" ? (
               <p className="font-semibold text-[#d43b4f]">{fumetto.testo}</p>
             ) : fumetto?.tipo === "comando" ? (
@@ -161,57 +173,11 @@ export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
                   <p className="min-w-0 flex-1 text-[12px] text-muted">
                     Tu: <span className="text-ink/80">«{fumetto.detto}»</span>
                   </p>
-                  <button type="button" aria-label="Chiudi" onClick={chiudi} className="-mt-[3px] -mr-[6px] grid size-[24px] shrink-0 cursor-pointer place-items-center rounded-full hover:bg-soft">
+                  <button type="button" aria-label="Chiudi" onClick={() => setFumetto(null)} className="-mt-[3px] -mr-[6px] grid size-[24px] shrink-0 cursor-pointer place-items-center rounded-full hover:bg-soft">
                     <X size={13} />
                   </button>
                 </div>
-                <button type="button" onClick={apriChat} className="mt-[6px] block w-full cursor-pointer text-left">
-                  {risposta?.text ? (
-                    <span className="line-clamp-4 font-medium">{risposta.text}</span>
-                  ) : (
-                    <span className="flex items-center gap-[6px] text-muted">
-                      <Loader2 size={13} className={reduce ? "" : "animate-spin"} /> Leo ci sta pensando…
-                    </span>
-                  )}
-                </button>
-                {schede.length > 0 && (
-                  <ul className="mt-[8px] flex flex-col gap-[5px] border-t border-line/60 pt-[8px]">
-                    {schede.map((s) => (
-                      <li key={s.key} className="flex items-start gap-[7px] text-[12px] leading-snug">
-                        <span className="mt-[1px] shrink-0">
-                          {s.stato === "fatto" ? (
-                            <Check size={13} strokeWidth={2.8} className="text-[#2f9e5b]" />
-                          ) : s.stato === "in-corso" ? (
-                            <Loader2 size={13} className={reduce ? "" : "animate-spin"} style={{ color: "var(--trainer)" }} />
-                          ) : s.stato === "da-confermare" ? (
-                            <Clock size={13} style={{ color: "var(--trainer)" }} />
-                          ) : (
-                            <X size={13} strokeWidth={2.8} className="text-[#d43b4f]" />
-                          )}
-                        </span>
-                        <span className={`min-w-0 ${s.stato === "annullato" || s.stato === "rifiutato" || s.stato === "errore" ? "text-muted" : ""}`}>
-                          {s.titolo}
-                          {(s.stato === "rifiutato" || s.stato === "errore") && <span className="block text-[11px] text-[#d43b4f]">{s.motivo ?? "Non si può fare"}</span>}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {daConfermare.length > 0 && risposta && (
-                  <div className="mt-[10px] flex gap-[6px]">
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => (daConfermare.length === 1 ? chat.conferma(risposta.id, daConfermare[0].key) : chat.confermaTutte(risposta.id))}
-                      className="btn-trainer flex h-[34px] flex-1 cursor-pointer items-center justify-center gap-[5px] rounded-full text-[12.5px] font-semibold"
-                    >
-                      <Check size={14} /> {daConfermare.length === 1 ? "Conferma" : `Conferma tutte (${daConfermare.length})`}
-                    </motion.button>
-                    <button type="button" onClick={apriChat} className="glass h-[34px] cursor-pointer rounded-full px-[12px] text-[12.5px] font-semibold">
-                      Rivedi
-                    </button>
-                  </div>
-                )}
+                {risposta?.nodo}
               </>
             ) : null}
           </motion.div>
@@ -220,10 +186,10 @@ export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
 
       <motion.button
         type="button"
-        aria-label="Leo: tocca per scrivere, tieni premuto per dirgli cosa fare"
-        initial={{ scale: reduce ? 1 : 0.6, opacity: 0 }}
-        animate={{ scale: tenuto && !reduce ? 1.15 : 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 420, damping: 24 }}
+        aria-label="Leo: tocca per scrivere, tieni premuto per parlargli"
+        initial={false}
+        animate={{ scale: tenuto && !reduce ? 1.15 : 1, opacity: arrivata ? 1 : 0 }}
+        transition={{ scale: { type: "spring", stiffness: 420, damping: 24 }, opacity: { duration: 0 } }}
         onPointerDown={giu}
         onPointerUp={su}
         onPointerCancel={su}
@@ -251,11 +217,11 @@ export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
             transition={{ duration: ascolta ? 1 : 1.9, repeat: Infinity, ease: "easeOut" }}
           />
         )}
-        {/* il bordo al neon che gira, come il tasto di Leo nell'app del cliente */}
+        {/* il bordo al neon che gira */}
         <span className="absolute inset-0 overflow-hidden rounded-full">
           <motion.span aria-hidden className="absolute top-1/2 left-1/2 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2" style={{ background: NEON }} animate={reduce ? undefined : { rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
         </span>
-        <span className="relative grid size-[62px] place-items-center rounded-full bg-white">
+        <span id={ID_FACCIA_LEO} className="relative grid size-[62px] place-items-center rounded-full bg-white">
           <CoachFace size={52} />
         </span>
         {(ascolta || finisco) && (
@@ -265,5 +231,84 @@ export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
         )}
       </motion.button>
     </>
+  );
+}
+
+// ——— Il trainer: Leo fa le azioni, il fumetto le mostra e chiede le conferme ———
+
+export function TastoLeo({ chat, onApri }: { chat: Chat; onApri: () => void }) {
+  const reduce = useReducedMotion();
+  return (
+    <FacciaLeo
+      occupato={chat.typing}
+      quanti={chat.messages.length}
+      chiedi={(t) => chat.ask(t)}
+      onApri={onApri}
+      consiglio={
+        <>
+          <b>Tocca</b> per scrivere a Leo, <b>tieni premuto</b> e dimmi cosa fare: lo faccio io
+        </>
+      }
+      mostra={(da, apriChat) => {
+        const risposta = chat.messages.slice(da).find((m) => m.from === "coach");
+        const schede = risposta?.schede ?? [];
+        const daConfermare = schede.filter((s) => s.stato === "da-confermare");
+        const inCorso = chat.typing || schede.some((s) => s.stato === "in-corso");
+        return {
+          resta: !risposta || inCorso || daConfermare.length > 0,
+          nodo: (
+            <>
+              <button type="button" onClick={apriChat} className="mt-[6px] block w-full cursor-pointer text-left">
+                {risposta?.text ? (
+                  <span className="line-clamp-4 font-medium">{risposta.text}</span>
+                ) : (
+                  <span className="flex items-center gap-[6px] text-muted">
+                    <Loader2 size={13} className={reduce ? "" : "animate-spin"} /> Leo ci sta pensando…
+                  </span>
+                )}
+              </button>
+              {schede.length > 0 && (
+                <ul className="mt-[8px] flex flex-col gap-[5px] border-t border-line/60 pt-[8px]">
+                  {schede.map((s) => (
+                    <li key={s.key} className="flex items-start gap-[7px] text-[12px] leading-snug">
+                      <span className="mt-[1px] shrink-0">
+                        {s.stato === "fatto" ? (
+                          <Check size={13} strokeWidth={2.8} className="text-[#2f9e5b]" />
+                        ) : s.stato === "in-corso" ? (
+                          <Loader2 size={13} className={reduce ? "" : "animate-spin"} style={{ color: "var(--trainer)" }} />
+                        ) : s.stato === "da-confermare" ? (
+                          <Clock size={13} style={{ color: "var(--trainer)" }} />
+                        ) : (
+                          <X size={13} strokeWidth={2.8} className="text-[#d43b4f]" />
+                        )}
+                      </span>
+                      <span className={`min-w-0 ${s.stato === "annullato" || s.stato === "rifiutato" || s.stato === "errore" ? "text-muted" : ""}`}>
+                        {s.titolo}
+                        {(s.stato === "rifiutato" || s.stato === "errore") && <span className="block text-[11px] text-[#d43b4f]">{s.motivo ?? "Non si può fare"}</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {daConfermare.length > 0 && risposta && (
+                <div className="mt-[10px] flex gap-[6px]">
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => (daConfermare.length === 1 ? chat.conferma(risposta.id, daConfermare[0].key) : chat.confermaTutte(risposta.id))}
+                    className="btn-trainer flex h-[34px] flex-1 cursor-pointer items-center justify-center gap-[5px] rounded-full text-[12.5px] font-semibold"
+                  >
+                    <Check size={14} /> {daConfermare.length === 1 ? "Conferma" : `Conferma tutte (${daConfermare.length})`}
+                  </motion.button>
+                  <button type="button" onClick={apriChat} className="glass h-[34px] cursor-pointer rounded-full px-[12px] text-[12.5px] font-semibold">
+                    Rivedi
+                  </button>
+                </div>
+              )}
+            </>
+          ),
+        };
+      }}
+    />
   );
 }
