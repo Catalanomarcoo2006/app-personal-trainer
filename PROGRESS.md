@@ -22,7 +22,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 
 ## Da fare (TODO)
 - Leo: foto e scansioni (serve un modello che vede le immagini), import dei clienti a fine onboarding con inviti (spec sua, serve il backend), trascrittore dei vocali sul server UE (`MediaRecorder` + rotta `api/leo/voce`, variabili `AI_STT_*`); trainer da telefono: push e spostare le sedute col dito.
-- **Per mettere online la versione vera**: Marco crea il progetto Supabase UE e segue `docs/supabase.md` (3 migrazioni, iscrizioni chiuse, modelli email con `token_hash`, account admin, chiavi su Vercel e Redeploy).
+- **Per mettere online la versione vera**: Marco crea il progetto Supabase UE e segue `docs/supabase.md` (4 migrazioni, iscrizioni chiuse, modelli email con `token_hash`, account admin, chiavi su Vercel e Redeploy).
 - Versione vera, dopo: Storage per documenti e logo, finestre per misure e note, aggiornamento dal vivo (Realtime), Leo con fornitore UE.
 - Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate); video con Opus per presentare la piattaforma (da fare quando l'app è pronta, utile anche per la landing).
 - Marco: chiavi Supabase (progetto UE) e Resend; email di supporto e dominio del prodotto (`config.ts`).

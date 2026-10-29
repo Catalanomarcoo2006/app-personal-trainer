@@ -106,8 +106,9 @@ describe("cliente", () => {
 describe("anonimo", () => {
   it("non legge nulla, ma vede il marchio del trainer", async () => {
     const anon = anonClient();
-    expect((await anon.from("clients").select("id")).data).toEqual([]);
-    expect((await anon.from("trainers").select("id")).data).toEqual([]);
+    // niente righe: elenco vuoto o rifiuto netto (senza permessi sulle tabelle, come nei progetti Supabase nuovi)
+    expect((await anon.from("clients").select("id")).data ?? []).toEqual([]);
+    expect((await anon.from("trainers").select("id")).data ?? []).toEqual([]);
     const marchio = await anon.rpc("trainer_branding", { p_slug: s.trainerB.slug });
     expect(marchio.data?.[0].name).toBe("trainer-b");
     expect((await anon.rpc("my_trainer_id")).error).not.toBeNull();

@@ -32,6 +32,8 @@ dalla sua scheda ("Invita nell'app").
   - Trigger: il trainer non cambia da solo stato, licenza o slug; una richiesta di spostamento diventa un avviso.
 - `supabase/migrations/20261029000003_versione_vera.sql`: `report_pain(testo)` (il dolore detto a Leo diventa un
   avviso per il trainer) e la data d'inizio nel profilo del cliente (`my_client`).
+- `supabase/migrations/20261029000004_permessi.sql`: permessi di base sulle tabelle. I progetti Supabase nuovi
+  non li danno più da soli: senza, "permission denied for table …" (trovato il 29/10 creando il primo trainer).
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -53,7 +55,7 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 2. **Chiavi** (Project Settings → API) in `.env.local` sul computer e su Vercel → Environment Variables:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (questa solo Secret, mai `NEXT_PUBLIC_`).
    Aggiorna `docs/chiavi.md`.
-3. **Carica lo schema** (o, senza terminale: SQL Editor → incolla ed esegui i tre file di `supabase/migrations/`, in ordine):
+3. **Carica lo schema** (o, senza terminale: SQL Editor → incolla ed esegui i quattro file di `supabase/migrations/`, in ordine):
    ```bash
    npx supabase login
    ```
