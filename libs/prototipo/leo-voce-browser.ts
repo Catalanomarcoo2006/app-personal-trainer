@@ -2,6 +2,7 @@
 // dal servizio del browser (Google per Chrome): va bene solo con i dati finti della demo, mai con clienti veri.
 // Più avanti lo sostituisce un trascrittore del server UE con la stessa forma (vedi leo-voce.ts).
 
+import { inDemo } from "@/libs/orologio";
 import { VoceErrore, type Dettato, type ErroreVoce, type Trascrittore } from "./leo-voce";
 
 type Risultati = ArrayLike<ArrayLike<{ transcript: string }>>;
@@ -23,6 +24,8 @@ type Riconoscitore = {
 
 // Si cerca a ogni chiamata, non al caricamento: i test (e la prova nel browser) ne mettono uno finto.
 function costruttore(): (new () => Riconoscitore) | undefined {
+  // la dettatura del browser manda l'audio a Google: con dati veri no (CLAUDE.md), finché non c'è il trascrittore UE
+  if (!inDemo()) return undefined;
   const g = globalThis as unknown as { SpeechRecognition?: new () => Riconoscitore; webkitSpeechRecognition?: new () => Riconoscitore };
   return g.SpeechRecognition ?? g.webkitSpeechRecognition;
 }

@@ -20,12 +20,20 @@ import { CLIENTE_IO } from "./scheda";
 import { ROTTE_CLIENTE } from "./nav";
 
 const CHIAVE = "registrazione-cliente";
-const nomeTrainer = trainer.name.split(" ")[0];
+// il nome del trainer (nella versione vera quello collegato): si legge a ogni uso
+const nomeTrainer = () => trainer.name.split(" ")[0];
 
 // true/false dopo il primo disegno (prima non si sa: il browser non è ancora letto)
+// Versione vera: la registrazione è fatta se il cliente ha già dato il consenso (dal database), e finirla lo salva.
+let vera: { fatta: boolean; alFinire: () => void } | null = null;
+export function impostaRegistrazioneVera(fatta: boolean, alFinire: () => void) {
+  vera = { fatta, alFinire };
+}
+
 export function useRegistrazione(): [boolean | null, () => void] {
   const [fatta, setFatta] = useState<boolean | null>(null);
   useEffect(() => {
+    if (vera) return setFatta(vera.fatta);
     let si = false;
     try {
       si = localStorage.getItem(CHIAVE) === "fatta" && !new URLSearchParams(location.search).has("registrazione");
@@ -35,6 +43,10 @@ export function useRegistrazione(): [boolean | null, () => void] {
     setFatta(si);
   }, []);
   const segna = () => {
+    if (vera) {
+      vera.alFinire();
+      vera.fatta = true;
+    }
     try {
       localStorage.setItem(CHIAVE, "fatta");
     } catch {
@@ -141,10 +153,10 @@ export function Registrazione({ onFatta }: { onFatta: () => void }) {
                 <h1 className="mt-[22px] text-[28px] leading-[1.15] font-extrabold tracking-[-0.03em]">
                   Ciao {client.name}!
                   <br />
-                  {nomeTrainer} ti ha invitato
+                  {nomeTrainer()} ti ha invitato
                 </h1>
                 <p className="mt-[10px] max-w-[290px] text-[14.5px] leading-snug text-ink/70">
-                  Qui trovi i tuoi allenamenti, i progressi e la chat con {nomeTrainer}. Ci vuole un minuto per iniziare.
+                  Qui trovi i tuoi allenamenti, i progressi e la chat con {nomeTrainer()}. Ci vuole un minuto per iniziare.
                 </p>
               </div>
             )}
@@ -177,7 +189,7 @@ export function Registrazione({ onFatta }: { onFatta: () => void }) {
             )}
 
             {passo === 2 && (
-              <Passo icona={<span className="text-[24px]">🎯</span>} titolo="Il tuo obiettivo" sotto={`Da dove parti e dove vuoi arrivare. ${nomeTrainer} lo guarda e lo conferma con te.`}>
+              <Passo icona={<span className="text-[24px]">🎯</span>} titolo="Il tuo obiettivo" sotto={`Da dove parti e dove vuoi arrivare. ${nomeTrainer()} lo guarda e lo conferma con te.`}>
                 <div className="flex flex-col gap-[12px]">
                   <CampoPeso label="Il tuo peso di partenza" valore={start} onChange={(v) => (setErrore(null), setStart(v))} />
                   <CampoPeso label="Il peso che vuoi raggiungere" valore={target} onChange={(v) => (setErrore(null), setTarget(v))} />
@@ -208,7 +220,7 @@ export function Registrazione({ onFatta }: { onFatta: () => void }) {
                       >
                         <span className="leading-tight">
                           <b className="block text-[15px] font-bold">{x.label}</b>
-                          <span className="text-[12.5px] text-ink/60">{x.f === "settimana" ? "Il consiglio di " + nomeTrainer + " per iniziare" : x.f === "giorno" ? "Il numero cambia molto da un giorno all'altro" : "Per chi non vuole pensarci troppo"}</span>
+                          <span className="text-[12.5px] text-ink/60">{x.f === "settimana" ? "Il consiglio di " + nomeTrainer() + " per iniziare" : x.f === "giorno" ? "Il numero cambia molto da un giorno all'altro" : "Per chi non vuole pensarci troppo"}</span>
                         </span>
                         <span className={`grid size-[24px] shrink-0 place-items-center rounded-full border-2 ${qui ? "border-transparent btn-trainer" : "border-ink/20"}`}>{qui && <Check size={14} strokeWidth={3} />}</span>
                       </button>
@@ -226,7 +238,7 @@ export function Registrazione({ onFatta }: { onFatta: () => void }) {
                 </motion.span>
                 <h1 className="mt-[22px] text-[28px] leading-[1.15] font-extrabold tracking-[-0.03em]">Tutto pronto!</h1>
                 <p className="mt-[10px] max-w-[290px] text-[14.5px] leading-snug text-ink/70">
-                  Il tuo obiettivo è arrivato a {nomeTrainer}: lo conferma lui. Intanto c&apos;è il tuo primo allenamento che ti aspetta.
+                  Il tuo obiettivo è arrivato a {nomeTrainer()}: lo conferma lui. Intanto c&apos;è il tuo primo allenamento che ti aspetta.
                 </p>
               </div>
             )}

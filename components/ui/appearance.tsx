@@ -39,12 +39,24 @@ function write(key: string, value: string) {
   }
 }
 
+// Versione vera: il colore del marchio è quello salvato nel database (non quello del browser, che è della demo),
+// e cambiarlo lo salva lì. Lo imposta AvvioVero, prima che questo componente legga il browser.
+let coloreVero: { colore: string; salva: (c: string) => void } | null = null;
+export function impostaColoreVero(colore: string, salva: (c: string) => void) {
+  coloreVero = { colore, salva };
+}
+
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
   const [accent, setAccentState] = useState(ACCENTS[0]);
 
   useEffect(() => {
     setThemeState(document.documentElement.classList.contains("dark") ? "dark" : "light");
+    if (coloreVero) {
+      setAccentState(coloreVero.colore);
+      document.documentElement.style.setProperty("--trainer", coloreVero.colore);
+      return;
+    }
     const saved = read(KEY_ACCENT);
     if (saved) setAccentState(saved);
   }, []);
@@ -67,7 +79,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   const setAccent = useCallback((color: string) => {
     setAccentState(color);
     document.documentElement.style.setProperty("--trainer", color);
-    write(KEY_ACCENT, color);
+    if (coloreVero) coloreVero.salva(color);
+    else write(KEY_ACCENT, color);
   }, []);
 
   // Leo cambia colore, tema e suoni dallo sportello (libs/dati/aspetto.ts): il ponte legge sempre i valori di adesso

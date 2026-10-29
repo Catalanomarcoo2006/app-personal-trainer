@@ -28,9 +28,10 @@ import { CLIENTE_IO } from "./scheda";
 import { FOTO_CLIENTE } from "./Shell";
 import { ID_FOGLI, ROTTE_CLIENTE } from "./nav";
 
-const nomeTrainer = trainer.name.split(" ")[0];
+// il nome del trainer (nella versione vera quello collegato): si legge a ogni uso
+const nomeTrainer = () => trainer.name.split(" ")[0];
 const numero = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
-const DA: Record<Documento["da"], string> = { nutrizionista: "Dal nutrizionista", trainer: `Da ${nomeTrainer}`, cliente: "Caricato da te" };
+const DA: Record<Documento["da"], string> = { nutrizionista: "Dal nutrizionista", trainer: `Da ${nomeTrainer()}`, cliente: "Caricato da te" };
 
 const Titolo = ({ children }: { children: ReactNode }) => <h2 className="mt-[20px] mb-[8px] px-[2px] text-[15px] font-bold tracking-[-0.01em]">{children}</h2>;
 
@@ -74,7 +75,7 @@ function Informativa() {
       <li className="glass-row rounded-[16px] px-[14px] py-[11px]">
         <b>Dove stanno</b>: su server in Unione Europea.
       </li>
-      <li className="px-[4px] pt-[4px] text-[12.5px] text-muted">Hai dato il consenso al trattamento dei dati sulla salute alla registrazione. Per toglierlo scrivi a {nomeTrainer}.</li>
+      <li className="px-[4px] pt-[4px] text-[12.5px] text-muted">Hai dato il consenso al trattamento dei dati sulla salute alla registrazione. Per toglierlo scrivi a {nomeTrainer()}.</li>
     </ul>
   );
 }
@@ -112,7 +113,7 @@ export function Profilo() {
       const file = v.tipo === "foto" ? await rimpicciolisciFoto(f) : f;
       stato.addDocumento({ nome: v.tipo === "foto" ? f.name.replace(/\.\w+$/, ".jpg") : f.name, tipo: v.tipo, da: "cliente", data: giornoDiOggi(), file });
       playSound("complete");
-      toast.success(`Caricato: ${nomeTrainer} lo trova tra i tuoi documenti`);
+      toast.success(`Caricato: ${nomeTrainer()} lo trova tra i tuoi documenti`);
     } catch {
       toast.error("Non riesco a leggere questa foto: prova con una JPG o PNG");
     }
@@ -126,7 +127,7 @@ export function Profilo() {
         <img src={FOTO_CLIENTE} alt="" className="size-[64px] rounded-full object-cover ring-[3px] ring-white/70" />
         <div className="min-w-0 leading-tight">
           <p className="truncate text-[19px] font-extrabold tracking-[-0.02em]">{c.name}</p>
-          <p className="mt-[3px] text-[12.5px] text-muted">Con {nomeTrainer} {c.since.toLowerCase()}</p>
+          <p className="mt-[3px] text-[12.5px] text-muted">Con {nomeTrainer()} {c.since.toLowerCase()}</p>
         </div>
       </section>
 
@@ -161,7 +162,7 @@ export function Profilo() {
               </div>
               <p className="mt-[6px] text-[11.5px] text-muted">
                 {usate} lezioni fatte su {totali}
-                {c.pkg.expiring ? ` · per rinnovare scrivi a ${nomeTrainer}` : ""}
+                {c.pkg.expiring ? ` · per rinnovare scrivi a ${nomeTrainer()}` : ""}
               </p>
             </>
           )}
@@ -170,7 +171,7 @@ export function Profilo() {
         <Riga
           icona={<span className="text-[17px]">🎯</span>}
           titolo={c.goal}
-          sotto={proposto ? `Hai proposto ${numero(proposto.start)} → ${numero(proposto.target)} kg: in attesa di ${nomeTrainer}` : `Da ${numero(c.start)} a ${numero(c.target)} kg · oggi ${numero(c.current)} kg`}
+          sotto={proposto ? `Hai proposto ${numero(proposto.start)} → ${numero(proposto.target)} kg: in attesa di ${nomeTrainer()}` : `Da ${numero(c.start)} a ${numero(c.target)} kg · oggi ${numero(c.current)} kg`}
           destra={<ChevronRight size={17} className="shrink-0 text-ink/35" />}
           onClick={() => navigate(ROTTE_CLIENTE.progressi)}
         />
@@ -203,7 +204,7 @@ export function Profilo() {
 
       <Titolo>I tuoi documenti</Titolo>
       <section className="panel overflow-hidden rounded-[24px]">
-        <Riga icona={<Dumbbell size={17} />} titolo="Scheda di allenamento.pdf" sotto={`Da ${nomeTrainer} · sempre aggiornata`} destra={<ChevronRight size={17} className="shrink-0 text-ink/35" />} onClick={() => (playSound("tap"), void apriFile(pdfScheda(giorni, videos)))} />
+        <Riga icona={<Dumbbell size={17} />} titolo="Scheda di allenamento.pdf" sotto={`Da ${nomeTrainer()} · sempre aggiornata`} destra={<ChevronRight size={17} className="shrink-0 text-ink/35" />} onClick={() => (playSound("tap"), void apriFile(pdfScheda(giorni, videos)))} />
         {documenti.map((d) => (
           <Riga
             key={d.id}

@@ -25,7 +25,8 @@ import { Foglio } from "./Foglio";
 import { CLIENTE_IO } from "./scheda";
 import { ID_FOGLI } from "./nav";
 
-const nomeTrainer = trainer.name.split(" ")[0];
+// il nome del trainer (nella versione vera quello collegato): si legge a ogni uso
+const nomeTrainer = () => trainer.name.split(" ")[0];
 const numero = (n: number, cifre = 1) => n.toLocaleString("it-IT", { maximumFractionDigits: cifre });
 const CAMPI: { k: Exclude<keyof Misura, "id" | "clientId" | "takenOn" | "daConfermare">; label: string; unita: string }[] = [
   { k: "weightKg", label: "Peso", unita: "kg" },
@@ -57,13 +58,13 @@ function AggiungiMisure({ aperto, onChiudi }: { aperto: boolean; onChiudi: () =>
     if ("motivo" in esito) return setErrore(esito.motivo);
     playSound("complete");
     // il peso entra subito; le circonferenze aspettano Marco (decisione del 29/10)
-    toast.success(esito.inAttesa ? `Salvate: le misure le conferma ${nomeTrainer}${m.weightKg !== undefined ? ", il peso c'è già" : ""}` : "Peso salvato");
+    toast.success(esito.inAttesa ? `Salvate: le misure le conferma ${nomeTrainer()}${m.weightKg !== undefined ? ", il peso c'è già" : ""}` : "Peso salvato");
     setValori({});
     chiudi();
   };
   return (
     <Foglio aperto={aperto} onChiudi={chiudi} titolo="Aggiungi misure">
-      <p className="mt-[4px] text-[12.5px] text-muted">Di oggi. Scrivi solo quelle che hai preso, le altre lasciale vuote. Il peso entra subito, le misure le conferma {nomeTrainer}.</p>
+      <p className="mt-[4px] text-[12.5px] text-muted">Di oggi. Scrivi solo quelle che hai preso, le altre lasciale vuote. Il peso entra subito, le misure le conferma {nomeTrainer()}.</p>
       <div className="mt-[14px] grid grid-cols-2 gap-[10px]">
         {CAMPI.map((c) => (
           <label key={c.k} className="block">
@@ -137,7 +138,7 @@ export function Progressi() {
         </div>
         {proposto && (
           <p className="mt-[12px] rounded-[14px] bg-card/70 px-[12px] py-[9px] text-[12.5px] leading-snug">
-            🕒 <b>Hai proposto</b> {numero(proposto.start)} → {numero(proposto.target)} kg: {nomeTrainer} lo guarda e lo conferma con te.
+            🕒 <b>Hai proposto</b> {numero(proposto.start)} → {numero(proposto.target)} kg: {nomeTrainer()} lo guarda e lo conferma con te.
           </p>
         )}
       </section>
@@ -207,7 +208,7 @@ export function Progressi() {
       {attesa.length > 0 && (
         <section className="panel rounded-[24px] px-[16px] pt-[14px] pb-[12px]">
           <div className="flex items-center justify-between">
-            <p className="text-[15px] font-bold">In attesa di {nomeTrainer}</p>
+            <p className="text-[15px] font-bold">In attesa di {nomeTrainer()}</p>
             <span className="rounded-full px-[9px] py-[4px] text-[11px] font-bold" style={{ color: "var(--trainer)", background: "color-mix(in srgb, var(--trainer) 12%, transparent)" }}>
               {attesa.length} da confermare
             </span>
@@ -226,7 +227,7 @@ export function Progressi() {
               </li>
             ))}
           </ul>
-          <p className="text-[11.5px] text-muted">Contano nei tuoi progressi quando {nomeTrainer} le conferma.</p>
+          <p className="text-[11.5px] text-muted">Contano nei tuoi progressi quando {nomeTrainer()} le conferma.</p>
         </section>
       )}
 

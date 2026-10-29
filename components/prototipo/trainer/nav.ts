@@ -5,17 +5,36 @@
 import { conMacchia } from "@/libs/ui/macchia";
 import { playSound } from "@/libs/ui/sound";
 
-export const BASE = "/prototipo/trainer";
+// /prototipo/trainer nella demo, /dashboard nella versione vera (impostaBase, all'avvio): chi importa BASE e ROUTES
+// legge sempre l'indirizzo di adesso.
+export let BASE = "/prototipo/trainer";
+export function impostaBase(base: string) {
+  BASE = base;
+}
 
 export const ROUTES = {
-  oggi: BASE,
-  clienti: `${BASE}/clienti`,
+  get oggi() {
+    return BASE;
+  },
+  get clienti() {
+    return `${BASE}/clienti`;
+  },
   cliente: (id: string) => `${BASE}/clienti/${id}`,
-  messaggi: `${BASE}/messaggi`,
-  schede: `${BASE}/schede`,
-  calendario: `${BASE}/calendario`,
-  incassi: `${BASE}/incassi`,
-  impostazioni: `${BASE}/impostazioni`,
+  get messaggi() {
+    return `${BASE}/messaggi`;
+  },
+  get schede() {
+    return `${BASE}/schede`;
+  },
+  get calendario() {
+    return `${BASE}/calendario`;
+  },
+  get incassi() {
+    return `${BASE}/incassi`;
+  },
+  get impostazioni() {
+    return `${BASE}/impostazioni`;
+  },
 };
 
 export function navigate(href: string, { quiet = false } = {}) {

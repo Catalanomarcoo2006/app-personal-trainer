@@ -11,13 +11,13 @@ import { openPayments, openTotal } from "./risposte";
 
 export type Speech = { text: string; icon?: LucideIcon; alert?: boolean; ask?: string };
 
-export const firstName = trainer.name.split(" ")[0];
+export let firstName = trainer.name.split(" ")[0];
 
 export const lucaTip: Speech = { icon: TriangleAlert, alert: true, text: "Luca ha segnalato fastidio al ginocchio durante gli affondi.", ask: "Cosa ha segnalato Luca?" };
 export const paymentsTip: Speech = { icon: Wallet, text: `${openPayments.length} pagamenti ancora aperti per ${formatEuro(openTotal)}. Te li riepilogo?`, ask: "Chi deve ancora pagare?" };
 
 // Quattro vignette dai dati della giornata, una alla volta, poi Leo tace.
-export const tips: Speech[] = [
+export let tips: Speech[] = [
   { icon: CalendarDays, text: `Ciao ${firstName}! Oggi hai ${agenda[TODAY_INDEX].length} appuntamenti, il prossimo alle 11:00 con Antonella.`, ask: "Chi ho in agenda oggi?" },
   lucaTip,
   { icon: Trophy, text: "Davide ha fatto il nuovo massimale di panca: 90 kg! 🎉", ask: "Com’è andata a Davide?" },
@@ -25,7 +25,14 @@ export const tips: Speech[] = [
 ];
 
 // Le cose che richiedono il trainer: fanno illuminare il tasto di Leo finché non apre la chat.
-export const novita: Speech[] = [lucaTip, paymentsTip];
+export let novita: Speech[] = [lucaTip, paymentsTip];
+
+// Versione vera: le vignette della demo parlano di clienti inventati, quindi Leo tace e saluta col nome giusto.
+export function fumettiVeri() {
+  firstName = trainer.name.split(" ")[0];
+  tips = [];
+  novita = [];
+}
 
 // Coda del fumetto: di base punta in basso a destra; si specchia in orizzontale e in verticale.
 export function Tail({ flipX, flipY, className }: { flipX?: boolean; flipY?: boolean; className: string }) {

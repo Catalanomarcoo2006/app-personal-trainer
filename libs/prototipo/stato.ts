@@ -158,6 +158,9 @@ function apriCanale() {
   canale.postMessage({ tipo: "chiedo", da: questa } satisfies Messaggio);
 }
 
+// Fuori da React (salvataggio della versione vera): avvisa a ogni cambiamento.
+export const ascoltaStato = (fn: () => void) => subscribe(fn);
+
 export function useStato<T>(select: (s: State) => T): T {
   return useSyncExternalStore(
     subscribe,
@@ -186,7 +189,8 @@ export const stato = {
     avvisa();
   },
   setPlan(clientId: string, fn: (days: Day[]) => Day[]) {
-    state = { ...state, plans: { ...state.plans, [clientId]: fn(state.plans[clientId]) } };
+    // chi non ha ancora una scheda parte da un giorno vuoto (clienti nuovi della versione vera)
+    state = { ...state, plans: { ...state.plans, [clientId]: fn(state.plans[clientId] ?? [{ label: "Giorno A", focus: "", rows: [] }]) } };
     emit();
   },
   setLibraryVideo(exId: string, url: string | null) {

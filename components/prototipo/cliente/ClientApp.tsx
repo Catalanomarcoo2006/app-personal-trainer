@@ -19,13 +19,14 @@ import { Allenamento } from "./Allenamento";
 import { Profilo } from "./Profilo";
 import { ROTTE_CLIENTE, sezioneDa, VOCI_BARRA, type SezioneCliente } from "./nav";
 
-const TITOLI: Record<SezioneCliente, { titolo: string; breve: string }> = {
+// una funzione: il nome è quello del cliente collegato, letto all'avvio della versione vera
+const titoli = (): Record<SezioneCliente, { titolo: string; breve: string }> => ({
   home: { titolo: `Ciao, ${client.name}! 👋`, breve: `Ciao, ${client.name}` },
   allenamento: { titolo: "Allenamento", breve: "Allenamento" },
   progressi: { titolo: "Progressi", breve: "Progressi" },
   messaggi: { titolo: "Messaggi", breve: "Messaggi" },
   profilo: { titolo: "Profilo", breve: "Profilo" },
-};
+});
 
 export function ClientApp() {
   const sezione = sezioneDa(usePathname());
@@ -33,7 +34,7 @@ export function ClientApp() {
   const chatLeo = useChatCliente(); // la usano il foglio di Leo e la sua faccia (vocale tenuto premuto)
   const chiudiLeo = useCallback(() => setLeo(false), []);
   const nonLetti = useNonLettiCliente(sezione === "messaggi");
-  const t = TITOLI[sezione];
+  const t = titoli()[sezione];
   const [registrata, segnaRegistrata] = useRegistrazione();
 
   // primo accesso: prima la registrazione (finché il browser non è letto, il telefono vuoto: niente lampi)

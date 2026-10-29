@@ -21,7 +21,8 @@ import { suggestions } from "../leo/risposte";
 import type { Allegato, Chat } from "../leo/useChatLeo";
 import { navigate, ROUTES } from "../nav";
 
-const primo = trainer.name.split(" ")[0];
+// il nome del trainer collegato (nella demo Marco): si legge a ogni disegno
+const nomeTrainer = () => trainer.name.split(" ")[0];
 // da telefono niente domande sui soldi tra quelle pronte, e niente link alle sezioni che qui non ci sono
 const PRONTE = suggestions.filter((s) => !/pag|incass/i.test(s)).slice(0, 4);
 const SOLO_COMPUTER = [ROUTES.incassi, ROUTES.schede, ROUTES.impostazioni];
@@ -141,7 +142,7 @@ export function LeoTelefono({ chat, aperto, onChiudi, bozza, setBozza, voce }: {
                   {!messages.length && (
                     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                       <p className="glass-row max-w-[88%] rounded-[18px] rounded-bl-[6px] px-[13px] py-[10px] text-[14px] leading-snug">
-                        Ciao {primo}! Dimmi cosa fare: fisso e sposto sedute, scrivo ai clienti, aggiorno misure e note. Anche a voce: tieni premuta la mia faccia, dimmi cosa fare e lo faccio 🎙️ Pagamenti e pacchetti li trovi sul computer.
+                        Ciao {nomeTrainer()}! Dimmi cosa fare: fisso e sposto sedute, scrivo ai clienti, aggiorno misure e note. Anche a voce: tieni premuta la mia faccia, dimmi cosa fare e lo faccio 🎙️ Pagamenti e pacchetti li trovi sul computer.
                       </p>
                       <div className="mt-[12px] flex flex-wrap gap-[7px]">
                         {PRONTE.map((d) => (

@@ -3,17 +3,31 @@
 
 import { ChartLine, Dumbbell, House, MessageCircle, type LucideIcon } from "lucide-react";
 
-export const BASE_CLIENTE = "/prototipo/cliente";
+// /prototipo/cliente nella demo, /<slug del trainer> nella versione vera (impostaBaseCliente, all'avvio)
+export let BASE_CLIENTE = "/prototipo/cliente";
+export function impostaBaseCliente(base: string) {
+  BASE_CLIENTE = base;
+}
 
 // Dove si agganciano fogli e caselle che stanno sopra tutto dentro il telefono, fuori dallo scorrimento (Shell.tsx).
 export const ID_FOGLI = "fogli-cliente";
 
 export const ROTTE_CLIENTE = {
-  home: BASE_CLIENTE,
-  allenamento: `${BASE_CLIENTE}/allenamento`,
-  progressi: `${BASE_CLIENTE}/progressi`,
-  messaggi: `${BASE_CLIENTE}/messaggi`,
-  profilo: `${BASE_CLIENTE}/profilo`,
+  get home() {
+    return BASE_CLIENTE;
+  },
+  get allenamento() {
+    return `${BASE_CLIENTE}/allenamento`;
+  },
+  get progressi() {
+    return `${BASE_CLIENTE}/progressi`;
+  },
+  get messaggi() {
+    return `${BASE_CLIENTE}/messaggi`;
+  },
+  get profilo() {
+    return `${BASE_CLIENTE}/profilo`;
+  },
 };
 
 export type SezioneCliente = keyof typeof ROTTE_CLIENTE;

@@ -1,6 +1,7 @@
 import { formatEuro } from "@/components/ui/motion";
 import { agenda, clientById, clients, revenue, TODAY_INDEX } from "@/libs/prototipo/dati-finti";
 import { ROUTES } from "../nav";
+import { inDemo } from "@/libs/orologio";
 
 // ——— Le risposte, calcolate dai dati ———
 
@@ -10,7 +11,13 @@ export const names = (ids: string[]) => ids.map((id) => clientById(id)?.name).fi
 export const openPayments = clients.flatMap((c) => c.payments.filter((p) => !p.paid).map((p) => ({ c, p })));
 export const openTotal = openPayments.reduce((s, x) => s + x.p.amount, 0);
 
+// Nella versione vera Leo non chiama l'AI finché non c'è il fornitore in Europa (CLAUDE.md, "Da non fare"),
+// e le risposte di riserva qui sotto parlano dei clienti della demo: risponde questo.
+export const LEO_IN_ARRIVO =
+  "Per ora rispondo solo nella demo: con i tuoi clienti veri mi accendo quando l'assistente sarà collegato a un server in Europa. Intanto trovi tutto nelle sezioni a sinistra.";
+
 export function answer(question: string): Answer {
+  if (!inDemo()) return { text: LEO_IN_ARRIVO };
   const q = question.toLowerCase();
 
   if (/luca|dolor|ginocch|segnal/.test(q)) {

@@ -15,7 +15,8 @@ import { apriFile, pdfScheda } from "./apri-file";
 import { useSpunte } from "./spunte";
 import { quandoSeduta, useScheda } from "./scheda";
 
-const nomeTrainer = trainer.name.split(" ")[0];
+// il nome del trainer (nella versione vera quello collegato): si legge a ogni uso
+const nomeTrainer = () => trainer.name.split(" ")[0];
 
 export function Allenamento() {
   const { giorni, prossimo, prossimaDi, esercizio } = useScheda();
@@ -32,7 +33,7 @@ export function Allenamento() {
   const quando = prossimaDi(qui);
 
   if (!giorno)
-    return <p className="panel mt-[16px] rounded-[24px] px-[18px] py-[24px] text-center text-[13.5px] text-muted">{nomeTrainer} non ti ha ancora mandato la scheda.</p>;
+    return <p className="panel mt-[16px] rounded-[24px] px-[18px] py-[24px] text-center text-[13.5px] text-muted">{nomeTrainer()} non ti ha ancora mandato la scheda.</p>;
 
   // la scheda intera in PDF (apri-file.ts)
   const apriPdf = async () => {
@@ -104,7 +105,7 @@ export function Allenamento() {
             </div>
             <p className="mt-[10px] inline-flex items-center gap-[5px] rounded-full bg-card/70 px-[9px] py-[5px] text-[11.5px] text-ink/75">
               <CalendarClock size={12} />
-              {quando ? `${quandoSeduta(quando)} con ${nomeTrainer}` : "Nessuna seduta in programma per questo giorno"}
+              {quando ? `${quandoSeduta(quando)} con ${nomeTrainer()}` : "Nessuna seduta in programma per questo giorno"}
             </p>
           </div>
 
@@ -165,7 +166,7 @@ export function Allenamento() {
                 transition={{ type: "spring", stiffness: 380, damping: 24 }}
                 className="btn-trainer mx-[12px] mb-[14px] rounded-[16px] px-[14px] py-[12px] text-center text-[13px] font-bold"
               >
-                Allenamento completato! 🎉 {nomeTrainer} lo vedrà nella tua scheda.
+                Allenamento completato! 🎉 {nomeTrainer()} lo vedrà nella tua scheda.
               </motion.p>
             )}
           </AnimatePresence>

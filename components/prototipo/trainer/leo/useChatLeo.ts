@@ -1,3 +1,4 @@
+import { inDemo } from "@/libs/orologio";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { playSound, type SoundKind } from "@/libs/ui/sound";
 import { clientById } from "@/libs/prototipo/dati-finti";
@@ -324,6 +325,8 @@ export function useCoachChat({ senzaSoldi = false } = {}): Chat {
       const azioni: AzioneLeo[] = [];
       let nonCapite = 0;
       try {
+        // versione vera: niente dati veri verso l'AI (risponde answer(), con il messaggio di attesa)
+        if (!inDemo()) throw new Error("versione vera: AI non ancora collegata");
         const res = await fetch("/prototipo/api/leo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

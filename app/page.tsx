@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { getSEOTags } from "@/libs/seo";
 
@@ -36,7 +35,8 @@ function Gruppo({ titolo, sottotitolo, voci }: { titolo: string; sottotitolo: st
       <p className="text-sm text-muted">{sottotitolo}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         {voci.map((v) => (
-          <Link
+          // <a> e non Link: demo e versione vera partono sempre da una pagina caricata da capo (dati separati)
+          <a
             key={v.href}
             href={v.href}
             className="group rounded-3xl bg-card p-5 shadow-xl shadow-black/5 transition hover:-translate-y-0.5 hover:shadow-black/10"
@@ -46,7 +46,7 @@ function Gruppo({ titolo, sottotitolo, voci }: { titolo: string; sottotitolo: st
             </span>
             <p className="mt-4 font-semibold text-ink">{v.titolo}</p>
             <p className="text-sm text-muted">{v.testo}</p>
-          </Link>
+          </a>
         ))}
       </div>
     </section>

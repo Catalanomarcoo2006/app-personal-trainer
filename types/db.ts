@@ -435,7 +435,7 @@ isOneToOne: false
                            },
 "my_client":
 { Args: Record<PropertyKey, never>; Returns: {
-              "consent_at": string,"email": string,"gender": string,"goal_current": number,"goal_label": string,"goal_proposed_start": number,"goal_proposed_target": number,"goal_start": number,"goal_target": number,"goal_unit": string,"id": string,"name": string,"phone": string,"tone": string,"trainer_id": string,"weigh_frequency": string
+              "consent_at": string,"created_at": string,"email": string,"gender": string,"goal_current": number,"goal_label": string,"goal_proposed_start": number,"goal_proposed_target": number,"goal_start": number,"goal_target": number,"goal_unit": string,"id": string,"name": string,"phone": string,"tone": string,"trainer_id": string,"weigh_frequency": string
             }[]
                            },
 "my_client_id":
@@ -446,6 +446,9 @@ isOneToOne: false
                            },
 "my_trainer_id":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"report_pain":
+{ Args: { "p_text": string }; Returns: undefined
                            },
 "trainer_branding":
 { Args: { "p_slug": string }; Returns: {

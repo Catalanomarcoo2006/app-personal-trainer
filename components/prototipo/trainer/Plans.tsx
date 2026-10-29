@@ -9,7 +9,8 @@ import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
-import { clients, exerciseById, library, Muscle, trainer } from "@/libs/prototipo/dati-finti";
+import { exerciseById, library, Muscle, trainer } from "@/libs/prototipo/dati-finti";
+import { useClienti, type ClienteVista } from "@/libs/dati/selettori";
 import { ParsedDay } from "@/libs/prototipo/pdf-scheda";
 import { buildPlanPdf } from "@/libs/prototipo/pdf-invio";
 import { Day, isLink, linkHost, nextKey, Row, rowName, rowVideo, stato, useStato } from "@/libs/prototipo/stato";
@@ -177,7 +178,7 @@ function SendSheet({
   onCancel,
   onSend,
 }: {
-  client: (typeof clients)[number];
+  client: ClienteVista;
   days: number;
   exercises: number;
   withVideo: number;
@@ -251,11 +252,15 @@ function SendSheet({
 
 // ——— La pagina ———
 
+const SCHEDA_VUOTA: Day[] = [{ label: "Giorno A", focus: "", rows: [] }];
+
 // search: i parametri dell'indirizzo (?cliente=), passati da TrainerApp.
 export function PlansView({ search }: { search: string }) {
   const params = new URLSearchParams(search);
+  // i clienti dello store: quelli della demo, o del database nella versione vera
+  const clients = useClienti();
   const fromQuery = clients.find((c) => c.id === params.get("cliente"))?.id;
-  const [clientId, setClientId] = useState(fromQuery ?? "giulia-bianchi");
+  const [scelto, setClientId] = useState(fromQuery ?? (clients.some((c) => c.id === "giulia-bianchi") ? "giulia-bianchi" : clients[0]?.id));
   const allPlans = useStato((s) => s.plans);
   const videos = useStato((s) => s.videos);
   const [dayIndex, setDayIndex] = useState(0);
@@ -266,8 +271,10 @@ export function PlansView({ search }: { search: string }) {
   const [confirming, setConfirming] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const client = clients.find((c) => c.id === clientId)!;
-  const days = allPlans[clientId];
+  const clientId = clients.some((c) => c.id === scelto) ? scelto : clients[0]?.id;
+  const client = clients.find((c) => c.id === clientId);
+  // chi non ha ancora una scheda parte da un giorno vuoto
+  const days = allPlans[clientId] ?? SCHEDA_VUOTA;
   const current = Math.min(dayIndex, days.length - 1);
   const day = days[current];
 
@@ -342,6 +349,13 @@ export function PlansView({ search }: { search: string }) {
     }
   };
 
+  if (!client)
+    return (
+      <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid place-items-center pr-[18px] pl-[80px]">
+        <p className="panel rounded-[18px] px-[22px] py-[16px] text-[13px] text-muted">Aggiungi un cliente per preparare la sua scheda.</p>
+      </main>
+    );
+
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[250px_1fr_300px] gap-x-[12px] pr-[18px] pl-[80px]">
       <section className="flex min-h-0 flex-col panel rounded-[18px] px-[12px] pt-[14px] pb-[12px]">
@@ -349,7 +363,7 @@ export function PlansView({ search }: { search: string }) {
         <div className="mt-[10px] flex min-h-0 flex-1 flex-col gap-[3px] overflow-y-auto [scrollbar-width:none]">
           {clients.map((c, i) => {
             const active = c.id === clientId;
-            const n = allPlans[c.id].length;
+            const n = allPlans[c.id]?.length ?? 0;
             return (
               <motion.button
                 key={c.id}

@@ -29,7 +29,8 @@ import { Appear, CountUp, EASE_OUT, formatEuro, ProgressBar } from "@/components
 import SoftAreaChart from "@/components/ui/SoftAreaChart";
 import { playSound } from "@/libs/ui/sound";
 import { appointmentColors, progressOf, toneColors, trainer } from "@/libs/prototipo/dati-finti";
-import { giornoDi, indiceOggi } from "@/libs/orologio";
+import { giornoDi, inDemo, indiceOggi } from "@/libs/orologio";
+import { InvitaCliente } from "@/components/vera/InvitaCliente";
 import { LONG, settimanaDelCliente } from "@/libs/prototipo/calendario";
 import { useStato, useFocusLeo } from "@/libs/prototipo/stato";
 import { segnaPagato } from "@/libs/dati/sportello";
@@ -128,6 +129,7 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
               <p className="truncate text-[10.5px] text-muted">{c.email}</p>
             </div>
           </div>
+          {!inDemo() && <InvitaCliente clientId={c.id} />}
 
           <div className="relative mt-[14px] rounded-[14px] px-[12px] py-[11px]" style={{ background: tone.bg }}>
             {tocca === "obiettivo" && <Bagliore key={focus?.seq} />}

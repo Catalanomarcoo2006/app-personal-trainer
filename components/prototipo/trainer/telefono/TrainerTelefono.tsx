@@ -32,7 +32,8 @@ import { passaA } from "./forma";
 
 type Sezione = "oggi" | "clienti" | "messaggi" | "calendario";
 
-const primo = trainer.name.split(" ")[0];
+// il nome del trainer collegato (nella demo Marco): si legge a ogni disegno
+const nomeTrainer = () => trainer.name.split(" ")[0];
 
 function leggi(path: string): { sezione: Sezione; id?: string } {
   const [parte, id] = path.slice(BASE.length).split("/").filter(Boolean);
@@ -130,7 +131,7 @@ export function TrainerTelefono() {
     titolo = breve = "Calendario";
     contenuto = <CalendarioTelefono giorno={query.get("giorno") ?? undefined} onNuova={({ date }) => setNuova({ date })} />;
   } else {
-    titolo = `Ciao, ${primo}! 👋`;
+    titolo = `Ciao, ${nomeTrainer()}! 👋`;
     breve = "Oggi";
     sotto = (
       <p className="mt-[2px] text-[13.5px] text-muted">

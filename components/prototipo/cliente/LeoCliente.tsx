@@ -4,6 +4,8 @@
 // Risponde l'AI (app/prototipo/api/leo-cliente) con il testo che scorre mentre arriva; senza chiave o se l'AI non
 // risponde, le risposte fisse di libs/prototipo/leo-cliente.ts. Con un dolore Leo avvisa il trainer (riga "Ho avvisato").
 
+import { inDemo } from "@/libs/orologio";
+import { createClient } from "@/libs/supabase/client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowUp, BellRing, Paperclip, X } from "lucide-react";
@@ -17,7 +19,8 @@ import { EASE_OUT } from "@/components/ui/motion";
 
 type Msg = { id: number; da: "cliente" | "leo" | "avviso"; testo: string; file?: string };
 export type Allegato = { nome: string; testo: string };
-const nomeTrainer = trainer.name.split(" ")[0];
+// il nome del trainer (nella versione vera quello collegato): si legge a ogni uso
+const nomeTrainer = () => trainer.name.split(" ")[0];
 // in leo-sbircia.webp (560 × 433) il bordo della foto è alla riga 378: in proporzione alla larghezza, 378 / 560.
 // Se si cambia la foto si cambia anche il nome del file: con lo stesso nome il browser può tenere la foto nuova
 // e il calcolo vecchio, e Leo finisce più in basso del bordo (successo il 29/10).
@@ -82,6 +85,8 @@ export function useChatCliente() {
     try {
       const ctrl = new AbortController();
       richiesta.current = ctrl;
+      // versione vera: niente dati veri verso l'AI finché non c'è il fornitore in Europa (risposte fisse)
+      if (!inDemo()) throw new Error("versione vera: AI non ancora collegata");
       const res = await fetch("/prototipo/api/leo-cliente", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,7 +117,7 @@ export function useChatCliente() {
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return true;
       // senza AI: le risposte fisse (un file senza AI non si può leggere: lo si dice)
-      const r = allegato ? { text: `Ho il file "${allegato.nome}", ma adesso non riesco a leggerlo: riprova tra poco, oppure mandalo a ${nomeTrainer} in Messaggi.`, dolore: false } : rispostaCliente(testo);
+      const r = allegato ? { text: `Ho il file "${allegato.nome}", ma adesso non riesco a leggerlo: riprova tra poco, oppure mandalo a ${nomeTrainer()} in Messaggi.`, dolore: false } : rispostaCliente(testo);
       setScrive(false);
       await scriviPianoPiano(id, r.text);
       dolore = r.dolore;
@@ -123,11 +128,16 @@ export function useChatCliente() {
       setRisponde(false);
     }
     playSound("confirm");
+    // versione vera: l'avviso arriva davvero al trainer, con la frase del cliente (spec, sezione 6)
+    if (dolore && !inDemo())
+      void createClient()
+        .rpc("report_pain", { p_text: testo })
+        .then(({ error }) => error && console.error("Avviso di dolore non salvato", error.message));
     if (dolore) {
       timer.current.push(
         window.setTimeout(() => {
           playSound("open");
-          setMessaggi((m) => [...m, { id: prossimo.current++, da: "avviso", testo: `Ho avvisato ${nomeTrainer}: ti scriverà in Messaggi` }]);
+          setMessaggi((m) => [...m, { id: prossimo.current++, da: "avviso", testo: `Ho avvisato ${nomeTrainer()}: ti scriverà in Messaggi` }]);
         }, 400),
       );
     }

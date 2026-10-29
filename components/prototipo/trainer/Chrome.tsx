@@ -21,6 +21,7 @@ import { FitCanvas } from "@/components/ui/basics";
 import { Appear, EASE_OUT } from "@/components/ui/motion";
 import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
+import { inDemo } from "@/libs/orologio";
 import { benvenutoAttuale } from "@/libs/prototipo/benvenuto";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 import { CoachAssistant } from "./CoachAssistant";
@@ -261,7 +262,8 @@ export function Sidebar() {
 export function TrainerFrame({ children }: { children: ReactNode }) {
   // primo accesso: prima il benvenuto (lo stato salvato si legge solo nel browser, dopo il montaggio)
   useEffect(() => {
-    if (!benvenutoAttuale().fatto) window.location.replace(BENVENUTO);
+    // il benvenuto è della demo: nella versione vera il primo accesso passa dall'invito e dalla password
+    if (inDemo() && !benvenutoAttuale().fatto) window.location.replace(BENVENUTO);
   }, []);
   const forma = useForma();
   // finché non si sa quale delle due (il browser non è ancora letto), niente: così non si vede un lampo dell'altra

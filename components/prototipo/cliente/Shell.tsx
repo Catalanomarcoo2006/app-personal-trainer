@@ -25,7 +25,11 @@ export type VoceBarra = { chiave: string; label: string; icon: LucideIcon; href:
 // La foto in alto a destra: apre il profilo (href) o quello che serve a chi usa il guscio (onTocca).
 export type FotoGuscio = { src: string; label: string; href?: string; onTocca?: () => void };
 
-export const FOTO_CLIENTE = "/prototipo/cliente-giulia.jpg";
+// la foto del cliente in alto: Giulia nella demo, quella vuota nella versione vera (impostaFotoCliente)
+export let FOTO_CLIENTE = "/prototipo/cliente-giulia.jpg";
+export function impostaFotoCliente(src: string) {
+  FOTO_CLIENTE = src;
+}
 const SPRING = { type: "spring", stiffness: 520, damping: 40 } as const;
 
 // Le macchie del fondo: danno al vetro qualcosa da mostrare, come nell'area trainer (stessa classe ambient-blob).

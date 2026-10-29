@@ -43,21 +43,20 @@ export function setInfoSeen() {
   writeFlag(KEY_INFO, true);
 }
 
-const firstName = trainer.name.split(" ")[0];
-
-const lines = [
-  { emoji: "👋", text: `Ciao ${firstName}, sono Leo! Sono il tuo assistente: vivo qui nell’app e conosco i tuoi clienti, l’agenda e gli incassi.` },
+// il nome si legge quando la presentazione parte: nella versione vera è quello del trainer collegato
+const lines = () => [
+  { emoji: "👋", text: `Ciao ${trainer.name.split(" ")[0]}, sono Leo! Sono il tuo assistente: vivo qui nell’app e conosco i tuoi clienti, l’agenda e gli incassi.` },
   { emoji: "💬", text: "Chiedimi quello che vuoi, a parole tue: “chi deve ancora pagare?”, “chi non si allena da una settimana?”. Rispondo in un attimo e ti porto nella sezione giusta." },
   { emoji: "✨", text: "Posso anche agire per te: fissare, spostare e cancellare sedute, scrivere ai clienti. Le cose delicate le confermi tu. Vuoi sapere tutto di me? Tocca la i luccicante qui sopra." },
 ];
 
-export const INTRO_LAST = lines.length - 1;
+export const INTRO_LAST = 2;
 
 export function LeoPresentazione({ face, onStep, onDone }: { face: ReactNode; onStep: (step: number) => void; onDone: () => void }) {
   const reduce = useReducedMotion();
   const [step, setStep] = useState(0);
   const last = step === INTRO_LAST;
-  const words = lines[step].text.split(" ");
+  const words = lines()[step].text.split(" ");
 
   useEffect(() => onStep(step), [step, onStep]);
 
@@ -79,8 +78,8 @@ export function LeoPresentazione({ face, onStep, onDone }: { face: ReactNode; on
     <div className="flex flex-1 flex-col">
       <div className="flex items-center justify-between">
         {/* a che punto sei: tre trattini, quello attuale si allunga */}
-        <div className="flex gap-[5px]" aria-label={`Presentazione, ${step + 1} di ${lines.length}`}>
-          {lines.map((_, i) => (
+        <div className="flex gap-[5px]" aria-label={`Presentazione, ${step + 1} di ${INTRO_LAST + 1}`}>
+          {lines().map((_, i) => (
             <motion.span
               key={i}
               className="h-[5px] rounded-full"
@@ -115,7 +114,7 @@ export function LeoPresentazione({ face, onStep, onDone }: { face: ReactNode; on
               exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.12 } }}
               transition={{ type: "spring", duration: 0.5, bounce: 0.5, delay: 0.1 }}
             >
-              {lines[step].emoji}
+              {lines()[step].emoji}
             </motion.span>
           </AnimatePresence>
         </div>
