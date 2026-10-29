@@ -231,13 +231,13 @@ export function TitleRow({
 }
 
 const sideItems: NavItem[] = [
-  { label: "Oggi", icon: House, href: ROUTES.oggi },
-  { label: "Messaggi", icon: MessageSquare, href: ROUTES.messaggi },
-  { label: "Clienti", icon: Users, href: ROUTES.clienti },
-  { label: "Schede", icon: Dumbbell, href: ROUTES.schede },
-  { label: "Calendario", icon: CalendarDays, href: ROUTES.calendario },
-  { label: "Incassi", icon: Wallet, href: ROUTES.incassi },
-  { label: "Impostazioni", icon: Settings, href: ROUTES.impostazioni },
+  { label: "Oggi", icon: House, get href() { return ROUTES.oggi; } },
+  { label: "Messaggi", icon: MessageSquare, get href() { return ROUTES.messaggi; } },
+  { label: "Clienti", icon: Users, get href() { return ROUTES.clienti; } },
+  { label: "Schede", icon: Dumbbell, get href() { return ROUTES.schede; } },
+  { label: "Calendario", icon: CalendarDays, get href() { return ROUTES.calendario; } },
+  { label: "Incassi", icon: Wallet, get href() { return ROUTES.incassi; } },
+  { label: "Impostazioni", icon: Settings, get href() { return ROUTES.impostazioni; } },
 ];
 
 // Macchie di colore molto sfocate dietro l'interfaccia: il vetro della barra laterale le sfoca e le ravviva.

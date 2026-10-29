@@ -63,13 +63,13 @@ export type Chat = {
 export type Turn = { role: "user" | "assistant"; content: string; msgId?: number; testo?: string };
 
 export const sectionLinks: Record<Exclude<Sezione, "cliente">, NonNullable<Answer["action"]>> = {
-  oggi: { label: "Apri Oggi", href: ROUTES.oggi },
-  clienti: { label: "Vedi i clienti", href: ROUTES.clienti },
-  messaggi: { label: "Apri Messaggi", href: ROUTES.messaggi },
-  schede: { label: "Apri Schede", href: ROUTES.schede },
-  calendario: { label: "Apri Calendario", href: ROUTES.calendario },
-  incassi: { label: "Apri Incassi", href: ROUTES.incassi },
-  impostazioni: { label: "Apri Impostazioni", href: ROUTES.impostazioni },
+  oggi: { label: "Apri Oggi", get href() { return ROUTES.oggi; } },
+  clienti: { label: "Vedi i clienti", get href() { return ROUTES.clienti; } },
+  messaggi: { label: "Apri Messaggi", get href() { return ROUTES.messaggi; } },
+  schede: { label: "Apri Schede", get href() { return ROUTES.schede; } },
+  calendario: { label: "Apri Calendario", get href() { return ROUTES.calendario; } },
+  incassi: { label: "Apri Incassi", get href() { return ROUTES.incassi; } },
+  impostazioni: { label: "Apri Impostazioni", get href() { return ROUTES.impostazioni; } },
 };
 
 // Il tasto proposto dall'AI ([[vai:…]]) diventa un link alla sezione o al profilo del cliente.

@@ -25,8 +25,9 @@ import { navigate, ROUTES } from "../nav";
 const nomeTrainer = () => trainer.name.split(" ")[0];
 // da telefono niente domande sui soldi tra quelle pronte, e niente link alle sezioni che qui non ci sono
 const PRONTE = suggestions.filter((s) => !/pag|incass/i.test(s)).slice(0, 4);
-const SOLO_COMPUTER = [ROUTES.incassi, ROUTES.schede, ROUTES.impostazioni];
-const linkValido = (href: string) => !SOLO_COMPUTER.some((r) => href.startsWith(r));
+// letta al momento: nella versione vera gli indirizzi sono quelli di /dashboard
+const soloComputer = () => [ROUTES.incassi, ROUTES.schede, ROUTES.impostazioni];
+const linkValido = (href: string) => !soloComputer().some((r) => href.startsWith(r));
 
 function Puntini({ ragiona }: { ragiona: boolean }) {
   return (

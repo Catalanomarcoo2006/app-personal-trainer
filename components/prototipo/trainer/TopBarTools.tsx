@@ -79,19 +79,19 @@ export function NovitaRecenti({ onScelta }: { onScelta: () => void }) {
 type Result = { group: "Clienti" | "Sezioni" | "Azioni"; label: string; detail: string; href: string; icon?: LucideIcon; clientId?: string; prima?: () => void };
 
 const sections: Result[] = [
-  { group: "Sezioni", label: "Oggi", detail: "La tua giornata", href: ROUTES.oggi, icon: House },
-  { group: "Sezioni", label: "Messaggi", detail: "Conversazioni con i clienti", href: ROUTES.messaggi, icon: MessageSquare },
-  { group: "Sezioni", label: "Clienti", detail: "Tutti i tuoi clienti", href: ROUTES.clienti, icon: Users },
-  { group: "Sezioni", label: "Schede", detail: "Schede di allenamento", href: ROUTES.schede, icon: Dumbbell },
-  { group: "Sezioni", label: "Calendario", detail: "Appuntamenti della settimana", href: ROUTES.calendario, icon: CalendarDays },
-  { group: "Sezioni", label: "Incassi", detail: "Pagamenti e pacchetti", href: ROUTES.incassi, icon: Wallet },
-  { group: "Sezioni", label: "Impostazioni", detail: "Profilo, colore, avvisi", href: ROUTES.impostazioni, icon: Settings },
+  { group: "Sezioni", label: "Oggi", detail: "La tua giornata", get href() { return ROUTES.oggi; }, icon: House },
+  { group: "Sezioni", label: "Messaggi", detail: "Conversazioni con i clienti", get href() { return ROUTES.messaggi; }, icon: MessageSquare },
+  { group: "Sezioni", label: "Clienti", detail: "Tutti i tuoi clienti", get href() { return ROUTES.clienti; }, icon: Users },
+  { group: "Sezioni", label: "Schede", detail: "Schede di allenamento", get href() { return ROUTES.schede; }, icon: Dumbbell },
+  { group: "Sezioni", label: "Calendario", detail: "Appuntamenti della settimana", get href() { return ROUTES.calendario; }, icon: CalendarDays },
+  { group: "Sezioni", label: "Incassi", detail: "Pagamenti e pacchetti", get href() { return ROUTES.incassi; }, icon: Wallet },
+  { group: "Sezioni", label: "Impostazioni", detail: "Profilo, colore, avvisi", get href() { return ROUTES.impostazioni; }, icon: Settings },
 ];
 
 const actions: Result[] = [
-  { group: "Azioni", label: "Nuova scheda", detail: "Crea una scheda di allenamento", href: ROUTES.schede, icon: SquarePen },
-  { group: "Azioni", label: "Nuova seduta", detail: "Fissa un appuntamento", href: ROUTES.calendario, icon: CalendarPlus, prima: chiediNuovaSeduta },
-  { group: "Azioni", label: "Registra un pagamento", detail: "Segna un incasso", href: ROUTES.incassi, icon: Wallet },
+  { group: "Azioni", label: "Nuova scheda", detail: "Crea una scheda di allenamento", get href() { return ROUTES.schede; }, icon: SquarePen },
+  { group: "Azioni", label: "Nuova seduta", detail: "Fissa un appuntamento", get href() { return ROUTES.calendario; }, icon: CalendarPlus, prima: chiediNuovaSeduta },
+  { group: "Azioni", label: "Registra un pagamento", detail: "Segna un incasso", get href() { return ROUTES.incassi; }, icon: Wallet },
 ];
 
 // minuscole e senza accenti: "lunedi" trova "Lunedì"
