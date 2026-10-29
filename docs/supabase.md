@@ -1,7 +1,23 @@
 # Supabase: database, accessi e come collegarlo
 
-Stato al 29/10/2026: schema, regole di accesso (RLS), smistamento per ruolo e pannello admin sono pronti e
-provati con un **Supabase locale** (Docker). Manca solo il progetto vero in UE, che crea Marco.
+Stato al 29/10/2026: schema, regole di accesso (RLS), smistamento per ruolo, pannello admin e **versione vera
+delle tre app** (trainer da computer, trainer da telefono, app del cliente) sono pronti e provati con un
+**Supabase locale** (Docker). Manca solo il progetto vero in UE, che crea Marco.
+
+## I sei "siti"
+
+| | Demo (dati finti, si riparte ricaricando) | Versione vera (database) |
+|---|---|---|
+| Trainer da computer | `/demo/trainer` | `/dashboard` (dopo il login) |
+| Trainer da telefono | `/demo/telefono` | `/dashboard` dal telefono (o `?telefono`) |
+| App del cliente | `/demo/cliente` | `/<slug-del-trainer>` (dal link d'invito) |
+
+La pagina `/` le elenca tutte. Le pagine sono le stesse del prototipo: nella versione vera `AvvioVero`
+(components/vera) le avvia con l'orologio di adesso (`libs/orologio.ts`), i dati letti dal database
+(`libs/vera/carica.ts` + `mappa.ts`) e il salvataggio continuo delle modifiche (`libs/vera/salva.ts`).
+Con dati veri Leo non chiama l'AI e la dettatura è spenta (CLAUDE.md, "Da non fare"): nuovo cliente,
+pagamento e pacchetto si fanno dalle finestre (`components/vera/Moduli.tsx`); il trainer invita il cliente
+dalla sua scheda ("Invita nell'app").
 
 ## Cosa c'è
 
@@ -14,6 +30,8 @@ provati con un **Supabase locale** (Docker). Manca solo il progetto vero in UE, 
   - `trainer_branding(slug)`: nome, logo e colore, leggibile anche senza accesso (pagina `/<slug>`).
   - `my_client()`: il cliente legge il suo profilo da qui (non vede le note del trainer); `complete_registration(...)` con consenso obbligatorio.
   - Trigger: il trainer non cambia da solo stato, licenza o slug; una richiesta di spostamento diventa un avviso.
+- `supabase/migrations/20261029000003_versione_vera.sql`: `report_pain(testo)` (il dolore detto a Leo diventa un
+  avviso per il trainer) e la data d'inizio nel profilo del cliente (`my_client`).
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -35,7 +53,7 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 2. **Chiavi** (Project Settings → API) in `.env.local` sul computer e su Vercel → Environment Variables:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (questa solo Secret, mai `NEXT_PUBLIC_`).
    Aggiorna `docs/chiavi.md`.
-3. **Carica lo schema**:
+3. **Carica lo schema** (o, senza terminale: SQL Editor → incolla ed esegui i tre file di `supabase/migrations/`, in ordine):
    ```bash
    npx supabase login
    ```
@@ -62,9 +80,13 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
    Le email di Supabase (link dei clienti, password dimenticata) con il server di posta incluso hanno limiti bassi:
    prima dei clienti veri serve un SMTP (Resend) in Authentication → Emails → SMTP Settings.
 
+9. **Ridistribuisci** su Vercel (Deployments → Redeploy) dopo aver messo le chiavi: da lì `/dashboard` e le pagine
+   dei trainer usano il database. Con le chiavi segnaposto le demo funzionano e le versioni vere mostrano il login.
+
 ## Ancora da fare (fasi successive)
 
-- Bucket privato di Storage per documenti e loghi, con le sue regole (Fase 3).
-- Collegare `libs/dati/sportello.ts` alle tabelle (Fase 2): oggi l'area trainer e l'app del cliente usano ancora i dati finti del prototipo.
-- Inviti dei clienti dal trainer (server action con la chiave di servizio, come `libs/admin/trainers.ts`).
-- Avvisi automatici dei pacchetti in scadenza e del dolore (Fase 2 e 4).
+- Storage (bucket privato) per documenti, foto e logo: oggi nella versione vera i documenti caricati non si salvano.
+- Finestre per misure e note del trainer (nella demo le fa Leo); avvisi automatici dei pacchetti in scadenza.
+- Aggiornamento dal vivo fra trainer e cliente (Realtime): oggi i messaggi nuovi si vedono ricaricando la pagina.
+- Leo con dati veri: quando c'è il fornitore AI in UE (e il trascrittore per i vocali), si toglie il blocco
+  `inDemo()` in `useChatLeo.ts`, `LeoCliente.tsx` e `leo-voce-browser.ts`.
