@@ -152,7 +152,7 @@ export function RevenueCard() {
           <CountUp value={collected} format={formatEuro} delay={0.15} duration={0.9} />
         </p>
         <span className="mb-[4px] flex shrink-0 items-center gap-[4px] rounded-full bg-ok-soft px-[8px] py-[3px] text-[10.5px] font-bold text-ok">
-          <TrendingUp size={11} strokeWidth={2.6} /> +{revenue.delta}% su settembre
+          <TrendingUp size={11} strokeWidth={2.6} /> {revenue.delta >= 0 ? "+" : ""}{revenue.delta}% su {revenue.prevMonth}
         </span>
       </div>
 

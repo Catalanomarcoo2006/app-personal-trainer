@@ -10,6 +10,7 @@ import { clients, conversations, defaultPlan, exerciseById, library, plans, trai
 import type { Seduta } from "./leo-azioni";
 import { datiIniziali } from "@/libs/dati/iniziali";
 import type { DatiClienti } from "@/libs/dati/tipi";
+import { inDemo } from "@/libs/orologio";
 
 // ——— Tipi della scheda ———
 
@@ -144,6 +145,8 @@ export function ricevi(arrivato: Condiviso) {
   avvisa();
 }
 function apriCanale() {
+  // nella versione vera le finestre non si passano lo stato: ognuna legge e scrive nel database
+  if (!inDemo()) return;
   if (canale || typeof window === "undefined" || typeof BroadcastChannel === "undefined") return;
   canale = new BroadcastChannel(CANALE);
   canale.onmessage = (e: MessageEvent<Messaggio>) => {
@@ -173,8 +176,15 @@ export function useFocusLeo(): FocusLeo | null {
   return useMemo(() => focusRecente(focus), [focus]);
 }
 
+export type StatoApp = State;
+
 export const stato = {
   get: () => state,
+  // versione vera (AvvioVero): i dati letti dal database prendono il posto di quelli della demo
+  carica(dal: Partial<Omit<State, "focus">>) {
+    state = { ...state, ...dal, focus: null };
+    avvisa();
+  },
   setPlan(clientId: string, fn: (days: Day[]) => Day[]) {
     state = { ...state, plans: { ...state.plans, [clientId]: fn(state.plans[clientId]) } };
     emit();
@@ -197,7 +207,7 @@ export const stato = {
     else emit();
   },
   addSeduta(s: Omit<Seduta, "id">): Seduta {
-    const nuova = { ...s, id: `A${++idSeduta}` };
+    const nuova = { ...s, id: inDemo() ? `A${++idSeduta}` : crypto.randomUUID() };
     state = { ...state, sedute: [...state.sedute, nuova] };
     emit();
     return nuova;
@@ -216,7 +226,7 @@ export const stato = {
     emit();
   },
   addDocumento(d: Omit<Documento, "id">): Documento {
-    const nuovo = { ...d, id: `D${Math.max(0, ...state.documenti.map((x) => Number(x.id.slice(1)) || 0)) + 1}` };
+    const nuovo = { ...d, id: inDemo() ? `D${Math.max(0, ...state.documenti.map((x) => Number(x.id.slice(1)) || 0)) + 1}` : crypto.randomUUID() };
     state = { ...state, documenti: [nuovo, ...state.documenti] };
     emit();
     return nuovo;

@@ -45,7 +45,7 @@ export function MessagesView({ search }: { search: string }) {
   const clientById = useTrovaCliente();
   const params = new URLSearchParams(search);
   const target = params.get("cliente");
-  const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : conversations[0].clientId));
+  const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : (conversations[0]?.clientId ?? "")));
   const threads = useStato((s) => s.threads);
   const [unread, setUnread] = useState(() => {
     const u = Object.fromEntries(conversations.map((c) => [c.clientId, c.unread])) as Record<string, number>;

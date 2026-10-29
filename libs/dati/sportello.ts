@@ -14,7 +14,7 @@ import type { Frequenza } from "@/libs/domain/pesate";
 import type { Tone } from "@/libs/prototipo/dati-finti";
 import { stato } from "@/libs/prototipo/stato";
 import { MESI } from "./iniziali";
-import { oggi as giornoDiOggi } from "@/libs/orologio";
+import { inDemo, oggi as giornoDiOggi } from "@/libs/orologio";
 import type { ClienteDati, DatiClienti, Misura, Notifiche, Pacchetto, Pagamento } from "./tipi";
 
 export type Esito = { ok: true; annulla?: () => Promise<Verifica>; id?: string } | { ok: false; motivo: string };
@@ -26,7 +26,9 @@ const TONI: Tone[] = ["peach", "sky", "rose", "violet", "mint"];
 const dati = () => stato.get().dati;
 const scrivi = (fn: (d: DatiClienti) => DatiClienti) => stato.setDati(fn);
 const cliente = (id: string) => dati().clienti.find((c) => c.id === id);
-const nuovoId = (prefisso: string, ids: string[]) => `${prefisso}${Math.max(0, ...ids.map((x) => Number(x.slice(prefisso.length)) || 0)) + 1}`;
+// nella demo P1, P2, …; nella versione vera un uuid, come le righe del database
+const nuovoId = (prefisso: string, ids: string[]) =>
+  inDemo() ? `${prefisso}${Math.max(0, ...ids.map((x) => Number(x.slice(prefisso.length)) || 0)) + 1}` : crypto.randomUUID();
 
 const cambiaCliente = (id: string, patch: Partial<ClienteDati>) => scrivi((d) => ({ ...d, clienti: d.clienti.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
 const cambiaPagamento = (id: string, patch: Partial<Pagamento>) => scrivi((d) => ({ ...d, pagamenti: d.pagamenti.map((p) => (p.id === id ? { ...p, ...patch } : p)) }));
@@ -253,7 +255,7 @@ export async function creaCliente(r: { name: string; gender: "donna" | "uomo"; e
   const v = controllaNuovoCliente(r.name, elenco);
   if (!v.ok) return fallito(v);
   const name = r.name.trim().replace(/\s+/g, " ");
-  const id = idDaNome(name, elenco.map((c) => c.id));
+  const id = inDemo() ? idDaNome(name, elenco.map((c) => c.id)) : crypto.randomUUID();
   const nuovo: ClienteDati = {
     id,
     name,

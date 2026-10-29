@@ -6,12 +6,23 @@ import { adesso, oggi } from "@/libs/orologio";
 
 const MESI_TITOLO = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 
+// Chi è il trainer: Marco Rossi nella demo, il trainer collegato nella versione vera (usaDatiVeri, in fondo al file).
+let profilo = { name: "Marco Rossi", initials: "MR", photo: "/prototipo/trainer-foto.jpg", color: "#FF6B2C" };
+
 export const trainer = {
-  name: "Marco Rossi",
+  get name() {
+    return profilo.name;
+  },
   role: "Personal trainer",
-  initials: "MR",
-  photo: "/prototipo/trainer-foto.jpg",
-  color: "#FF6B2C",
+  get initials() {
+    return profilo.initials;
+  },
+  get photo() {
+    return profilo.photo;
+  },
+  get color() {
+    return profilo.color;
+  },
   // "21 Ottobre"
   get today() {
     const o = oggi();
@@ -183,7 +194,8 @@ export const toneColors: Record<Tone, { bg: string; strong: string; track: strin
   mint: { bg: "var(--color-mint)", strong: "var(--color-mint-strong)", track: "var(--color-mint-track)", sub: "#7a978a" },
 };
 
-export const pathCards = ["giulia-bianchi", "luca-ferri", "davide-greco"];
+// i tre clienti in evidenza nella home (nella versione vera: i primi tre clienti)
+export let pathCards = ["giulia-bianchi", "luca-ferri", "davide-greco"];
 
 export const quickStats = [
   { key: "clienti", label: "Clienti attivi", value: clients.length, href: "/prototipo/trainer/clienti" },
@@ -251,7 +263,7 @@ export const appointmentColors: Record<AppointmentType, { bg: string; strong: st
 
 export type UrgentKind = "pagamento" | "imminente" | "pacchetto" | "dolore";
 
-export const urgent: { kind: UrgentKind; clientId: string; title: string; detail: string }[] = [
+export let urgent: { kind: UrgentKind; clientId: string; title: string; detail: string }[] = [
   { kind: "imminente", clientId: "antonella-russo", title: "Workout tra 40 minuti", detail: "Antonella Russo · ore 11:00 · Fit Lab" },
   { kind: "pagamento", clientId: "luca-ferri", title: "Pagamento mancante · € 120", detail: "Luca Ferri · mensile di ottobre" },
   { kind: "pagamento", clientId: "antonella-russo", title: "Pagamento mancante · € 40", detail: "Antonella Russo · valutazione del 3 ottobre" },
@@ -262,8 +274,10 @@ export const urgent: { kind: UrgentKind; clientId: string; title: string; detail
 
 // ——— Incassi ———
 
-export const revenue = {
+export let revenue = {
   month: "Ottobre",
+  prevMonth: "settembre",
+  range: "mag – ott 2026",
   collected: 2840,
   outstanding: 160,
   forecast: 3400,
@@ -282,7 +296,7 @@ export const revenue = {
 
 export type Alert = { clientId: string; text: string; urgent?: boolean };
 
-export const alerts: Alert[] = [
+export let alerts: Alert[] = [
   { clientId: "giulia-bianchi", text: "Posso spostare la seduta di venerdì alle 18 a sabato?" },
   { clientId: "luca-ferri", text: "Fastidio al ginocchio durante gli affondi: segnalato dall'assistente", urgent: true },
   { clientId: "sara-conti", text: "Mi piacerebbe rinnovare il pacchetto, quando ne parliamo?" },
@@ -294,7 +308,7 @@ export const alerts: Alert[] = [
 
 export type NotificationKind = "allenamento" | "messaggio" | "pagamento" | "misure" | "scheda";
 
-export const notifications: { kind: NotificationKind; clientId: string; text: string; when: string; to: "cliente" | "messaggi" | "incassi" }[] = [
+export let notifications: { kind: NotificationKind; clientId: string; text: string; when: string; to: "cliente" | "messaggi" | "incassi" }[] = [
   { kind: "allenamento", clientId: "giulia-bianchi", text: "ha completato Giorno A · Gambe e glutei", when: "8 min fa", to: "cliente" },
   { kind: "messaggio", clientId: "luca-ferri", text: "ha segnalato un fastidio al ginocchio", when: "25 min fa", to: "messaggi" },
   { kind: "pagamento", clientId: "davide-greco", text: "ha pagato il mensile di ottobre · € 120", when: "1 h fa", to: "incassi" },
@@ -305,12 +319,16 @@ export const notifications: { kind: NotificationKind; clientId: string; text: st
 // ——— App del cliente ———
 
 export const client = {
-  name: "Giulia",
+  get name() {
+    return nomeCliente;
+  },
   goal: "Obiettivo −8 kg",
   goalDetail: "Partenza 72 kg · oggi 68,9 kg",
   goalPercent: 39,
   since: "Dal 05 Ott 2026",
-  lessonsLeft: 2,
+  get lessonsLeft() {
+    return lezioniCliente;
+  },
   weekDone: ["L", "M"],
   nextSession: { when: "Venerdì 23, ore 18:00", where: "Fit Lab, Meolo" },
   weight: [72, 71.6, 71.1, 70.8, 70.2, 69.9, 69.4, 68.9],
@@ -421,7 +439,7 @@ export const defaultPlan: PlanDay[] = [
 export type Attachment = { name: string; url: string; detail: string };
 export type ChatMessage = { from: "client" | "trainer" | "assistant"; text: string; time: string; attachment?: Attachment };
 
-export const conversations: { clientId: string; unread: number; messages: ChatMessage[] }[] = [
+export let conversations: { clientId: string; unread: number; messages: ChatMessage[] }[] = [
   {
     clientId: "luca-ferri",
     unread: 2,
@@ -472,3 +490,36 @@ export const conversations: { clientId: string; unread: number; messages: ChatMe
     ],
   },
 ];
+
+// ——— Versione vera ———
+// All'avvio della versione vera (AvvioVero, solo nel browser) i dati della demo che le pagine leggono da qui
+// diventano quelli del database: chi li importa legge sempre il valore di adesso (export let e getter).
+let nomeCliente = "Giulia";
+let lezioniCliente = 2;
+
+export type Revenue = typeof revenue;
+
+export type DatiVeri = {
+  trainer: { name: string; initials: string; photo: string; color: string };
+  cliente?: { name: string; lessonsLeft: number };
+  pathCards: string[];
+  revenue: Revenue;
+  alerts: Alert[];
+  notifications: typeof notifications;
+  conversations: typeof conversations;
+  urgent: typeof urgent;
+};
+
+export function usaDatiVeri(v: DatiVeri) {
+  profilo = v.trainer;
+  if (v.cliente) {
+    nomeCliente = v.cliente.name;
+    lezioniCliente = v.cliente.lessonsLeft;
+  }
+  pathCards = v.pathCards;
+  revenue = v.revenue;
+  alerts = v.alerts;
+  notifications = v.notifications;
+  conversations = v.conversations;
+  urgent = v.urgent;
+}

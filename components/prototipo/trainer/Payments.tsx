@@ -96,7 +96,7 @@ export function PaymentsView() {
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] flex flex-col gap-[10px] pr-[18px] pl-[80px]">
       <div className="grid grid-cols-4 gap-[10px]">
-        <Kpi icon={Wallet} label="Incassato a ottobre" i={0} note={<span className="inline-flex items-center gap-[3px] rounded-full bg-ok-soft px-[6px] py-[2px] font-bold text-ok"><TrendingUp size={10} /> +{revenue.delta}% su settembre</span>}>
+        <Kpi icon={Wallet} label={`Incassato a ${revenue.month.toLowerCase()}`} i={0} note={<span className="inline-flex items-center gap-[3px] rounded-full bg-ok-soft px-[6px] py-[2px] font-bold text-ok"><TrendingUp size={10} /> {revenue.delta >= 0 ? "+" : ""}{revenue.delta}% su {revenue.prevMonth}</span>}>
           <CountUp value={collected} format={formatEuro} />
         </Kpi>
         <Kpi icon={Hourglass} label="Da incassare" i={1} onClick={mostraDaIncassare} note={<span className="text-muted">{conta(open.length, "pagamento aperto", "pagamenti aperti")}</span>}>
@@ -115,7 +115,7 @@ export function PaymentsView() {
           <section className="flex h-full flex-col panel rounded-[18px] px-[16px] pt-[14px] pb-[12px]">
             <div className="flex items-center justify-between">
               <h2 className="text-[14px] font-bold">Andamento degli ultimi 6 mesi</h2>
-              <span className="rounded-full bg-soft px-[9px] py-[3px] text-[10.5px] font-semibold">mag – ott 2026</span>
+              <span className="rounded-full bg-soft px-[9px] py-[3px] text-[10.5px] font-semibold">{revenue.range}</span>
             </div>
             <div className="mt-[6px] min-h-0 flex-1">
               <RevenueChart months={mesiConOggi(collected)} />
