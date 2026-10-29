@@ -13,7 +13,7 @@ const NEXT: RouteDecision = { action: "next" };
 const go = (to: string): RouteDecision => ({ action: "redirect", to });
 
 // Sempre aperte a tutti: API, pagine legali, prototipo, file di Next.
-const PUBLIC = ["api", "auth", "privacy-policy", "tos", "prototipo", "_next"];
+const PUBLIC = ["api", "auth", "privacy-policy", "tos", "prototipo", "demo", "_next"];
 const PRIVATE = ["dashboard", "admin"];
 
 // Pagine che si aprono senza guardare chi è collegato: il middleware non chiede nemmeno l'accesso al database.

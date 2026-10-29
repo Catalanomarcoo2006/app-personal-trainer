@@ -1,7 +1,7 @@
 // Lo slug è l'indirizzo dell'app del trainer (app.it/marco-rossi): solo minuscole, cifre e trattini.
 
 // Percorsi già usati dall'app: un trainer non può prenderli.
-export const RESERVED_SLUGS = ["dashboard", "admin", "api", "signin", "privacy-policy", "tos", "prototipo", "sospeso", "_next", "auth", "nuova-password"] as const;
+export const RESERVED_SLUGS = ["dashboard", "admin", "api", "signin", "privacy-policy", "tos", "prototipo", "sospeso", "_next", "auth", "nuova-password", "demo"] as const;
 
 const FORMAT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MIN = 3;

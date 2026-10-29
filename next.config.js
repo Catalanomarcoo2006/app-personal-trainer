@@ -5,9 +5,13 @@ const nextConfig = {
   reactStrictMode: true,
   // il pallino "N" di Next in basso a sinistra finirebbe sotto il tasto del Coach
   devIndicators: false,
-  // finché non c'è la vetrina vera, la pagina principale porta al prototipo (non alla vetrina del boilerplate)
+  // indirizzi corti delle tre demo (la pagina principale le elenca insieme alle tre versioni vere)
   async redirects() {
-    return [{ source: "/", destination: "/prototipo/trainer", permanent: false }];
+    return [
+      { source: "/demo/trainer", destination: "/prototipo/trainer?computer", permanent: false },
+      { source: "/demo/telefono", destination: "/prototipo/trainer?telefono", permanent: false },
+      { source: "/demo/cliente", destination: "/prototipo/cliente", permanent: false },
+    ];
   },
   images: {
     remotePatterns: [

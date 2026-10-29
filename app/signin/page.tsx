@@ -12,7 +12,9 @@ import { getAccess, homeOf } from "@/libs/auth/profile";
 function Accesso() {
   const supabase = createClient();
   const router = useRouter();
-  const linkScaduto = useSearchParams().get("errore") === "link";
+  const params = useSearchParams();
+  const linkScaduto = params.get("errore") === "link";
+  const [trainer, setTrainer] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [attesa, setAttesa] = useState(false);
@@ -43,6 +45,26 @@ function Accesso() {
     // stessa risposta che l'email esista o no: non si rivela chi è registrato
     toast.success("Se l'email è registrata, ti abbiamo mandato un link per scegliere una nuova password");
   };
+
+  // dalla pagina d'ingresso, "App del cliente": il cliente entra dalla pagina del suo trainer
+  if (params.has("cliente"))
+    return (
+      <AuthCard title="App del cliente" subtitle="Apri il link che ti ha mandato il tuo trainer, oppure scrivi qui il suo indirizzo.">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const slug = trainer.trim().toLowerCase().replace(/^.*\//, "");
+            if (slug) router.push(`/${slug}`);
+          }}
+          className="space-y-3"
+        >
+          <input required placeholder="nome-del-trainer" className="input input-bordered w-full rounded-2xl" value={trainer} onChange={(e) => setTrainer(e.target.value)} />
+          <button type="submit" className="btn btn-trainer w-full rounded-2xl border-0">
+            Vai
+          </button>
+        </form>
+      </AuthCard>
+    );
 
   return (
     <AuthCard
