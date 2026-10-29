@@ -35,6 +35,7 @@ import { segnaPagato } from "@/libs/dati/sportello";
 import type { ClienteVista } from "@/libs/dati/selettori";
 import { navigate, ROUTES } from "./nav";
 import { Bagliore, ClientAvatar } from "./shared";
+import { DaConfermare } from "./DaConfermare";
 
 const card = "panel rounded-[18px]";
 const kg = (n: number) => n.toFixed(1).replace(".", ",");
@@ -99,6 +100,7 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_1fr] gap-x-[14px] pr-[18px] pl-[80px]">
+      <DaConfermare clientId={c.id} nome={c.name} />
       {/* Colonna sinistra: chi è e il suo percorso */}
       <Appear i={1} className="min-h-0">
         <section className={`${card} flex h-full flex-col px-[16px] pt-[14px] pb-[14px]`}>

@@ -4,6 +4,7 @@
 
 import type { PackageKind } from "@/libs/domain/packages";
 import type { Tone } from "@/libs/prototipo/dati-finti";
+import type { Frequenza } from "@/libs/domain/pesate";
 
 export type ClienteDati = {
   id: string;
@@ -25,6 +26,9 @@ export type ClienteDati = {
   questions: string[];
   email?: string;
   phone?: string;
+  // dall'app del cliente: ogni quanto si pesa, e l'obiettivo che ha proposto alla registrazione (lo conferma il trainer)
+  pesata?: Frequenza;
+  obiettivoProposto?: { start: number; target: number };
 };
 
 export type Pacchetto = {
@@ -59,6 +63,7 @@ export type Misura = {
   chestCm?: number;
   armCm?: number;
   thighCm?: number;
+  daConfermare?: boolean; // circonferenze scritte dal cliente: valgono quando il trainer le accetta
 };
 
 export type Notifiche = { dolore: boolean; spostamento: boolean; pacchetti: boolean; riepilogo: boolean; avvisoDolori: boolean };

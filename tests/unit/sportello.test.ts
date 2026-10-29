@@ -213,3 +213,53 @@ describe("misura con data vecchia e messaggi a più clienti", () => {
     expect(m.stato.get().threads["sara-conti"].at(-1)).toMatchObject({ text: "Ciao Sara" });
   });
 });
+
+describe("misure e obiettivo dall'app del cliente", () => {
+  it("il peso entra subito, le circonferenze restano in attesa e non contano finché il trainer non le accetta", async () => {
+    const e = await m.sp.misureDalCliente({ clientId: "giulia-bianchi", takenOn: "2026-10-21", weightKg: 68.2, waistCm: 80 });
+    expect(e).toMatchObject({ ok: true, inAttesa: true });
+    expect(vista("giulia-bianchi").current).toBe(68.2);
+    expect(vista("giulia-bianchi").measures.find((x) => x.label === "Vita")?.current).toBe(82);
+    const [attesa] = m.sp.misureInAttesa(dati(), "giulia-bianchi");
+    expect(attesa).toMatchObject({ waistCm: 80, daConfermare: true });
+    expect(attesa.weightKg).toBeUndefined();
+
+    expect((await m.sp.confermaMisura(attesa.id)).ok).toBe(true);
+    expect(vista("giulia-bianchi").measures.find((x) => x.label === "Vita")?.current).toBe(80);
+    expect(m.sp.misureInAttesa(dati(), "giulia-bianchi")).toHaveLength(0);
+  });
+
+  it("le circonferenze rifiutate spariscono; solo peso: niente in attesa", async () => {
+    await m.sp.misureDalCliente({ clientId: "giulia-bianchi", takenOn: "2026-10-21", hipsCm: 99 });
+    const [attesa] = m.sp.misureInAttesa(dati(), "giulia-bianchi");
+    expect((await m.sp.rifiutaMisura(attesa.id)).ok).toBe(true);
+    expect(dati().misure.some((x) => x.id === attesa.id)).toBe(false);
+    expect(await m.sp.misureDalCliente({ clientId: "giulia-bianchi", takenOn: "2026-10-21", weightKg: 68 })).toEqual({ ok: true });
+    expect(m.sp.misureInAttesa(dati(), "giulia-bianchi")).toHaveLength(0);
+  });
+
+  it("valori assurdi rifiutati con lo stesso messaggio del trainer", async () => {
+    const e = await m.sp.misureDalCliente({ clientId: "giulia-bianchi", takenOn: "2026-10-21", weightKg: 500 });
+    expect(e.ok).toBe(false);
+    expect(m.sp.misureInAttesa(dati(), "giulia-bianchi")).toHaveLength(0);
+  });
+
+  it("l'obiettivo proposto vale quando il trainer lo conferma; si può rifiutare", async () => {
+    expect((await m.sp.proponiObiettivo("giulia-bianchi", 70, 70)).ok).toBe(false);
+    expect((await m.sp.proponiObiettivo("giulia-bianchi", 70, 900)).ok).toBe(false);
+    expect((await m.sp.proponiObiettivo("giulia-bianchi", 70, 62.5)).ok).toBe(true);
+    expect(vista("giulia-bianchi").target).toBe(64); // ancora quello di prima
+    expect((await m.sp.confermaObiettivo("giulia-bianchi")).ok).toBe(true);
+    const g = vista("giulia-bianchi");
+    expect([g.start, g.target, g.goal]).toEqual([70, 62.5, "Dimagrimento −7,5 kg"]);
+    await m.sp.proponiObiettivo("giulia-bianchi", 70, 75);
+    expect((await m.sp.rifiutaObiettivo("giulia-bianchi")).ok).toBe(true);
+    expect(dati().clienti.find((c) => c.id === "giulia-bianchi")?.obiettivoProposto).toBeUndefined();
+  });
+
+  it("ogni quanto pesarsi: settimanale di partenza, si cambia", async () => {
+    expect(dati().clienti.find((c) => c.id === "giulia-bianchi")?.pesata).toBe("settimana");
+    await m.sp.impostaPesata("giulia-bianchi", "giorno");
+    expect(dati().clienti.find((c) => c.id === "giulia-bianchi")?.pesata).toBe("giorno");
+  });
+});

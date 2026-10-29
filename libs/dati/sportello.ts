@@ -9,6 +9,8 @@ import { controllaNuovoCliente, idDaNome } from "@/libs/domain/clients";
 import { controllaImporto, controllaPagabile } from "@/libs/domain/payments";
 import { controllaRinnovo } from "@/libs/domain/rinnovi";
 import { no, OK, type Verifica } from "@/libs/domain/verifica";
+import { aggiungiMesi } from "@/libs/domain/time";
+import type { Frequenza } from "@/libs/domain/pesate";
 import type { Tone } from "@/libs/prototipo/dati-finti";
 import { stato } from "@/libs/prototipo/stato";
 import { MESI, OGGI } from "./iniziali";
@@ -31,16 +33,7 @@ const cambiaPacchetto = (id: string, p: Pacchetto) => scrivi((d) => ({ ...d, pac
 
 const fallito = (v: Verifica): Esito => ("motivo" in v ? { ok: false, motivo: v.motivo } : { ok: false, motivo: "Non si può fare" });
 
-// "2026-10-31" + 1 mese → "2026-11-30": l'ultimo del mese resta l'ultimo del mese.
-export function aggiungiMesi(iso: string, mesi: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const fineMese = (yy: number, mm: number) => new Date(Date.UTC(yy, mm, 0)).getUTCDate(); // mm 1-12
-  const totale = m - 1 + mesi;
-  const ny = y + Math.floor(totale / 12);
-  const nm = (totale % 12) + 1;
-  const giorno = d === fineMese(y, m) ? fineMese(ny, nm) : Math.min(d, fineMese(ny, nm));
-  return `${ny}-${String(nm).padStart(2, "0")}-${String(giorno).padStart(2, "0")}`;
-}
+export { aggiungiMesi }; // sta in libs/domain/time.ts: serve anche al calcolo delle pesate
 
 // ——— Pagamenti e pacchetti ———
 
@@ -130,6 +123,83 @@ export async function aggiungiMisura(m: Omit<Misura, "id">, oggi = OGGI): Promis
       return OK;
     },
   };
+}
+
+// ——— Dall'app del cliente: il peso entra subito, le circonferenze e l'obiettivo li conferma il trainer ———
+// (decisione di Marco del 29/10: il peso lo prende il cliente a casa anche ogni giorno, le circonferenze si sbagliano facilmente)
+
+const CIRCONFERENZE_CLIENTE = ["waistCm", "hipsCm", "chestCm", "armCm", "thighCm"] as const;
+
+export async function misureDalCliente(m: Omit<Misura, "id" | "daConfermare">, oggi = OGGI): Promise<Esito & { inAttesa?: boolean }> {
+  const v = controllaMisura(m, oggi);
+  if (!v.ok) return fallito(v);
+  const giri = Object.fromEntries(CIRCONFERENZE_CLIENTE.flatMap((k) => (m[k] === undefined ? [] : [[k, m[k]]])));
+  if (m.weightKg !== undefined) {
+    const peso = await aggiungiMisura({ clientId: m.clientId, takenOn: m.takenOn, weightKg: m.weightKg }, oggi);
+    if (!peso.ok) return peso;
+  }
+  if (!Object.keys(giri).length) return { ok: true };
+  if (!cliente(m.clientId)) return { ok: false, motivo: "Cliente non trovato" };
+  const id = nuovoId("M", dati().misure.map((x) => x.id));
+  scrivi((d) => ({ ...d, misure: [...d.misure, { id, clientId: m.clientId, takenOn: m.takenOn, ...giri, daConfermare: true }] }));
+  return { ok: true, id, inAttesa: true };
+}
+
+export const misureInAttesa = (d: DatiClienti, clientId: string) => d.misure.filter((m) => m.clientId === clientId && m.daConfermare);
+
+// Il trainer accetta le circonferenze del cliente: da lì contano nei progressi.
+export async function confermaMisura(id: string): Promise<Esito> {
+  const m = dati().misure.find((x) => x.id === id);
+  if (!m?.daConfermare) return { ok: false, motivo: "Misura non in attesa" };
+  scrivi((d) => ({ ...d, misure: d.misure.map((x) => (x.id === id ? { ...x, daConfermare: undefined } : x)) }));
+  return { ok: true, annulla: async () => (scrivi((d) => ({ ...d, misure: d.misure.map((x) => (x.id === id ? { ...x, daConfermare: true } : x)) })), OK) };
+}
+
+export async function rifiutaMisura(id: string): Promise<Esito> {
+  const m = dati().misure.find((x) => x.id === id);
+  if (!m?.daConfermare) return { ok: false, motivo: "Misura non in attesa" };
+  scrivi((d) => ({ ...d, misure: d.misure.filter((x) => x.id !== id) }));
+  return { ok: true, annulla: async () => (scrivi((d) => ({ ...d, misure: [...d.misure, m] })), OK) };
+}
+
+// Alla registrazione il cliente propone peso di partenza e traguardo; vale quando il trainer lo conferma.
+export async function proponiObiettivo(clientId: string, start: number, target: number, oggi = OGGI): Promise<Esito> {
+  if (!cliente(clientId)) return { ok: false, motivo: "Cliente non trovato" };
+  for (const [peso, nome] of [[start, "Il peso di oggi"], [target, "Il peso che vuoi raggiungere"]] as const) {
+    const v = controllaMisura({ clientId, takenOn: oggi, weightKg: peso }, oggi);
+    if (!v.ok) return { ok: false, motivo: `${nome}: ${"motivo" in v ? v.motivo : ""}`.replace(/: Peso fuori misura: /, " sembra strano: ") };
+  }
+  if (start === target) return { ok: false, motivo: "Il traguardo è uguale al peso di oggi" };
+  cambiaCliente(clientId, { obiettivoProposto: { start, target } });
+  return { ok: true };
+}
+
+const etichettaObiettivo = (start: number, target: number) => {
+  const d = Math.round(Math.abs(start - target) * 10) / 10;
+  return `${target < start ? "Dimagrimento −" : "Aumento di peso +"}${String(d).replace(".", ",")} kg`;
+};
+
+export async function confermaObiettivo(clientId: string): Promise<Esito> {
+  const c = cliente(clientId);
+  if (!c?.obiettivoProposto) return { ok: false, motivo: "Nessun obiettivo proposto" };
+  const prima = { goalLabel: c.goalLabel, goalStart: c.goalStart, goalTarget: c.goalTarget, goalUnit: c.goalUnit, obiettivoProposto: c.obiettivoProposto };
+  const { start, target } = c.obiettivoProposto;
+  cambiaCliente(clientId, { goalLabel: etichettaObiettivo(start, target), goalStart: start, goalTarget: target, goalUnit: "kg", obiettivoProposto: undefined });
+  return { ok: true, annulla: async () => (cambiaCliente(clientId, prima), OK) };
+}
+
+export async function rifiutaObiettivo(clientId: string): Promise<Esito> {
+  const c = cliente(clientId);
+  if (!c?.obiettivoProposto) return { ok: false, motivo: "Nessun obiettivo proposto" };
+  const proposto = c.obiettivoProposto;
+  cambiaCliente(clientId, { obiettivoProposto: undefined });
+  return { ok: true, annulla: async () => (cambiaCliente(clientId, { obiettivoProposto: proposto }), OK) };
+}
+
+export async function impostaPesata(clientId: string, f: Frequenza): Promise<Esito> {
+  if (!cliente(clientId)) return { ok: false, motivo: "Cliente non trovato" };
+  cambiaCliente(clientId, { pesata: f });
+  return { ok: true };
 }
 
 export async function aggiornaObiettivo(clientId: string, patch: { goalLabel?: string; goalTarget?: number; goalUnit?: string }): Promise<Esito> {

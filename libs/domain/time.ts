@@ -22,3 +22,14 @@ export function daysBetween(from: Date | string, to: Date | string): number {
   const utc = (key: string) => Date.UTC(+key.slice(0, 4), +key.slice(5, 7) - 1, +key.slice(8, 10));
   return Math.round((utc(romeDayKey(to)) - utc(romeDayKey(from))) / 86_400_000);
 }
+
+// "2026-10-31" + 1 mese → "2026-11-30": l'ultimo del mese resta l'ultimo del mese.
+export function aggiungiMesi(iso: string, mesi: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const fineMese = (yy: number, mm: number) => new Date(Date.UTC(yy, mm, 0)).getUTCDate(); // mm 1-12
+  const totale = m - 1 + mesi;
+  const ny = y + Math.floor(totale / 12);
+  const nm = (totale % 12) + 1;
+  const giorno = d === fineMese(y, m) ? fineMese(ny, nm) : Math.min(d, fineMese(ny, nm));
+  return `${ny}-${String(nm).padStart(2, "0")}-${String(giorno).padStart(2, "0")}`;
+}

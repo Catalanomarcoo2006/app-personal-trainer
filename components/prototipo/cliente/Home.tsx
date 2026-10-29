@@ -16,6 +16,7 @@ import { navigate } from "@/components/prototipo/trainer/nav";
 import { useSpunte } from "./spunte";
 import { ROTTE_CLIENTE } from "./nav";
 import { CLIENTE_DEMO, giornoDetto, OGGI, useScheda } from "./scheda";
+import { PromemoriaPesata } from "./pesata";
 
 export { CLIENTE_DEMO };
 const GIORNI = [0, 1, 2, 3, 4]; // da lunedì a venerdì, come il riferimento
@@ -236,6 +237,7 @@ export function Home({ onLeo }: { onLeo: () => void }) {
       <Titolo>La tua giornata</Titolo>
       <Entra i={0}>
         <AllenamentoDiOggi />
+        <PromemoriaPesata />
       </Entra>
       <Titolo>La tua agenda</Titolo>
       <Entra i={1}>

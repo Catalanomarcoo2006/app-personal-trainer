@@ -53,10 +53,11 @@ function misure(c: Client, prossimo: () => string): Misura[] {
     };
     return { waistCm: v("Vita"), hipsCm: v("Fianchi"), chestCm: v("Petto"), armCm: v("Braccio"), thighCm: v("Coscia") };
   };
+  const fine = c.ultimaPesata ?? OGGI;
   return c.weights.map((w, i) => ({
     id: prossimo(),
     clientId: c.id,
-    takenOn: settimane(OGGI, i - ultima),
+    takenOn: settimane(fine, i - ultima),
     weightKg: w,
     ...(i % 2 === 0 || i === ultima ? valori(ultima ? i / ultima : 1) : {}),
   }));
@@ -83,6 +84,7 @@ function cliente(c: Client): ClienteDati {
     questions: c.questions,
     email: c.email,
     phone: c.phone,
+    pesata: "settimana",
   };
 }
 

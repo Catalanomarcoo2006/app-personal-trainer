@@ -43,7 +43,8 @@ const pagamentoVista = (p: Pagamento): PagamentoVista => ({ id: p.id, date: data
 export function vistaCliente(d: DatiClienti, id: string): ClienteVista | undefined {
   const c = d.clienti.find((x) => x.id === id);
   if (!c) return undefined;
-  const righe = d.misure.filter((m) => m.clientId === id).sort((a, b) => a.takenOn.localeCompare(b.takenOn));
+  // le misure in attesa del trainer non contano finché non le accetta
+  const righe = d.misure.filter((m) => m.clientId === id && !m.daConfermare).sort((a, b) => a.takenOn.localeCompare(b.takenOn));
   const pesi = righe.flatMap((m) => (m.weightKg === undefined ? [] : [m.weightKg])).slice(-PESI_IN_VISTA);
   const measures = CIRCONFERENZE.flatMap(([k, label]) => {
     const conValore = righe.filter((m) => m[k] !== undefined);

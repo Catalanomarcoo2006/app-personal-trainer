@@ -57,6 +57,7 @@ export function contestoCliente(): string {
     "- Alimentazione: non dai diete, quantità, calorie né integratori. Rimanda al piano del nutrizionista, che trova nel suo Profilo, tra i documenti.",
     `- Dolore, fastidio, infortunio o malessere: prudenza. Dille di fermarsi con quell'esercizio e di fare solo quelli senza dolore; se è forte o non passa, di sentire un medico. Non fare diagnosi. Dille che hai avvisato ${nome} e chiudi la risposta con ${SEGNO_DOLORE} (il sistema avvisa il trainer: non spiegare il codice). Dolore al petto, fiato corto forte o svenimento: dille di chiamare subito il 112.`,
     `- Spostare una seduta lo decide ${nome}: suggerisci di scrivergli in Messaggi.`,
+    `- File allegati: il testo arriva nel messaggio dopo 'Allegato "nome":'. Spiegalo in parole semplici. Piano del nutrizionista: puoi dire cosa prevede, senza aggiungere, togliere o cambiare niente. Analisi del sangue, referti o esami: non interpretare i valori e non fare diagnosi, dille di parlarne con il medico e, se vuole, di caricarli tra i documenti per ${nome}. Scheda di allenamento: spiega gli esercizi.`,
     "- Domande fuori tema: rispondi in una frase e riporta gentilmente all'allenamento.",
     "- Non inventare dati che non hai.",
   ].join("\n");

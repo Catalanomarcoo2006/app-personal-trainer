@@ -1,17 +1,19 @@
 // Leo del cliente con l'AI: riceve la conversazione, aggiunge le istruzioni con i dati di Giulia (libs/prototipo/leo-cliente.ts)
 // e restituisce NDJSON come la rotta del trainer ({"tipo":"testo"} man mano che arriva). Niente azioni: il cliente chiede,
-// Leo risponde; il dolore lo segnala il testo stesso ([[avvisa-trainer]]), che legge il browser.
+// Leo risponde (anche su un file allegato, letto nel browser); il dolore lo segnala il testo stesso ([[avvisa-trainer]]), che legge il browser.
 // Sta sotto /prototipo perché il middleware lo esclude. Solo dati finti: con clienti veri serve il fornitore UE.
 
 import { z } from "zod";
 import { contestoCliente } from "@/libs/prototipo/leo-cliente";
 import { ripulisci } from "@/libs/prototipo/leo-contesto";
+import { conAllegato } from "@/libs/prototipo/leo-allegato";
 import type { EventoLeo } from "@/libs/prototipo/leo-flusso";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_CARATTERI = 1000;
+const MAX_CON_ALLEGATO = 7500; // il testo del file (al massimo 6.000) più la domanda
 const MAX_MESSAGGI = 10;
 const LIMITE_MINUTO = 15;
 const ATTESA_RISPOSTA = 30_000; // ms per iniziare a rispondere
@@ -46,8 +48,10 @@ export async function POST(req: Request) {
   const corpo = Richiesta.safeParse(await req.json().catch((): unknown => null));
   if (!corpo.success) return Response.json({ errore: "richiesta non valida" }, { status: 400 });
 
-  // ultimi 10 messaggi, tagliati a 1.000 caratteri, senza email e telefoni
-  const messaggi = corpo.data.messages.slice(-MAX_MESSAGGI).map((m) => ({ role: m.role, content: ripulisci(m.content.slice(0, MAX_CARATTERI)) }));
+  // ultimi 10 messaggi, tagliati a 1.000 caratteri (7.500 con un file allegato), senza email e telefoni
+  const messaggi = corpo.data.messages
+    .slice(-MAX_MESSAGGI)
+    .map((m) => ({ role: m.role, content: ripulisci(m.content.slice(0, conAllegato(m.content) ? MAX_CON_ALLEGATO : MAX_CARATTERI)) }));
 
   const stop = new AbortController();
   const attesa = setTimeout(() => stop.abort(), ATTESA_RISPOSTA);

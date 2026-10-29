@@ -7,7 +7,8 @@ import { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Hammer } from "lucide-react";
 import { client } from "@/libs/prototipo/dati-finti";
-import { Guscio } from "./Shell";
+import { Guscio, Telefono } from "./Shell";
+import { Registrazione, useRegistrazione } from "./Registrazione";
 import { LeoCliente } from "./LeoCliente";
 import { Home, TrainerDiGiulia } from "./Home";
 import { Progressi } from "./Progressi";
@@ -41,6 +42,11 @@ export function ClientApp() {
   const chiudiLeo = useCallback(() => setLeo(false), []);
   const nonLetti = useNonLettiCliente(sezione === "messaggi");
   const t = TITOLI[sezione];
+  const [registrata, segnaRegistrata] = useRegistrazione();
+
+  // primo accesso: prima la registrazione (finché il browser non è letto, il telefono vuoto: niente lampi)
+  if (registrata === null) return <Telefono>{null}</Telefono>;
+  if (!registrata) return <Registrazione onFatta={segnaRegistrata} />;
 
   return (
     <Guscio sezione={sezione} titolo={t.titolo} titoloBreve={t.breve} sotto={sezione === "home" ? <TrainerDiGiulia /> : undefined} nonLetti={nonLetti} fuori={<LeoCliente aperto={leo} onChiudi={chiudiLeo} />}>

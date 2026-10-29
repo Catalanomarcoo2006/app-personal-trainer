@@ -98,13 +98,59 @@ let idSeduta = state.sedute.length;
 let seqFocus = 0;
 
 const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
+const avvisa = () => listeners.forEach((l) => l());
+// ogni cambiamento arriva anche alle altre finestre aperte (vedi sotto)
+const emit = () => {
+  avvisa();
+  trasmetti();
+};
 const subscribe = (l: () => void) => {
+  apriCanale();
   listeners.add(l);
   return () => {
     listeners.delete(l);
   };
 };
+
+// ——— Più finestre dello stesso browser: area trainer e app del cliente affiancate (piano dell'area cliente, Task 2) ———
+// Ogni cambiamento manda lo stato intero alle altre finestre (è piccolo); chi lo riceve lo sostituisce al suo senza
+// ritrasmetterlo. Una finestra appena aperta chiede lo stato alle altre; se nessuna risponde resta con i dati finti.
+// Vince l'ultimo cambiamento: in una demo clicca una persona alla volta. Il focus di Leo resta di ogni finestra
+// (sono le sue animazioni). Con Supabase questo lo farà il database (Realtime).
+const CANALE = "pt-prototipo";
+const questa = Math.random().toString(36).slice(2);
+let canale: BroadcastChannel | null = null;
+type Condiviso = Omit<State, "focus">;
+type Messaggio = { tipo: "chiedo"; da: string } | { tipo: "stato"; da: string; stato: Condiviso };
+
+const condiviso = (): Condiviso => {
+  const resto: Partial<State> = { ...state };
+  delete resto.focus;
+  return resto as Condiviso;
+};
+function trasmetti() {
+  try {
+    canale?.postMessage({ tipo: "stato", da: questa, stato: condiviso() } satisfies Messaggio);
+  } catch (e) {
+    console.warn("Stato non condiviso con le altre finestre", e);
+  }
+}
+export function ricevi(arrivato: Condiviso) {
+  state = { ...arrivato, focus: state.focus };
+  idSeduta = Math.max(idSeduta, ...state.sedute.map((x) => Number(x.id.slice(1)) || 0));
+  avvisa();
+}
+function apriCanale() {
+  if (canale || typeof window === "undefined" || typeof BroadcastChannel === "undefined") return;
+  canale = new BroadcastChannel(CANALE);
+  canale.onmessage = (e: MessageEvent<Messaggio>) => {
+    const m = e.data;
+    if (!m || m.da === questa) return;
+    if (m.tipo === "chiedo") trasmetti();
+    else if (m.tipo === "stato") ricevi(m.stato);
+  };
+  canale.postMessage({ tipo: "chiedo", da: questa } satisfies Messaggio);
+}
 
 export function useStato<T>(select: (s: State) => T): T {
   return useSyncExternalStore(

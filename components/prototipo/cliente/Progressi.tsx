@@ -15,7 +15,9 @@ import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { useCliente } from "@/libs/dati/selettori";
 import { useStato } from "@/libs/prototipo/stato";
-import { aggiungiMisura } from "@/libs/dati/sportello";
+import { impostaPesata, misureDalCliente, misureInAttesa } from "@/libs/dati/sportello";
+import { FREQUENZE } from "@/libs/domain/pesate";
+import { quandoPesata, usePesata } from "./pesata";
 import { OGGI } from "@/libs/dati/iniziali";
 import { dataBreve } from "@/libs/dati/vista";
 import type { Misura } from "@/libs/dati/tipi";
@@ -23,8 +25,9 @@ import { Foglio } from "./Foglio";
 import { CLIENTE_DEMO } from "./scheda";
 import { ID_FOGLI } from "./nav";
 
+const nomeTrainer = trainer.name.split(" ")[0];
 const numero = (n: number, cifre = 1) => n.toLocaleString("it-IT", { maximumFractionDigits: cifre });
-const CAMPI: { k: Exclude<keyof Misura, "id" | "clientId" | "takenOn">; label: string; unita: string }[] = [
+const CAMPI: { k: Exclude<keyof Misura, "id" | "clientId" | "takenOn" | "daConfermare">; label: string; unita: string }[] = [
   { k: "weightKg", label: "Peso", unita: "kg" },
   { k: "waistCm", label: "Vita", unita: "cm" },
   { k: "hipsCm", label: "Fianchi", unita: "cm" },
@@ -50,16 +53,17 @@ function AggiungiMisure({ aperto, onChiudi }: { aperto: boolean; onChiudi: () =>
       if (v !== undefined && Number.isNaN(v)) return setErrore(`${c.label}: scrivi solo il numero, per esempio 68,5`);
       if (v !== undefined) m[c.k] = v;
     }
-    const esito = await aggiungiMisura(m);
+    const esito = await misureDalCliente(m);
     if ("motivo" in esito) return setErrore(esito.motivo);
     playSound("complete");
-    toast.success(`Misure salvate: ${trainer.name.split(" ")[0]} le vede nella tua scheda`);
+    // il peso entra subito; le circonferenze aspettano Marco (decisione del 29/10)
+    toast.success(esito.inAttesa ? `Salvate: le misure le conferma ${nomeTrainer}${m.weightKg !== undefined ? ", il peso c'è già" : ""}` : "Peso salvato");
     setValori({});
     chiudi();
   };
   return (
     <Foglio aperto={aperto} onChiudi={chiudi} titolo="Aggiungi misure">
-      <p className="mt-[4px] text-[12.5px] text-muted">Di oggi. Scrivi solo quelle che hai preso, le altre lasciale vuote.</p>
+      <p className="mt-[4px] text-[12.5px] text-muted">Di oggi. Scrivi solo quelle che hai preso, le altre lasciale vuote. Il peso entra subito, le misure le conferma {nomeTrainer}.</p>
       <div className="mt-[14px] grid grid-cols-2 gap-[10px]">
         {CAMPI.map((c) => (
           <label key={c.k} className="block">
@@ -90,8 +94,12 @@ function AggiungiMisure({ aperto, onChiudi }: { aperto: boolean; onChiudi: () =>
 
 export function Progressi() {
   const c = useCliente(CLIENTE_DEMO);
-  const tutte = useStato((s) => s.dati.misure);
-  const righe = useMemo(() => tutte.filter((m) => m.clientId === CLIENTE_DEMO).sort((a, b) => b.takenOn.localeCompare(a.takenOn)), [tutte]);
+  const d = useStato((s) => s.dati);
+  const tutte = d.misure;
+  const attesa = useMemo(() => misureInAttesa(d, CLIENTE_DEMO), [d]);
+  const proposto = d.clienti.find((x) => x.id === CLIENTE_DEMO)?.obiettivoProposto;
+  const pesata = usePesata();
+  const righe = useMemo(() => tutte.filter((m) => m.clientId === CLIENTE_DEMO && !m.daConfermare).sort((a, b) => b.takenOn.localeCompare(a.takenOn)), [tutte]);
   const [aggiungi, setAggiungi] = useState(false);
   // il punto d'aggancio dei fogli c'è solo dopo il primo disegno
   const [fogli, setFogli] = useState<HTMLElement | null>(null);
@@ -127,6 +135,11 @@ export function Progressi() {
           <span className="font-bold text-ink">Oggi {numero(c.current)} kg</span>
           <span>Traguardo {numero(c.target)} kg</span>
         </div>
+        {proposto && (
+          <p className="mt-[12px] rounded-[14px] bg-card/70 px-[12px] py-[9px] text-[12.5px] leading-snug">
+            🕒 <b>Hai proposto</b> {numero(proposto.start)} → {numero(proposto.target)} kg: {nomeTrainer} lo guarda e lo conferma con te.
+          </p>
+        )}
       </section>
 
       {/* peso */}
@@ -143,7 +156,29 @@ export function Progressi() {
         <div className="mt-[6px] h-[96px]">
           <SoftAreaChart points={c.weights} />
         </div>
-        <p className="text-[11px] text-muted">Le ultime {c.weights.length} pesate, una a settimana</p>
+        <div className="mt-[4px] flex flex-wrap items-center justify-between gap-[6px]">
+          <p className="text-[12px] text-ink/70">
+            Prossima pesata: <b className="font-bold text-ink">{quandoPesata(pesata.prossima)}</b>
+          </p>
+          <div role="radiogroup" aria-label="Ogni quanto ti pesi" className="flex gap-[4px]">
+            {FREQUENZE.map((x) => (
+              <button
+                key={x.f}
+                type="button"
+                role="radio"
+                aria-checked={x.f === pesata.frequenza}
+                onClick={() => {
+                  if (x.f === pesata.frequenza) return;
+                  playSound("tap");
+                  void impostaPesata(CLIENTE_DEMO, x.f);
+                }}
+                className={`cursor-pointer rounded-full px-[9px] py-[5px] text-[11px] font-semibold ${x.f === pesata.frequenza ? "sel-trainer" : "bg-ink/5 text-ink/60"}`}
+              >
+                {x.label.replace("Ogni ", "")}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* circonferenze */}
@@ -167,6 +202,33 @@ export function Progressi() {
           <Plus size={16} strokeWidth={2.6} /> Aggiungi misure
         </motion.button>
       </section>
+
+      {/* in attesa di Marco */}
+      {attesa.length > 0 && (
+        <section className="panel rounded-[24px] px-[16px] pt-[14px] pb-[12px]">
+          <div className="flex items-center justify-between">
+            <p className="text-[15px] font-bold">In attesa di {nomeTrainer}</p>
+            <span className="rounded-full px-[9px] py-[4px] text-[11px] font-bold" style={{ color: "var(--trainer)", background: "color-mix(in srgb, var(--trainer) 12%, transparent)" }}>
+              {attesa.length} da confermare
+            </span>
+          </div>
+          <ul className="mt-[6px]">
+            {attesa.map((r) => (
+              <li key={r.id} className="flex items-center gap-[10px] py-[8px] text-[12.5px]">
+                <span className="w-[52px] shrink-0 font-semibold text-muted">{r.takenOn === OGGI ? "Oggi" : dataBreve(r.takenOn)}</span>
+                <span className="min-w-0 flex-1 text-ink/75">
+                  {CAMPI.slice(1)
+                    .filter((x) => r[x.k] !== undefined)
+                    .map((x) => `${x.label} ${numero(r[x.k] as number)} cm`)
+                    .join(" · ")}
+                </span>
+                <span aria-hidden>🕒</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11.5px] text-muted">Contano nei tuoi progressi quando {nomeTrainer} le conferma.</p>
+        </section>
+      )}
 
       {/* storico */}
       <section className="panel rounded-[24px] px-[16px] pt-[14px] pb-[8px]">

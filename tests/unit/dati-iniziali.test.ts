@@ -39,8 +39,9 @@ describe("datiIniziali", () => {
     const righe = misureDi("giulia-bianchi");
     expect(righe).toHaveLength(8);
     expect(righe.map((r) => r.weightKg)).toEqual(giulia.weights);
-    expect(righe[7].takenOn).toBe("2026-10-21");
-    expect(righe[6].takenOn).toBe("2026-10-14");
+    // l'ultima pesata di Giulia è di una settimana fa (ultimaPesata): oggi l'app le ricorda di pesarsi
+    expect(righe[7].takenOn).toBe("2026-10-14");
+    expect(righe[6].takenOn).toBe("2026-10-07");
     expect(righe[0]).toMatchObject({ waistCm: 86, hipsCm: 104, chestCm: 95, armCm: 31, thighCm: 60 });
     expect(righe[7]).toMatchObject({ waistCm: 82, hipsCm: 101, chestCm: 93, armCm: 30, thighCm: 58 });
     expect(righe[3].waistCm).toBeUndefined();

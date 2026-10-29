@@ -42,6 +42,7 @@ export type Client = {
   questions: string[];
   phone: string;
   email: string;
+  ultimaPesata?: string; // "AAAA-MM-GG" dell'ultima pesata, se non è oggi (le pesate vanno indietro di settimana in settimana da lì)
 };
 
 // Serie di pesi credibile fra due valori (8 settimane).
@@ -81,6 +82,7 @@ export const clients: Client[] = [
     notes: "Molto motivata. Vuole arrivare in forma per un matrimonio a dicembre.",
     questions: ["Come faccio lo squat?", "Oggi non ho il bilanciere"],
     phone: "+39 340 000 0102", email: "giulia.bianchi@esempio.it",
+    ultimaPesata: "2026-10-14", // una settimana fa: con la pesata settimanale, oggi l'app del cliente le ricorda di pesarsi
   },
   {
     id: "luca-ferri", name: "Luca Ferri", gender: "uomo", initials: "LF", photo: "/prototipo/cliente-luca.jpg", tone: "sky", since: "Dal 08 Set 2026",

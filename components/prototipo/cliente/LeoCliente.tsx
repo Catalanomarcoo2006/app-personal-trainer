@@ -6,14 +6,17 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowUp, BellRing, X } from "lucide-react";
+import { ArrowUp, BellRing, Paperclip, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
 import { assistantSuggestions, client, trainer } from "@/libs/prototipo/dati-finti";
 import { lettoreNdjson } from "@/libs/prototipo/leo-flusso";
 import { estraiDolore, pareDolore, rispostaCliente } from "@/libs/prototipo/leo-cliente";
+import { ACCETTATI, bloccoAllegato, leggiFile } from "@/libs/prototipo/leo-file";
+import { TastoMicrofono, useVoceLeo, VoceStato } from "@/components/prototipo/trainer/MicrofonoLeo";
 import { EASE_OUT } from "@/components/ui/motion";
 
-type Msg = { id: number; da: "cliente" | "leo" | "avviso"; testo: string };
+type Msg = { id: number; da: "cliente" | "leo" | "avviso"; testo: string; file?: string };
+export type Allegato = { nome: string; testo: string };
 const nomeTrainer = trainer.name.split(" ")[0];
 // in leo-bordo.webp (560 × 339) il bordo è alla riga 283: in proporzione alla larghezza, 283 / 560
 const LEO_BORDO = 283 / 560;
@@ -53,14 +56,18 @@ function useChatCliente() {
       );
     });
 
-  const chiedi = async (domanda: string) => {
-    const testo = domanda.trim().slice(0, 1000);
+  // allegato: il testo del file (letto nel browser) va a Leo una volta sola, con questa domanda; nella cronologia
+  // resta solo il nome del file, come nella chat del trainer
+  const chiedi = async (domanda: string, allegato?: Allegato) => {
+    const testo = (domanda.trim() || (allegato ? "Leggi il file che ti ho mandato" : "")).slice(0, 1000);
     if (!testo || occupato.current) return false;
     occupato.current = true;
     setRisponde(true);
     playSound("tap");
-    setMessaggi((m) => [...m, { id: prossimo.current++, da: "cliente", testo }]);
-    storia.current = [...storia.current, { role: "user", content: testo }];
+    setMessaggi((m) => [...m, { id: prossimo.current++, da: "cliente", testo, file: allegato?.nome }]);
+    const conFile = allegato ? `${testo}\n\n${bloccoAllegato(allegato.nome, allegato.testo)}` : testo;
+    const daMandare = [...storia.current.slice(-9), { role: "user" as const, content: conFile }];
+    storia.current = [...storia.current, { role: "user", content: allegato ? `${testo}\n(file allegato "${allegato.nome}")` : testo }];
     setScrive(true);
     const id = prossimo.current++;
     let raw = "";
@@ -72,7 +79,7 @@ function useChatCliente() {
       const res = await fetch("/prototipo/api/leo-cliente", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: storia.current.slice(-10) }),
+        body: JSON.stringify({ messages: daMandare }),
         signal: ctrl.signal,
       });
       if (!res.ok || !res.body) throw new Error(String(res.status));
@@ -98,8 +105,8 @@ function useChatCliente() {
       storia.current = [...storia.current, { role: "assistant", content: finale.testo }];
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return true;
-      // senza AI: le risposte fisse
-      const r = rispostaCliente(testo);
+      // senza AI: le risposte fisse (un file senza AI non si può leggere: lo si dice)
+      const r = allegato ? { text: `Ho il file "${allegato.nome}", ma adesso non riesco a leggerlo: riprova tra poco, oppure mandalo a ${nomeTrainer} in Messaggi.`, dolore: false } : rispostaCliente(testo);
       setScrive(false);
       await scriviPianoPiano(id, r.text);
       dolore = r.dolore;
@@ -139,6 +146,24 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
   const { messaggi, scrive, risponde, chiedi } = useChatCliente();
   const [bozza, setBozza] = useState("");
   const lista = useRef<HTMLDivElement>(null);
+  // vocali: come nella chat del trainer (la dettatura del browser: solo con dati finti, regole del progetto)
+  const voce = useVoceLeo({ bloccato: risponde, draft: bozza, setDraft: setBozza, invia: (t) => void chiedi(t) });
+  // il file allegato: l'app lo legge subito nel browser (PDF con testo, Excel, CSV, TXT) e lo manda con il messaggio
+  const [file, setFile] = useState<Allegato | null>(null);
+  const [erroreFile, setErroreFile] = useState<string | null>(null);
+  const sceltaFile = useRef<HTMLInputElement>(null);
+  const allega = async (f: File | undefined) => {
+    if (!f) return;
+    playSound("tap");
+    const letto = await leggiFile(f);
+    if ("motivo" in letto) {
+      setFile(null);
+      setErroreFile(letto.motivo);
+      return;
+    }
+    setErroreFile(null);
+    setFile({ nome: letto.nome, testo: letto.testo });
+  };
 
   // in fondo a ogni messaggio nuovo (anche mentre la risposta scorre)
   useEffect(() => {
@@ -154,9 +179,11 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
 
   const invia = (e?: FormEvent) => {
     e?.preventDefault();
-    if (!bozza.trim() || risponde) return;
-    void chiedi(bozza);
+    if ((!bozza.trim() && !file) || risponde) return;
+    void chiedi(bozza, file ?? undefined);
     setBozza(""); // solo se la domanda è partita: mentre Leo risponde il testo resta nella casella
+    setFile(null);
+    setErroreFile(null);
   };
 
   return (
@@ -229,6 +256,11 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
                         className={`max-w-[85%] rounded-[18px] px-[13px] py-[10px] text-[14px] leading-snug whitespace-pre-wrap [overflow-wrap:anywhere] ${m.da === "cliente" ? "ml-auto rounded-br-[6px] text-white" : "glass-row rounded-bl-[6px]"}`}
                         style={m.da === "cliente" ? { background: "var(--trainer)" } : undefined}
                       >
+                        {m.file && (
+                          <span className="mb-[6px] flex items-center gap-[5px] rounded-[10px] bg-white/20 px-[8px] py-[5px] text-[12px] font-semibold">
+                            <Paperclip size={12} className="shrink-0" /> <span className="truncate">{m.file}</span>
+                          </span>
+                        )}
                         {m.testo}
                       </motion.p>
                     ),
@@ -237,16 +269,46 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
                 </div>
               </div>
 
-              <form onSubmit={invia} className="mx-[12px] flex items-center gap-[8px] rounded-full border border-line bg-card py-[5px] pr-[5px] pl-[16px]">
+              <VoceStato voce={voce} />
+              {(file || erroreFile) && (
+                <div className="mx-[14px] mb-[6px] flex items-center gap-[6px] text-[12px]">
+                  {file ? (
+                    <span className="flex min-w-0 items-center gap-[5px] rounded-full bg-soft px-[10px] py-[5px] font-semibold">
+                      <Paperclip size={12} className="shrink-0" />
+                      <span className="truncate">{file.nome}</span>
+                      <button type="button" aria-label="Togli il file" onClick={() => setFile(null)} className="grid size-[18px] shrink-0 cursor-pointer place-items-center rounded-full hover:bg-line">
+                        <X size={11} />
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="text-[#d43b4f]">{erroreFile}</span>
+                  )}
+                </div>
+              )}
+              <form onSubmit={invia} className="mx-[12px] flex items-center gap-[6px] rounded-full border border-line bg-card py-[5px] pr-[5px] pl-[10px]">
+                <input
+                  ref={sceltaFile}
+                  type="file"
+                  accept={ACCETTATI}
+                  className="hidden"
+                  onChange={(e) => {
+                    void allega(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                <button type="button" aria-label="Allega un file (PDF, Excel, CSV, TXT)" onClick={() => sceltaFile.current?.click()} className="grid size-[32px] shrink-0 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-soft hover:text-ink">
+                  <Paperclip size={16} />
+                </button>
+                <TastoMicrofono voce={voce} />
                 <input
                   value={bozza}
                   onChange={(e) => setBozza(e.target.value)}
                   maxLength={1000}
-                  placeholder="Scrivi a Leo…"
+                  placeholder={voce.fase === "in-ascolto" ? "Parla adesso…" : voce.fase === "preparazione" ? "Accendo il microfono…" : "Scrivi a Leo…"}
                   aria-label="Scrivi a Leo"
                   className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-muted"
                 />
-                <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.92 }} disabled={!bozza.trim() || risponde} className="btn-trainer grid size-[38px] shrink-0 cursor-pointer place-items-center rounded-full disabled:cursor-default disabled:opacity-40">
+                <motion.button type="submit" aria-label="Invia" whileTap={{ scale: 0.92 }} disabled={(!bozza.trim() && !file) || risponde} className="btn-trainer grid size-[38px] shrink-0 cursor-pointer place-items-center rounded-full disabled:cursor-default disabled:opacity-40">
                   <ArrowUp size={17} strokeWidth={2.4} />
                 </motion.button>
               </form>
