@@ -18,8 +18,12 @@ import { EASE_OUT } from "@/components/ui/motion";
 type Msg = { id: number; da: "cliente" | "leo" | "avviso"; testo: string; file?: string };
 export type Allegato = { nome: string; testo: string };
 const nomeTrainer = trainer.name.split(" ")[0];
-// in leo-bordo.webp (560 × 433) il bordo è alla riga 378: in proporzione alla larghezza, 378 / 560
+// in leo-sbircia.webp (560 × 433) il bordo della foto è alla riga 378: in proporzione alla larghezza, 378 / 560.
+// Se si cambia la foto si cambia anche il nome del file: con lo stesso nome il browser può tenere la foto nuova
+// e il calcolo vecchio, e Leo finisce più in basso del bordo (successo il 29/10).
+const LEO_FOTO = "/prototipo/coach/leo-sbircia.webp";
 const LEO_BORDO = 378 / 560;
+const LEO_LARGO = 132; // px: piccolo, si aggrappa al bordo senza coprire lo schermo
 
 function useChatCliente() {
   const [messaggi, setMessaggi] = useState<Msg[]>([]);
@@ -200,19 +204,19 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
             transition={{ duration: 0.42, ease: EASE_OUT }}
             className="absolute inset-x-0 bottom-0 flex h-[80%] flex-col"
           >
-            {/* Leo si affaccia dal bordo alto e guarda giù, come se sbirciasse la chat (leo-bordo.webp, ritagliato dalla
+            {/* Leo si affaccia dal bordo alto e guarda giù, come se sbirciasse la chat (leo-sbircia.webp, ritagliato dalla
                 foto di Gemini di Marco del 29/10): la riga del bordo della foto combacia con il bordo del foglio e le
                 dita scendono sopra il foglio. Sta sopra il foglio, quindi entra solo con una dissolvenza breve. */}
             <motion.img
-              src="/prototipo/coach/leo-bordo.webp"
+              src={LEO_FOTO}
               alt=""
               aria-hidden
               draggable={false}
               initial={{ opacity: 0, y: reduce ? 0 : 14, x: "-50%" }}
               animate={{ opacity: 1, y: 0, x: "-50%" }}
               transition={{ delay: 0.3, type: "spring", stiffness: 260, damping: 22 }}
-              className="pointer-events-none absolute left-1/2 z-10 w-[168px] select-none"
-              style={{ top: -LEO_BORDO * 168 }}
+              className="pointer-events-none absolute left-1/2 z-10 select-none"
+              style={{ width: LEO_LARGO, top: -LEO_BORDO * LEO_LARGO }}
             />
             {/* fondo pieno: dietro ci sono il corpo di Leo e la pagina, non devono trasparire */}
             <div className="panel relative flex min-h-0 flex-1 flex-col rounded-t-[30px] rounded-b-none pb-[max(12px,env(safe-area-inset-bottom))]" style={{ background: "var(--color-card)" }}>

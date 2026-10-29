@@ -4,14 +4,16 @@
 // sul fondo come l'area trainer, intestazione grande che scorrendo si rimpicciolisce in una barra di vetro (come le app
 // Apple, scelta di Marco del 28/10) e barra in basso a pillola di vetro con la goccia che scivola sulla voce attiva.
 
-import { ReactNode, RefObject, useEffect, useRef } from "react";
+import { ReactNode, RefObject, useEffect, useRef, useState } from "react";
 import {
   motion,
   useReducedMotion,
   useScroll,
   useTransform,
 } from "motion/react";
-import { BatteryFull, Bell, Signal, Wifi } from "lucide-react";
+import { BatteryFull, Moon, Signal, Sun, Wifi } from "lucide-react";
+import { useAppearance } from "@/components/ui/appearance";
+import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { navigate } from "@/components/prototipo/trainer/nav";
 import {
@@ -129,18 +131,84 @@ function FotoCliente({ size, onClick }: { size: number; onClick: () => void }) {
   );
 }
 
-function Campanella({ onClick }: { onClick: () => void }) {
+// Al posto della campanella (Marco, 29/10): la luna per il tema scuro (il sole per tornare al chiaro).
+// Il cambio parte dal tasto con l'onda dell'area trainer. Le novità del trainer si vedono col numero su Messaggi.
+function TastoTema() {
+  const { theme, setTheme } = useAppearance();
+  const scuro = theme === "dark";
   return (
     <motion.button
       type="button"
-      aria-label="Novità"
+      aria-label={scuro ? "Tema chiaro" : "Tema scuro"}
       whileTap={{ scale: 0.94 }}
-      onClick={onClick}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        playSound("tap");
+        setTheme(scuro ? "light" : "dark", { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      }}
       className="glass relative grid size-[40px] cursor-pointer place-items-center rounded-full"
     >
-      <Bell size={17} strokeWidth={1.9} />
-      <span className="absolute top-[9px] right-[10px] size-[7px] rounded-full bg-[#e5484d] ring-2 ring-white dark:ring-black" />
+      <motion.span key={theme} initial={{ rotate: -40, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} transition={{ duration: 0.3 }}>
+        {scuro ? <Sun size={17} strokeWidth={1.9} /> : <Moon size={17} strokeWidth={1.9} />}
+      </motion.span>
     </motion.button>
+  );
+}
+
+// Indicatore di scorrimento sul bordo destro, come su iOS (Marco, 29/10: far capire che la Home scorre).
+// All'apertura di una sezione che scorre compare e fa un piccolo su e giù per invitare a scorrere, poi sparisce;
+// riappare mentre si scorre e dice a che punto si è. Se la sezione non scorre non c'è.
+function Scorrimento({ scorre, chiave }: { scorre: RefObject<HTMLDivElement | null>; chiave: string }) {
+  const reduce = useReducedMotion();
+  const [misure, setMisure] = useState({ su: 0, alto: 0, tutto: 0 });
+  const [acceso, setAcceso] = useState(false);
+  const spegni = useRef(0);
+
+  useEffect(() => {
+    const el = scorre.current;
+    if (!el) return;
+    const misura = () => setMisure({ su: el.scrollTop, alto: el.clientHeight, tutto: el.scrollHeight });
+    const accendi = (ms: number) => {
+      setAcceso(true);
+      window.clearTimeout(spegni.current);
+      spegni.current = window.setTimeout(() => setAcceso(false), ms);
+    };
+    const suScorri = () => {
+      misura();
+      accendi(1100);
+    };
+    misura();
+    // l'invito: appena aperta la sezione (dopo che le schede sono entrate)
+    const invito = window.setTimeout(() => {
+      misura();
+      if (el.scrollHeight > el.clientHeight + 24) accendi(2600);
+    }, 700);
+    const osserva = new ResizeObserver(misura);
+    osserva.observe(el);
+    if (el.firstElementChild) osserva.observe(el.firstElementChild);
+    el.addEventListener("scroll", suScorri, { passive: true });
+    return () => {
+      window.clearTimeout(invito);
+      window.clearTimeout(spegni.current);
+      osserva.disconnect();
+      el.removeEventListener("scroll", suScorri);
+    };
+  }, [scorre, chiave]);
+
+  if (misure.tutto <= misure.alto + 24) return null;
+  const binario = misure.alto - 200; // dall'intestazione alla barra in basso
+  const pollice = Math.max(34, (misure.alto / misure.tutto) * binario);
+  const dove = (misure.su / (misure.tutto - misure.alto)) * (binario - pollice);
+  const inCima = misure.su < 4;
+
+  return (
+    <motion.span
+      aria-hidden
+      className="pointer-events-none absolute right-[4px] z-20 w-[4px] rounded-full"
+      style={{ top: 110 + dove, height: pollice, background: "color-mix(in srgb, var(--trainer) 70%, var(--color-ink) 10%)" }}
+      animate={{ opacity: acceso ? 0.85 : 0, y: acceso && inCima && !reduce ? [0, 14, 0, 9, 0] : 0 }}
+      transition={{ opacity: { duration: 0.25 }, y: { duration: 1.6, ease: "easeInOut", delay: 0.2 } }}
+    />
   );
 }
 
@@ -313,7 +381,7 @@ export function Guscio({
               {titolo}
             </h1>
             <div className="flex items-center gap-[8px]">
-              <Campanella onClick={() => navigate(ROTTE_CLIENTE.messaggi)} />
+              <TastoTema />
               <FotoCliente size={40} onClick={profilo} />
             </div>
           </div>
@@ -329,6 +397,7 @@ export function Guscio({
         </motion.div>
       </div>
 
+      <Scorrimento scorre={scorre} chiave={sezione} />
       <BarraCliente attiva={sezione} nonLetti={nonLetti} />
       {fuori}
       {/* qui si agganciano i fogli delle sezioni (createPortal): sopra tutto, dentro il telefono */}

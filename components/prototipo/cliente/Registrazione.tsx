@@ -17,6 +17,7 @@ import { impostaPesata, proponiObiettivo } from "@/libs/dati/sportello";
 import { FREQUENZE, type Frequenza } from "@/libs/domain/pesate";
 import { Telefono } from "./Shell";
 import { CLIENTE_DEMO } from "./scheda";
+import { ROTTE_CLIENTE } from "./nav";
 
 const CHIAVE = "registrazione-cliente";
 const nomeTrainer = trainer.name.split(" ")[0];
@@ -39,6 +40,8 @@ export function useRegistrazione(): [boolean | null, () => void] {
     } catch {
       // niente memoria: alla prossima apertura si rifà
     }
+    // finita la registrazione si entra sempre dalla Home, qualunque fosse l'indirizzo dell'invito (e senza ?registrazione)
+    window.history.replaceState(null, "", ROTTE_CLIENTE.home);
     setFatta(true);
   };
   return [fatta, segna];
