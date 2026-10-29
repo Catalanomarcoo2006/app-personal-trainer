@@ -16,7 +16,7 @@ import { EASE_OUT } from "@/components/ui/motion";
 import { LEO_BORDO, LEO_FOTO, LEO_LARGO } from "@/components/prototipo/cliente/LeoCliente";
 import { ConfermaTutte, SchedaAzioneView } from "../LeoAzioni";
 import { TastoMicrofono, VoceStato, type VoceLeo } from "../MicrofonoLeo";
-import { CoachFace } from "../leo/CoachFace";
+import { TestaLeo } from "@/components/prototipo/cliente/IngressoLeo";
 import { suggestions } from "../leo/risposte";
 import type { Allegato, Chat } from "../leo/useChatLeo";
 import { navigate, ROUTES } from "../nav";
@@ -96,7 +96,7 @@ export function LeoTelefono({ chat, aperto, onChiudi, bozza, setBozza, voce }: {
             exit={{ opacity: 0, y: -12 }}
             className="glass glass-3d absolute top-[max(12px,env(safe-area-inset-top))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-[8px] rounded-full py-[5px] pr-[14px] pl-[6px] text-[13px] font-semibold whitespace-nowrap sm:top-[54px]"
           >
-            <CoachFace size={28} /> Leo sta lavorando…
+            <TestaLeo size={28} /> Leo sta lavorando…
           </motion.div>
         )}
       </AnimatePresence>

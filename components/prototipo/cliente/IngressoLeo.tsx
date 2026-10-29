@@ -2,21 +2,39 @@
 
 // L'animazione d'apertura delle app da telefono (cliente e trainer), dal logo (Marco, 30/10; logo in
 // public/brand/logo-leo-anello.svg): al centro compare la testa di Leo nel suo cerchio; intorno l'anello arancione,
-// che all'inizio non c'è, si disegna fino a chiudere il cerchio; poi la testa vola, rimpicciolendo, fino alla faccia di
-// Leo in basso a destra (telefono/TastoLeo.tsx, che fino ad allora resta nascosta) e l'app si scopre.
-// Il contenitore (Marco, 30/10): fin dal primo istante in basso a destra c'è già il cerchio colorato col bordo al
-// neon, vuoto, al posto della faccia; la testa ci atterra dentro con un piccolo colpo.
+// che all'inizio non c'è, si disegna fino a chiudere il cerchio. Poi si entra nell'app: il fondo sfuma e in basso a
+// destra compare il contenitore (la faccia di Leo, vuota e colorata); la testa ci vola dentro e ci resta.
+// Senza tagli (Marco, 30/10): la testa che vola e quella della faccia di Leo sono la stessa (TestaLeo, la testa del
+// logo), e la testa atterra esattamente sul suo posto: quando arriva, la faccia la prende e l'animazione sparisce
+// nello stesso istante, con gli stessi pixel. Poi la faccia fa un piccolo colpo, come un oggetto appoggiato.
 // Una volta per apertura dell'app (cambiando sezione non riparte). Un tocco la salta. Con "riduci movimento": il logo
 // fermo per un attimo, poi una dissolvenza.
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { motion, useAnimate, useReducedMotion } from "motion/react";
 
-export const ID_FACCIA_LEO = "faccia-leo"; // dove atterra la testa (la faccia di Leo in basso a destra)
+export const ID_FACCIA_LEO = "faccia-leo"; // il posto della testa nella faccia di Leo, in basso a destra
 
-// ——— Fatta o no: la faccia di Leo compare solo quando la testa è arrivata ———
+// ——— La testa di Leo: la stessa nell'animazione e nella faccia in basso a destra ———
 
-let fatto = false;
+const BORDO = 4 / 168; // il bordo di vetro, in proporzione: a ogni misura la testa è identica
+
+export function TestaLeo({ size }: { size: number }) {
+  return (
+    <span
+      className="block overflow-hidden rounded-full"
+      style={{ width: size, height: size, background: "radial-gradient(circle at 40% 30%, #fffaf5, #f3e4d8)", border: `${size * BORDO}px solid rgba(255,255,255,0.75)` }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/prototipo/coach/leo-logo.webp" alt="" draggable={false} className="size-full object-cover select-none" />
+    </span>
+  );
+}
+
+// ——— A che punto è: 0 la faccia è nascosta, 1 c'è il contenitore vuoto, 2 la testa è dentro ———
+
+export type FaseIngresso = 0 | 1 | 2;
+let fase: FaseIngresso = 0;
 const chi = new Set<() => void>();
 const iscrivi = (f: () => void) => {
   chi.add(f);
@@ -24,16 +42,16 @@ const iscrivi = (f: () => void) => {
     chi.delete(f);
   };
 };
-function segnaFatto() {
-  if (fatto) return;
-  fatto = true;
-  chi.forEach((f) => f());
+function segnaFase(f: FaseIngresso) {
+  if (f <= fase) return;
+  fase = f;
+  chi.forEach((x) => x());
 }
-export const useIngressoFatto = () =>
+export const useFaseIngresso = (): FaseIngresso =>
   useSyncExternalStore(
     iscrivi,
-    () => fatto,
-    () => false,
+    () => fase,
+    () => 0,
   );
 
 // ——— Misure (come nel logo: anello r 352, testa r 276 su 1024) ———
@@ -43,12 +61,10 @@ const R = Math.round((TESTA / 2) * (352 / 276)); // 107
 const SPESSORE = 17;
 const LATO = 2 * (R + SPESSORE + 8);
 const GIRO = 2 * Math.PI * R;
-const VOLO = { duration: 0.75, ease: [0.65, 0, 0.35, 1] } as const;
-const NEON = "conic-gradient(from 0deg, var(--trainer), #ffcf5c, #7cf0d0, #7cc4ff, var(--trainer))";
-
+const VOLO = 0.8;
 
 export function IngressoLeo() {
-  const [via] = useState(() => !fatto); // già vista in questa apertura: niente
+  const [via] = useState(() => fase < 2); // già vista in questa apertura: niente
   const [finita, setFinita] = useState(false);
   const reduce = useReducedMotion();
   const [scope, animate] = useAnimate<HTMLDivElement>();
@@ -56,9 +72,9 @@ export function IngressoLeo() {
   useEffect(() => {
     if (!via) return;
     let fermo = false;
-    const chiudi = () => {
-      segnaFatto();
-      setFinita(true);
+    const fine = () => {
+      segnaFase(2);
+      setFinita(true); // nello stesso momento: la faccia prende la testa, l'animazione sparisce
     };
     (async () => {
       const el = scope.current;
@@ -67,11 +83,6 @@ export function IngressoLeo() {
       const anello = el.querySelectorAll<SVGCircleElement>("[data-arco]");
       const fondo = el.querySelector<HTMLElement>("[data-fondo]")!;
       const cerchio = el.querySelector<HTMLElement>("[data-cerchio]")!;
-      // il contenitore va dove sta la faccia di Leo (ancora nascosta sotto)
-      const tasto = document.getElementById(ID_FACCIA_LEO)?.parentElement?.getBoundingClientRect();
-      const io = el.getBoundingClientRect();
-      const contenitore = tasto?.width ? el.querySelector<HTMLElement>("[data-contenitore]") : null;
-      if (contenitore && tasto) Object.assign(contenitore.style, { left: `${tasto.left - io.left}px`, top: `${tasto.top - io.top}px`, width: `${tasto.width}px`, height: `${tasto.height}px` });
       if (reduce) {
         anello.forEach((a) => {
           a.style.strokeDashoffset = "0";
@@ -79,47 +90,43 @@ export function IngressoLeo() {
         });
         await new Promise((r) => setTimeout(r, 700));
         if (fermo) return;
-        segnaFatto();
+        segnaFase(2);
         await animate(el, { opacity: 0 }, { duration: 0.35 });
         return setFinita(true);
       }
-      // 1. la testa compare al centro, il contenitore in basso a destra
-      if (contenitore) void animate(contenitore, { opacity: [0, 1], scale: [0.5, 1] }, { type: "spring", duration: 0.5, bounce: 0.35 });
+      // 1. la testa compare
       await animate(testa, { opacity: [0, 1], scale: [0.72, 1] }, { duration: 0.45, ease: [0.22, 1, 0.36, 1] });
       if (fermo) return;
-      // 2. l'anello si disegna fino a chiudersi
-      // (fino ad allora è nascosto: con la punta tonda, a lunghezza zero si vedrebbe un puntino)
+      // 2. l'anello si disegna fino a chiudersi (nascosto fino ad allora: con la punta tonda si vedrebbe un puntino)
       await Promise.all([...anello].map((a) => animate(a, { opacity: [0, 1], strokeDashoffset: [GIRO, 0] }, { duration: 1.1, ease: [0.45, 0, 0.25, 1], opacity: { duration: 0.12 } })));
       if (fermo) return;
       // 3. un piccolo battito quando si chiude
       await animate(testa, { scale: [1, 1.07, 1] }, { duration: 0.32, ease: "easeOut" });
       if (fermo) return;
-      // 4. la testa vola alla faccia di Leo; l'anello e il fondo se ne vanno
-      const dove = document.getElementById(ID_FACCIA_LEO)?.getBoundingClientRect();
+      // 4. si entra nell'app: anello e fondo se ne vanno, compare il contenitore, la testa ci vola dentro.
+      // Il posto si misura prima: centro dal riquadro, misura vera da offsetWidth (che non sente le trasformazioni:
+      // il contenitore entra rimpicciolito e si allarga).
+      const posto = document.getElementById(ID_FACCIA_LEO);
+      const dove = posto?.getBoundingClientRect();
       const qui = testa.getBoundingClientRect();
       void animate(cerchio, { opacity: 0, scale: 0.7 }, { duration: 0.35, ease: "easeIn" });
-      void animate(fondo, { opacity: 0 }, { duration: 0.6, delay: 0.1, ease: "easeOut" });
-      if (dove && dove.width) {
-        const x = dove.left + dove.width / 2 - (qui.left + qui.width / 2);
-        const y = dove.top + dove.height / 2 - (qui.top + qui.height / 2);
-        // x esce subito, y scende dopo: la testa fa una curva invece di una linea dritta
-        await Promise.all([
-          animate(testa, { x }, { ...VOLO, ease: [0.3, 0.7, 0.4, 1] }),
-          animate(testa, { y }, { ...VOLO, ease: [0.6, 0, 0.7, 0.9] }),
-          animate(testa, { scale: dove.width / TESTA }, VOLO),
-        ]);
-        if (fermo) return;
-        // l'atterraggio: il contenitore accusa il colpo, poi tutto sfuma sulla faccia vera, già al suo posto sotto
-        const piccola = dove.width / TESTA;
-        const colpo = { duration: 0.3, ease: "easeOut" } as const;
-        await Promise.all([animate(testa, { scale: [piccola, piccola * 1.1, piccola] }, colpo), contenitore && animate(contenitore, { scale: [1, 1.12, 1] }, colpo)]);
-        if (fermo) return;
-        segnaFatto();
-        await animate(el, { opacity: 0 }, { duration: 0.2 });
-      } else {
+      void animate(fondo, { opacity: 0 }, { duration: 0.55, ease: "easeOut" });
+      if (!posto || !dove?.width) {
         await animate(testa, { opacity: 0, scale: 0.6 }, { duration: 0.4 });
+        if (!fermo) fine();
+        return;
       }
-      if (!fermo) chiudi();
+      segnaFase(1);
+      const x = dove.left + dove.width / 2 - (qui.left + qui.width / 2);
+      const y = dove.top + dove.height / 2 - (qui.top + qui.height / 2);
+      // x parte subito, y scende dopo: la testa fa una curva; l'ombra si spegne, nella faccia non c'è
+      await Promise.all([
+        animate(testa, { x }, { duration: VOLO, ease: [0.3, 0.7, 0.4, 1] }),
+        animate(testa, { y }, { duration: VOLO, ease: [0.6, 0, 0.7, 0.9] }),
+        animate(testa, { scale: posto.offsetWidth / TESTA }, { duration: VOLO, ease: [0.65, 0, 0.35, 1] }),
+        animate(testa, { boxShadow: ["0 14px 24px -8px rgba(30,58,42,0.35)", "0 0 0 0 rgba(30,58,42,0)"] }, { duration: VOLO, ease: "easeIn" }),
+      ]);
+      if (!fermo) fine();
     })();
     return () => {
       fermo = true;
@@ -134,29 +141,13 @@ export function IngressoLeo() {
       ref={scope}
       role="presentation"
       onClick={() => {
-        segnaFatto();
+        segnaFase(2);
         setFinita(true);
       }}
       className="absolute inset-0 z-[70] grid cursor-pointer place-items-center"
     >
       {/* il fondo del logo: salvia con un velo del colore del trainer */}
       <div data-fondo className="absolute inset-0 bg-salvia" style={{ backgroundImage: "radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--trainer) 14%, transparent), transparent 60%)" }} />
-      {/* il contenitore: la faccia di Leo senza Leo, piena di colore, che aspetta la testa */}
-      {/* posizione e misura le mette l'animazione: quelle della faccia di Leo */}
-      {(
-        <div
-          data-contenitore
-          className="absolute grid place-items-center rounded-full opacity-0"
-          style={{
-            boxShadow: "0 0 0 1px color-mix(in srgb, var(--trainer) 35%, transparent), 0 12px 30px -6px color-mix(in srgb, var(--trainer) 75%, transparent), 0 0 30px -2px color-mix(in srgb, var(--trainer) 60%, transparent)",
-          }}
-        >
-          <span className="absolute inset-0 overflow-hidden rounded-full">
-            <motion.span aria-hidden className="absolute top-1/2 left-1/2 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2" style={{ background: NEON }} animate={reduce ? undefined : { rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
-          </span>
-          <span className="absolute inset-[3px] rounded-full" style={{ background: "radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--trainer) 35%, white), var(--trainer))" }} />
-        </div>
-      )}
       <div className="relative grid place-items-center" style={{ width: LATO, height: LATO }}>
         <div data-cerchio className="absolute inset-0">
           <svg viewBox={`0 0 ${LATO} ${LATO}`} className="size-full -rotate-90 overflow-visible">
@@ -172,15 +163,8 @@ export function IngressoLeo() {
             <circle data-arco cx={LATO / 2} cy={LATO / 2} r={R} fill="none" stroke="url(#ingresso-arancio)" strokeWidth={SPESSORE} strokeLinecap="round" strokeDasharray={GIRO} strokeDashoffset={GIRO} opacity={0} />
           </svg>
         </div>
-        {/* la testa: il cerchio chiaro del logo con Leo, il bordo di vetro */}
-        <motion.div
-          data-testa
-          initial={{ opacity: 0 }}
-          className="relative overflow-hidden rounded-full shadow-[0_14px_24px_-8px_rgba(30,58,42,0.35)]"
-          style={{ width: TESTA, height: TESTA, background: "radial-gradient(circle at 40% 30%, #fffaf5, #f3e4d8)", border: "4px solid rgba(255,255,255,0.75)" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/prototipo/coach/leo-logo.webp" alt="" draggable={false} className="size-full object-cover select-none" />
+        <motion.div data-testa initial={{ opacity: 0 }} className="relative rounded-full" style={{ width: TESTA, height: TESTA, boxShadow: "0 14px 24px -8px rgba(30,58,42,0.35)" }}>
+          <TestaLeo size={TESTA} />
         </motion.div>
       </div>
     </div>

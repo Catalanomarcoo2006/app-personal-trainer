@@ -15,9 +15,8 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, Clock, Loader2, Mic, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
-import { ID_FACCIA_LEO, useIngressoFatto } from "@/components/prototipo/cliente/IngressoLeo";
+import { ID_FACCIA_LEO, TestaLeo, useFaseIngresso } from "@/components/prototipo/cliente/IngressoLeo";
 import { useVoceLeo } from "../MicrofonoLeo";
-import { CoachFace } from "../leo/CoachFace";
 import type { Chat } from "../leo/useChatLeo";
 
 const TIENI_MS = 300; // da qui un tocco diventa "tieni premuto"
@@ -48,7 +47,8 @@ export function FacciaLeo({
   onApri: () => void;
 }) {
   const reduce = useReducedMotion();
-  const arrivata = useIngressoFatto();
+  const fase = useFaseIngresso(); // 0 nascosta, 1 contenitore vuoto, 2 con la testa (IngressoLeo)
+  const arrivata = fase === 2;
   const [bozza, setBozza] = useState("");
   const [fumetto, setFumetto] = useState<Fumetto>(null);
   const voce = useVoceLeo({
@@ -188,8 +188,8 @@ export function FacciaLeo({
         type="button"
         aria-label="Leo: tocca per scrivere, tieni premuto per parlargli"
         initial={false}
-        animate={{ scale: tenuto && !reduce ? 1.15 : 1, opacity: arrivata ? 1 : 0 }}
-        transition={{ scale: { type: "spring", stiffness: 420, damping: 24 }, opacity: { duration: 0 } }}
+        animate={{ scale: tenuto && !reduce ? 1.15 : fase === 0 ? 0.55 : 1, opacity: fase === 0 ? 0 : 1 }}
+        transition={{ scale: { type: "spring", stiffness: 420, damping: fase === 1 ? 18 : 24 }, opacity: { duration: 0.2 } }}
         onPointerDown={giu}
         onPointerUp={su}
         onPointerCancel={su}
@@ -221,9 +221,18 @@ export function FacciaLeo({
         <span className="absolute inset-0 overflow-hidden rounded-full">
           <motion.span aria-hidden className="absolute top-1/2 left-1/2 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2" style={{ background: NEON }} animate={reduce ? undefined : { rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
         </span>
-        <span id={ID_FACCIA_LEO} className="relative grid size-[62px] place-items-center rounded-full bg-white">
-          <CoachFace size={52} />
-        </span>
+        {/* la testa di Leo (la stessa dell'animazione d'apertura); prima che arrivi, il contenitore vuoto e colorato.
+            Quando arriva fa un piccolo colpo, come appoggiata (initial false: aprendo una sezione dopo, niente colpo) */}
+        <motion.span
+          id={ID_FACCIA_LEO}
+          initial={false}
+          animate={arrivata && !reduce ? { scale: [1, 1.09, 1] } : { scale: 1 }}
+          transition={{ duration: 0.34, ease: "easeOut" }}
+          className="relative size-[62px] rounded-full"
+          style={arrivata ? undefined : { background: "radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--trainer) 35%, white), var(--trainer))" }}
+        >
+          {arrivata && <TestaLeo size={62} />}
+        </motion.span>
         {(ascolta || finisco) && (
           <span className="absolute -top-[1px] -right-[1px] grid size-[22px] place-items-center rounded-full text-white ring-2 ring-white" style={{ background: "var(--trainer)" }}>
             <Mic size={12} strokeWidth={2.6} />
