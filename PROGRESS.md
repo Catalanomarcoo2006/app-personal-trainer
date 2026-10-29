@@ -57,5 +57,4 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git); `animazione-login.mp4` è il riferimento del benvenuto. Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista). Prove delle app da telefono (Playwright, 390 × 844): saltare benvenuto e registrazione con localStorage `benvenuto` = `{"v":1,"fatto":true}` e `registrazione-cliente` = `fatta`; dettatura finta mettendo `window.SpeechRecognition`; AI finta con `AI_API_KEY` + `AI_BASE_URL` verso un server locale.
 
 ## Changelog (le voci vecchie in `docs/STORICO.md`)
-- 2026-10-29: Supabase UE collegato e versione vera online (corretti permessi di base dei progetti nuovi e barra laterale della dashboard vera).
-- 2026-10-29: versione vera delle tre app sul database e pagina d'ingresso con i sei siti; orologio unico (demo ferma al 21/10).
+- 2026-10-29: versione vera delle tre app sul database, pagina d'ingresso con i sei siti, orologio unico (demo ferma al 21/10); Supabase UE collegato e online (corretti i permessi di base dei progetti nuovi e la barra laterale della dashboard vera).
