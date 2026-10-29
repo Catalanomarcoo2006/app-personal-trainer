@@ -23,8 +23,40 @@ import { Foglio } from "@/components/prototipo/cliente/Foglio";
 import { ID_FOGLI } from "@/components/prototipo/cliente/nav";
 import { conta } from "@/libs/ui/testo";
 import { navigate, ROUTES } from "../nav";
-import { RigaSeduta } from "./Oggi";
-import { Riquadro, Titoletto, Vuoto } from "./pezzi";
+import { ClientAvatar } from "../shared";
+import { fineDi, minutiDi, Riga, Riquadro, Titoletto, Vuoto } from "./pezzi";
+
+const ORA = minutiDi(ADESSO.ora);
+
+// Una seduta: ora e fine a sinistra (i numeri in evidenza), il cliente, il tipo e il posto.
+// Quelle già finite sono spente; quella in corso ha la scritta "Adesso".
+function RigaSeduta({ s, onClick }: { s: Seduta; onClick: () => void }) {
+  const c = useTrovaCliente()(s.clientId);
+  const oggi = s.date === ADESSO.data;
+  const inizio = minutiDi(s.time);
+  const finita = s.date < ADESSO.data || (oggi && inizio + s.minutes <= ORA);
+  const adesso = oggi && inizio <= ORA && ORA < inizio + s.minutes;
+  return (
+    <Riga
+      onClick={onClick}
+      spenta={finita}
+      sinistra={
+        <span className="w-[46px] shrink-0 leading-none">
+          <span className="block text-[16px] font-extrabold tabular-nums">{s.time}</span>
+          <span className="mt-[4px] block text-[11px] text-muted tabular-nums">{fineDi(s.time, s.minutes)}</span>
+        </span>
+      }
+      titolo={
+        <span className="flex items-center gap-[8px]">
+          {c && <ClientAvatar c={c} size={22} />}
+          <span className="truncate">{c?.name ?? "Cliente"}</span>
+        </span>
+      }
+      sotto={`${s.type} · ${s.place}`}
+      destra={adesso ? <span className="btn-trainer shrink-0 rounded-full px-[8px] py-[3px] text-[11px] font-bold">Adesso</span> : finita ? <span className="shrink-0 text-[11.5px] text-muted">Fatta</span> : undefined}
+    />
+  );
+}
 
 const GIORNI = [0, 1].map((w) => Array.from({ length: 7 }, (_, i) => giornoDi(w, i)));
 const DURATE = [30, 45, 60, 90];

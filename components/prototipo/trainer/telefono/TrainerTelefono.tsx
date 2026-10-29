@@ -19,6 +19,7 @@ import { Guscio, type VoceBarra } from "@/components/prototipo/cliente/Shell";
 import { Foglio } from "@/components/prototipo/cliente/Foglio";
 import { BASE, ROUTES } from "../nav";
 import { useCoachChat } from "../leo/useChatLeo";
+import { useVoceLeo } from "../MicrofonoLeo";
 import { OggiTelefono } from "./Oggi";
 import { ClienteNonTrovato, ClientiTelefono, ProfiloTelefono } from "./Clienti";
 import { ChatCliente, ElencoMessaggi } from "./Messaggi";
@@ -82,6 +83,9 @@ export function TrainerTelefono() {
 
   const chat = useCoachChat({ senzaSoldi: true });
   const [leo, setLeo] = useState(false);
+  // la casella di Leo e il microfono stanno qui: il vocale parte anche dalla faccia di Leo, a foglio chiuso
+  const [bozza, setBozza] = useState("");
+  const voce = useVoceLeo({ bloccato: chat.typing, draft: bozza, setDraft: setBozza, invia: (t) => chat.ask(t) });
   const apriLeo = useCallback(() => setLeo(true), []);
   const chiudiLeo = useCallback(() => setLeo(false), []);
   const [account, setAccount] = useState(false);
@@ -131,7 +135,7 @@ export function TrainerTelefono() {
         {giornoLungo(ADESSO.data)} · {seduteOggi ? conta(seduteOggi, "seduta", "sedute") : "nessuna seduta"}
       </p>
     );
-    contenuto = <OggiTelefono onLeo={apriLeo} />;
+    contenuto = <OggiTelefono />;
   }
 
   const chiave = path + (conCliente ? `?${conCliente}` : "");
@@ -148,10 +152,10 @@ export function TrainerTelefono() {
       indietro={indietro}
       fuori={
         <>
-          {!conCliente && !leo && <TastoLeo onApri={apriLeo} />}
+          {!conCliente && !leo && <TastoLeo voce={voce} testo={bozza} onApri={apriLeo} />}
           <NuovaSeduta aperta={!!nuova} clientId={nuova?.clientId} date={nuova?.date} onChiudi={chiudiNuova} />
           <Account aperto={account} onChiudi={() => setAccount(false)} />
-          <LeoTelefono chat={chat} aperto={leo} onChiudi={chiudiLeo} />
+          <LeoTelefono chat={chat} aperto={leo} onChiudi={chiudiLeo} bozza={bozza} setBozza={setBozza} voce={voce} />
         </>
       }
     >

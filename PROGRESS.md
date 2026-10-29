@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-29
+**Ultimo aggiornamento:** 2026-10-30
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -16,7 +16,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo con lo stacco da terra, scritte subito e "Iniziamo" a ~3,7 s); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; nel prototipo ogni aggiornamento della pagina riparte dal primo passo (`?riprendi` riparte dal passo salvato). Tutti i passi finiti il 25/10 (marchio, privacy, primo cliente, conosci Leo, finale con le schede a meteoriti).
 
 ## In corso
-- **Area cliente approvata** da Marco il 29/10 ("per ora diamo per buona"). **Area trainer da telefono fatta il 29/10** (spec `docs/specs/2026-10-29-trainer-telefono-design.md`, codice in `components/prototipo/trainer/telefono/`): stesso guscio del cliente, Oggi · Clienti · Messaggi · Calendario e Leo completo (azioni, vocali, file), senza Incassi né Schede (le azioni sui soldi si fermano: "si gestiscono dal computer"). Si apre da sola sul telefono; dal computer `?telefono` (`?computer` per tornare). Da far provare a Marco sul telefono vero.
+- **Area cliente approvata** da Marco il 29/10 ("per ora diamo per buona"). **Area trainer da telefono fatta il 29/10** (spec `docs/specs/2026-10-29-trainer-telefono-design.md`, codice in `components/prototipo/trainer/telefono/`): stesso guscio del cliente, Oggi · Clienti · Messaggi · Calendario e Leo completo (azioni, vocali, file), senza Incassi né Schede (le azioni sui soldi si fermano: "si gestiscono dal computer"). Il 30/10: vocale tenendo premuta la faccia di Leo, Oggi con la giornata al centro e gli avvisi sotto. Si apre da sola sul telefono; dal computer `?telefono` (`?computer` per tornare). Da far provare a Marco sul telefono vero.
 
 ## Da fare (TODO)
 - Leo: foto e scansioni (serve un modello che vede le immagini), import dei clienti a fine onboarding con inviti (spec sua, serve il backend), trascrittore dei vocali sul server UE (`MediaRecorder` + rotta `api/leo/voce`, variabili `AI_STT_*`); trainer da telefono: push e spostare le sedute col dito.
