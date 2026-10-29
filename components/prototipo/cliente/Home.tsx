@@ -6,7 +6,7 @@
 
 import { ReactNode, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { ChevronRight, MapPin, Play, Video } from "lucide-react";
+import { ChevronRight, MapPin, MessageCircleHeart, Play, Video } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { client, trainer } from "@/libs/prototipo/dati-finti";
@@ -207,26 +207,49 @@ function Agenda() {
   );
 }
 
-// "Chiedi a Leo": Leo si affaccia dal bordo destro della scheda (spunta.webp, girato), con la testa che esce sopra.
+// "Chiedi a Leo" (Marco, 29/10): solo il viso di Leo in un cerchio e tutto il tasto luminoso, che inviti a toccarlo.
+// Il bordo è un neon che gira (conic-gradient che ruota) con un alone fatto di ombre, niente filtri blur (Chrome su
+// Windows li taglia); il cerchio del viso pulsa piano. Con "riduci movimento" resta luminoso ma fermo.
+const NEON = "conic-gradient(from 0deg, var(--trainer), #ffcf5c, #7cf0d0, #7cc4ff, var(--trainer))";
+
 function ChiediALeo({ onApri }: { onApri: () => void }) {
   const reduce = useReducedMotion();
   return (
-    <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={onApri} className="glass-row relative mt-[34px] flex h-[66px] w-full cursor-pointer items-center rounded-[20px] pr-[120px] pl-[16px] text-left">
-      <span className="min-w-0 leading-none">
-        <span className="block text-[15px] font-bold">Chiedi a Leo</span>
-        <span className="mt-[5px] block truncate text-[12px] text-muted">Esercizi, dubbi, come stai andando</span>
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.97 }}
+      onClick={onApri}
+      aria-label="Chiedi a Leo, il tuo assistente"
+      className="relative mt-[18px] block w-full cursor-pointer overflow-hidden rounded-[26px] p-[2.5px] text-left"
+      style={{ boxShadow: "0 0 0 1px color-mix(in srgb, var(--trainer) 30%, transparent), 0 10px 30px -8px color-mix(in srgb, var(--trainer) 70%, transparent), 0 0 26px -4px color-mix(in srgb, var(--trainer) 55%, transparent)" }}
+    >
+      {/* il neon del bordo */}
+      <motion.span aria-hidden className="absolute top-1/2 left-1/2 aspect-square w-[160%] -translate-x-1/2 -translate-y-1/2" style={{ background: NEON }} animate={reduce ? undefined : { rotate: 360 }} transition={{ duration: 5, repeat: Infinity, ease: "linear" }} />
+      <span className="relative flex items-center gap-[14px] rounded-[23.5px] px-[14px] py-[12px]" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--trainer) 16%, var(--color-card)), var(--color-card) 60%)" }}>
+        <span className="relative grid size-[58px] shrink-0 place-items-center">
+          {/* l'alone che pulsa dietro il viso */}
+          {!reduce && (
+            <motion.span aria-hidden className="absolute inset-0 rounded-full" style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--trainer) 70%, transparent) 40%, transparent 70%)" }} animate={{ scale: [1, 1.45], opacity: [0.7, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }} />
+          )}
+          <span className="relative size-[58px] overflow-hidden rounded-full p-[2.5px]" style={{ background: NEON }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/prototipo/coach/viso.webp" alt="" draggable={false} className="size-full rounded-full bg-card object-cover" />
+          </span>
+          <span aria-hidden className="absolute right-[1px] bottom-[2px] size-[13px] rounded-full bg-[#2fc26b] ring-[2.5px] ring-[var(--color-card)]" />
+        </span>
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block text-[17px] font-extrabold tracking-[-0.02em]">Chiedi a Leo</span>
+          <span className="mt-[3px] block text-[12.5px] text-ink/65">Esercizi, dubbi, un fastidio: rispondo subito</span>
+        </span>
+        <motion.span
+          aria-hidden
+          className="btn-trainer grid size-[42px] shrink-0 place-items-center rounded-full"
+          animate={reduce ? undefined : { scale: [1, 1.08, 1] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <MessageCircleHeart size={19} strokeWidth={2.2} />
+        </motion.span>
       </span>
-      <motion.img
-        src="/prototipo/coach/spunta.webp"
-        alt=""
-        aria-hidden
-        initial={{ x: reduce ? 0 : 30, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ delay: 0.6, type: "spring", stiffness: 260, damping: 22 }}
-        className="pointer-events-none absolute right-0 bottom-0 h-[112px] w-auto -scale-x-100 select-none"
-        // il bordo dritto della figura combacia con il bordo destro della scheda: Leo sbuca da dietro; l'angolo segue la curva
-        style={{ clipPath: "inset(0 round 0 0 0 20px)" }}
-      />
     </motion.button>
   );
 }

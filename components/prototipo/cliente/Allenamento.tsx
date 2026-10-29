@@ -9,10 +9,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { CalendarClock, Check, FileText, Play } from "lucide-react";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
-import { clients, trainer } from "@/libs/prototipo/dati-finti";
-import { buildPlanPdf } from "@/libs/prototipo/pdf-invio";
+import { trainer } from "@/libs/prototipo/dati-finti";
+import { useStato } from "@/libs/prototipo/stato";
+import { apriFile, pdfScheda } from "./apri-file";
 import { useSpunte } from "./spunte";
-import { CLIENTE_DEMO, quandoSeduta, useScheda } from "./scheda";
+import { quandoSeduta, useScheda } from "./scheda";
 
 const nomeTrainer = trainer.name.split(" ")[0];
 
@@ -21,6 +22,7 @@ export function Allenamento() {
   const delGiorno = prossimo?.giorno ?? 0;
   const [scelto, setScelto] = useState(delGiorno);
   const [pdf, setPdf] = useState(false);
+  const videos = useStato((s) => s.videos);
   const qui = Math.min(scelto, Math.max(0, giorni.length - 1)); // se Marco toglie un giorno dalla scheda
   const oggi = !!prossimo?.oggi && qui === prossimo.giorno;
   const giorno = giorni[qui];
@@ -32,30 +34,12 @@ export function Allenamento() {
   if (!giorno)
     return <p className="panel mt-[16px] rounded-[24px] px-[18px] py-[24px] text-center text-[13.5px] text-muted">{nomeTrainer} non ti ha ancora mandato la scheda.</p>;
 
-  // la scheda intera in PDF, come quella che Marco manda dall'area trainer (pdf-invio.ts), con il colore del trainer.
-  // La scheda del browser si apre subito, nello stesso tocco: aperta dopo l'attesa la bloccherebbe il browser.
+  // la scheda intera in PDF (apri-file.ts)
   const apriPdf = async () => {
     playSound("tap");
     setPdf(true);
-    const finestra = window.open("", "_blank");
-    try {
-      const colore = getComputedStyle(document.documentElement).getPropertyValue("--trainer").trim();
-      const blob = await buildPlanPdf({
-        clientName: clients.find((c) => c.id === CLIENTE_DEMO)?.name ?? "",
-        trainerName: trainer.name,
-        date: `${trainer.today.toLowerCase()} 2026`,
-        color: /^#[0-9a-f]{6}$/i.test(colore) ? colore : trainer.color,
-        days: giorni.map((g) => ({ label: g.label, focus: g.focus, rows: g.rows.map((r) => ({ ...esercizio(r), name: esercizio(r).nome, sets: r.sets, load: r.load, rest: r.rest })) })),
-      });
-      const url = URL.createObjectURL(blob);
-      if (finestra) finestra.location.href = url;
-      else window.location.href = url;
-    } catch (e) {
-      finestra?.close();
-      console.error("PDF della scheda non riuscito", e);
-    } finally {
-      setPdf(false);
-    }
+    await apriFile(pdfScheda(giorni, videos));
+    setPdf(false);
   };
 
   const spunta = (i: number) => {

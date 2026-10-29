@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { conta } from "@/libs/ui/testo";
 import { seduteIniziali } from "./calendario";
+import { documentiDemo, type Documento } from "./documenti";
 import { clients, conversations, defaultPlan, exerciseById, library, plans, trainer, type ChatMessage, type PlanDay } from "./dati-finti";
 import type { Seduta } from "./leo-azioni";
 import { datiIniziali } from "@/libs/dati/iniziali";
@@ -80,6 +81,7 @@ type State = {
   threads: Record<string, ChatMessage[]>; // clientId → messaggi
   focus: FocusLeo | null;
   dati: DatiClienti; // clienti, pacchetti, pagamenti, misure, notifiche: si cambiano solo dallo sportello (libs/dati)
+  documenti: Documento[]; // del cliente della demo (Profilo dell'app del cliente)
 };
 
 let state: State = {
@@ -92,6 +94,7 @@ let state: State = {
   threads: Object.fromEntries(conversations.map((c) => [c.clientId, c.messages])),
   focus: null,
   dati: datiIniziali(),
+  documenti: documentiDemo,
 };
 
 let idSeduta = state.sedute.length;
@@ -210,6 +213,17 @@ export const stato = {
   // rimette una seduta tolta (annulla), al suo posto nell'elenco se c'era già
   putSeduta(s: Seduta) {
     state = { ...state, sedute: state.sedute.some((x) => x.id === s.id) ? state.sedute.map((x) => (x.id === s.id ? s : x)) : [...state.sedute, s] };
+    emit();
+  },
+  addDocumento(d: Omit<Documento, "id">): Documento {
+    const nuovo = { ...d, id: `D${Math.max(0, ...state.documenti.map((x) => Number(x.id.slice(1)) || 0)) + 1}` };
+    state = { ...state, documenti: [nuovo, ...state.documenti] };
+    emit();
+    return nuovo;
+  },
+  // si tolgono solo i documenti caricati dal cliente: quelli del nutrizionista e del trainer restano
+  removeDocumento(id: string) {
+    state = { ...state, documenti: state.documenti.filter((x) => !(x.id === id && x.da === "cliente")) };
     emit();
   },
   addMessage(clientId: string, m: ChatMessage) {

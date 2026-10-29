@@ -49,13 +49,13 @@ const leggi = (t: string) => (t.trim() ? Number(t.trim().replace(",", ".")) : Na
 
 function Passo({ icona, titolo, sotto, children }: { icona: ReactNode; titolo: string; sotto: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex shrink-0 flex-col">
       <span className="sel-trainer grid size-[52px] place-items-center rounded-[16px]" style={{ color: "var(--trainer)" }}>
         {icona}
       </span>
       <h1 className="mt-[16px] text-[26px] leading-[1.15] font-extrabold tracking-[-0.03em]">{titolo}</h1>
       <p className="mt-[8px] text-[14px] leading-snug text-ink/70">{sotto}</p>
-      <div className="mt-[20px] flex min-h-0 flex-1 flex-col">{children}</div>
+      <div className="mt-[20px] flex flex-col">{children}</div>
     </div>
   );
 }
@@ -125,8 +125,9 @@ export function Registrazione({ onFatta }: { onFatta: () => void }) {
           <span className="w-[34px]" />
         </div>
 
+        {/* se il passo è più alto dello schermo scorre lui: il tasto resta sotto, niente scritte dietro */}
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={passo} className="mt-[26px] flex min-h-0 flex-1 flex-col" initial={{ opacity: 0, x: reduce ? 0 : 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduce ? 0 : -24 }} transition={{ duration: 0.28, ease: EASE_OUT }}>
+          <motion.div key={passo} className="mt-[26px] -mx-[4px] flex min-h-0 flex-1 flex-col overflow-y-auto px-[4px] pb-[8px] [scrollbar-width:none]" initial={{ opacity: 0, x: reduce ? 0 : 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduce ? 0 : -24 }} transition={{ duration: 0.28, ease: EASE_OUT }}>
             {passo === 0 && (
               <div className="flex flex-1 flex-col items-center justify-center text-center">
                 <div className="relative">
