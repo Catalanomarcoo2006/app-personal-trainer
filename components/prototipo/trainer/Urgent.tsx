@@ -13,7 +13,7 @@ import { ROUTES } from "./nav";
 import { ClientAvatar } from "./shared";
 import { NovitaRecenti } from "./TopBarTools";
 
-const kinds: Record<UrgentKind, { icon: LucideIcon; color: string; bg: string; group: string }> = {
+export const kinds: Record<UrgentKind, { icon: LucideIcon; color: string; bg: string; group: string }> = {
   imminente: { icon: Clock, color: "#e0562b", bg: "rgba(224,86,43,0.14)", group: "Appuntamenti imminenti" },
   pagamento: { icon: Wallet, color: "#c98a1e", bg: "rgba(201,138,30,0.16)", group: "Pagamenti mancanti" },
   dolore: { icon: TriangleAlert, color: "#d43b4f", bg: "rgba(212,59,79,0.14)", group: "Segnalazioni" },

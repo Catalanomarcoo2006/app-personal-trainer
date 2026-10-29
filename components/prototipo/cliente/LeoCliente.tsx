@@ -21,9 +21,9 @@ const nomeTrainer = trainer.name.split(" ")[0];
 // in leo-sbircia.webp (560 × 433) il bordo della foto è alla riga 378: in proporzione alla larghezza, 378 / 560.
 // Se si cambia la foto si cambia anche il nome del file: con lo stesso nome il browser può tenere la foto nuova
 // e il calcolo vecchio, e Leo finisce più in basso del bordo (successo il 29/10).
-const LEO_FOTO = "/prototipo/coach/leo-sbircia.webp";
-const LEO_BORDO = 378 / 560;
-const LEO_LARGO = 132; // px: piccolo, si aggrappa al bordo senza coprire lo schermo
+export const LEO_FOTO = "/prototipo/coach/leo-sbircia.webp";
+export const LEO_BORDO = 378 / 560;
+export const LEO_LARGO = 132; // px: piccolo, si aggrappa al bordo senza coprire lo schermo
 
 function useChatCliente() {
   const [messaggi, setMessaggi] = useState<Msg[]>([]);

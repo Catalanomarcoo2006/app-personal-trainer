@@ -319,6 +319,12 @@
   padding-top: 46px;
   animation: sezione-entra 140ms ease-out;
 }
+/* da telefono la sezione scorre nel guscio (telefono/TrainerTelefono.tsx): il segno serve solo al viaggio di Leo */
+.section-live.sezione-telefono {
+  position: static;
+  padding-top: 0;
+  animation: none;
+}
 @keyframes sezione-entra {
   from { opacity: 0; }
   to { opacity: 1; }

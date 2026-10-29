@@ -212,14 +212,15 @@ function Agenda() {
 // Windows li taglia); il cerchio del viso pulsa piano. Con "riduci movimento" resta luminoso ma fermo.
 const NEON = "conic-gradient(from 0deg, var(--trainer), #ffcf5c, #7cf0d0, #7cc4ff, var(--trainer))";
 
-function ChiediALeo({ onApri }: { onApri: () => void }) {
+// Usato anche dal trainer da telefono, con la sua frase sotto il titolo.
+export function ChiediALeo({ onApri, sotto = "Esercizi, dubbi, un fastidio: rispondo subito" }: { onApri: () => void; sotto?: string }) {
   const reduce = useReducedMotion();
   return (
     <motion.button
       type="button"
       whileTap={{ scale: 0.97 }}
       onClick={onApri}
-      aria-label="Chiedi a Leo, il tuo assistente"
+      aria-label="Chiedi a Leo"
       className="relative mt-[18px] block w-full cursor-pointer overflow-hidden rounded-[26px] p-[2.5px] text-left"
       style={{ boxShadow: "0 0 0 1px color-mix(in srgb, var(--trainer) 30%, transparent), 0 10px 30px -8px color-mix(in srgb, var(--trainer) 70%, transparent), 0 0 26px -4px color-mix(in srgb, var(--trainer) 55%, transparent)" }}
     >
@@ -239,7 +240,7 @@ function ChiediALeo({ onApri }: { onApri: () => void }) {
         </span>
         <span className="min-w-0 flex-1 leading-tight">
           <span className="block text-[17px] font-extrabold tracking-[-0.02em]">Chiedi a Leo</span>
-          <span className="mt-[3px] block text-[12.5px] text-ink/65">Esercizi, dubbi, un fastidio: rispondo subito</span>
+          <span className="mt-[3px] block text-[12.5px] text-ink/65">{sotto}</span>
         </span>
         <motion.span
           aria-hidden

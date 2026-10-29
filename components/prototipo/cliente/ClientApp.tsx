@@ -6,7 +6,7 @@
 import { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { client } from "@/libs/prototipo/dati-finti";
-import { Guscio, Telefono } from "./Shell";
+import { FOTO_CLIENTE, Guscio, Telefono } from "./Shell";
 import { Registrazione, useRegistrazione } from "./Registrazione";
 import { LeoCliente } from "./LeoCliente";
 import { Home, TrainerDiGiulia } from "./Home";
@@ -14,7 +14,7 @@ import { Progressi } from "./Progressi";
 import { Messaggi, useNonLettiCliente } from "./Messaggi";
 import { Allenamento } from "./Allenamento";
 import { Profilo } from "./Profilo";
-import { sezioneDa, type SezioneCliente } from "./nav";
+import { ROTTE_CLIENTE, sezioneDa, VOCI_BARRA, type SezioneCliente } from "./nav";
 
 const TITOLI: Record<SezioneCliente, { titolo: string; breve: string }> = {
   home: { titolo: `Ciao, ${client.name}! 👋`, breve: `Ciao, ${client.name}` },
@@ -37,7 +37,15 @@ export function ClientApp() {
   if (!registrata) return <Registrazione onFatta={segnaRegistrata} />;
 
   return (
-    <Guscio sezione={sezione} titolo={t.titolo} titoloBreve={t.breve} sotto={sezione === "home" ? <TrainerDiGiulia /> : undefined} nonLetti={nonLetti} fuori={<LeoCliente aperto={leo} onChiudi={chiudiLeo} />}>
+    <Guscio
+      sezione={sezione}
+      voci={VOCI_BARRA.map((v) => ({ chiave: v.sezione, label: v.label, icon: v.icon, href: ROTTE_CLIENTE[v.sezione], badge: v.sezione === "messaggi" ? nonLetti : undefined }))}
+      foto={{ src: FOTO_CLIENTE, label: "Il tuo profilo", href: ROTTE_CLIENTE.profilo }}
+      titolo={t.titolo}
+      titoloBreve={t.breve}
+      sotto={sezione === "home" ? <TrainerDiGiulia /> : undefined}
+      fuori={<LeoCliente aperto={leo} onChiudi={chiudiLeo} />}
+    >
       {sezione === "home" && <Home onLeo={() => setLeo(true)} />}
       {sezione === "allenamento" && (
         <Allenamento />

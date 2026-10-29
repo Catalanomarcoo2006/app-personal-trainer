@@ -1,27 +1,29 @@
 "use client";
 
-// Guscio dell'app del cliente: cornice del telefono sul computer (a tutto schermo sul telefono vero), macchie di colore
-// sul fondo come l'area trainer, intestazione grande che scorrendo si rimpicciolisce in una barra di vetro (come le app
-// Apple, scelta di Marco del 28/10) e barra in basso a pillola di vetro con la goccia che scivola sulla voce attiva.
+// Guscio delle app da telefono (il cliente, e dal 29/10 anche il trainer): cornice del telefono sul computer (a tutto
+// schermo sul telefono vero), macchie di colore sul fondo come l'area trainer, intestazione grande che scorrendo si
+// rimpicciolisce in una barra di vetro (come le app Apple, scelta di Marco del 28/10) e barra in basso a pillola di
+// vetro con la goccia che scivola sulla voce attiva. Voci della barra e foto in alto le passa chi lo usa.
 
 import { ReactNode, RefObject, useEffect, useRef, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   motion,
   useReducedMotion,
   useScroll,
   useTransform,
 } from "motion/react";
-import { BatteryFull, Moon, Signal, Sun, Wifi } from "lucide-react";
+import { BatteryFull, ChevronLeft, Moon, Signal, Sun, Wifi } from "lucide-react";
 import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
 import { navigate } from "@/components/prototipo/trainer/nav";
-import {
-  ID_FOGLI,
-  ROTTE_CLIENTE,
-  VOCI_BARRA,
-  type SezioneCliente,
-} from "./nav";
+import { ID_FOGLI } from "./nav";
+
+// Una voce della barra in basso; badge: il numero rosso (messaggi non letti).
+export type VoceBarra = { chiave: string; label: string; icon: LucideIcon; href: string; badge?: number };
+// La foto in alto a destra: apre il profilo (href) o quello che serve a chi usa il guscio (onTocca).
+export type FotoGuscio = { src: string; label: string; href?: string; onTocca?: () => void };
 
 export const FOTO_CLIENTE = "/prototipo/cliente-giulia.jpg";
 const SPRING = { type: "spring", stiffness: 520, damping: 40 } as const;
@@ -111,19 +113,19 @@ export function Telefono({ children }: { children: ReactNode }) {
   );
 }
 
-function FotoCliente({ size, onClick }: { size: number; onClick: () => void }) {
+function FotoTonda({ size, foto }: { size: number; foto: FotoGuscio }) {
   return (
     <motion.button
       type="button"
-      aria-label="Il tuo profilo"
+      aria-label={foto.label}
       whileTap={{ scale: 0.94 }}
-      onClick={onClick}
+      onClick={() => (foto.onTocca ? foto.onTocca() : foto.href && navigate(foto.href))}
       className="glass shrink-0 cursor-pointer overflow-hidden rounded-full p-[2px]"
       style={{ width: size, height: size }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={FOTO_CLIENTE}
+        src={foto.src}
         alt=""
         className="size-full rounded-full object-cover"
       />
@@ -214,32 +216,26 @@ function Scorrimento({ scorre, chiave }: { scorre: RefObject<HTMLDivElement | nu
 
 // Barra in basso: pillola di vetro in rilievo; la goccia (glass-drop, la stessa della barra laterale del trainer)
 // scivola sotto la voce attiva. La voce attiva prende il colore del trainer.
-function BarraCliente({
-  attiva,
-  nonLetti,
-}: {
-  attiva: SezioneCliente;
-  nonLetti: number;
-}) {
+function BarraSezioni({ voci, attiva }: { voci: VoceBarra[]; attiva: string }) {
   return (
     <nav
       aria-label="Sezioni"
-      className="glass glass-3d absolute inset-x-[14px] z-40 grid h-[64px] grid-cols-4 rounded-full px-[5px]"
-      style={{ bottom: "max(14px, env(safe-area-inset-bottom))" }}
+      className="glass glass-3d absolute inset-x-[14px] z-40 grid h-[64px] rounded-full px-[5px]"
+      style={{ bottom: "max(14px, env(safe-area-inset-bottom))", gridTemplateColumns: `repeat(${voci.length}, 1fr)` }}
     >
-      {VOCI_BARRA.map(({ sezione, label, icon: Icon }) => {
-        const qui = sezione === attiva;
+      {voci.map(({ chiave, label, icon: Icon, href, badge }) => {
+        const qui = chiave === attiva;
         return (
           <button
-            key={sezione}
+            key={chiave}
             type="button"
             aria-current={qui ? "page" : undefined}
-            onClick={() => navigate(ROTTE_CLIENTE[sezione])}
+            onClick={() => navigate(href)}
             className="relative flex cursor-pointer flex-col items-center justify-center gap-[3px] [-webkit-tap-highlight-color:transparent]"
           >
             {qui && (
               <motion.span
-                layoutId="goccia-cliente"
+                layoutId="goccia-telefono"
                 aria-hidden
                 className="glass-drop absolute inset-x-[2px] inset-y-[6px] rounded-full"
                 transition={SPRING}
@@ -252,9 +248,9 @@ function BarraCliente({
                 style={{ color: qui ? "var(--trainer)" : undefined }}
                 className={qui ? "" : "text-ink/55"}
               />
-              {sezione === "messaggi" && nonLetti > 0 && (
+              {!!badge && badge > 0 && (
                 <span className="absolute -top-[5px] -right-[9px] grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[#e5484d] px-[4px] text-[9.5px] font-bold text-white">
-                  {nonLetti}
+                  {badge}
                 </span>
               )}
             </span>
@@ -321,19 +317,25 @@ function useTrascina(ref: RefObject<HTMLDivElement | null>) {
 // sottile di vetro con il titolo piccolo e la foto. Il titolo grande intanto rimpicciolisce e sfuma, come su iOS.
 export function Guscio({
   sezione,
+  voci,
+  attiva = sezione,
+  foto,
   titolo,
   titoloBreve,
   sotto,
-  nonLetti,
   fuori,
+  indietro,
   children,
 }: {
-  sezione: SezioneCliente;
+  sezione: string; // la pagina mostrata: cambiandola si torna in cima
+  voci: VoceBarra[];
+  attiva?: string; // la voce accesa nella barra (una sottopagina accende la voce da cui viene)
+  foto: FotoGuscio;
   titolo: string;
   titoloBreve: string;
   sotto?: ReactNode;
-  nonLetti: number;
   fuori?: ReactNode; // sopra tutto, dentro la cornice (fogli come Leo): non scorre con il contenuto
+  indietro?: { label: string; href: string }; // le sottopagine (profilo di un cliente, una conversazione): sopra il titolo
   children: ReactNode;
 }) {
   const scorre = useRef<HTMLDivElement>(null);
@@ -350,8 +352,6 @@ export function Guscio({
     scorre.current?.scrollTo({ top: 0 });
   }, [sezione]);
 
-  const profilo = () => navigate(ROTTE_CLIENTE.profilo);
-
   return (
     <Telefono>
       {/* la barra sottile che compare scorrendo */}
@@ -360,11 +360,17 @@ export function Guscio({
         className="glass absolute inset-x-0 top-0 z-30 rounded-none border-x-0 border-t-0 pt-[max(10px,env(safe-area-inset-top))] sm:pt-[50px]"
       >
         <div className="flex h-[46px] items-center justify-between px-[16px]">
-          <span className="w-[34px]" />
+          {indietro ? (
+            <button type="button" aria-label={`Torna a ${indietro.label}`} onClick={() => navigate(indietro.href)} className="grid size-[34px] cursor-pointer place-items-center rounded-full" style={{ color: "var(--trainer)" }}>
+              <ChevronLeft size={22} strokeWidth={2.4} />
+            </button>
+          ) : (
+            <span className="w-[34px]" />
+          )}
           <p className="text-[15px] font-bold tracking-[-0.01em]">
             {titoloBreve}
           </p>
-          <FotoCliente size={34} onClick={profilo} />
+          <FotoTonda size={34} foto={foto} />
         </div>
       </motion.div>
 
@@ -376,13 +382,18 @@ export function Guscio({
           style={{ scale: grande, opacity: grandeVisibile }}
           className="origin-left"
         >
+          {indietro && (
+            <button type="button" onClick={() => navigate(indietro.href)} className="-ml-[6px] mb-[4px] flex cursor-pointer items-center text-[15px] font-semibold" style={{ color: "var(--trainer)" }}>
+              <ChevronLeft size={20} strokeWidth={2.4} /> {indietro.label}
+            </button>
+          )}
           <div className="flex items-center justify-between gap-[10px]">
             <h1 className="min-w-0 truncate text-[28px] leading-[1.1] font-extrabold tracking-[-0.03em]">
               {titolo}
             </h1>
             <div className="flex items-center gap-[8px]">
               <TastoTema />
-              <FotoCliente size={40} onClick={profilo} />
+              <FotoTonda size={40} foto={foto} />
             </div>
           </div>
           {sotto}
@@ -398,7 +409,7 @@ export function Guscio({
       </div>
 
       <Scorrimento scorre={scorre} chiave={sezione} />
-      <BarraCliente attiva={sezione} nonLetti={nonLetti} />
+      <BarraSezioni voci={voci} attiva={attiva} />
       {fuori}
       {/* qui si agganciano i fogli delle sezioni (createPortal): sopra tutto, dentro il telefono */}
       <div id={ID_FOGLI} />

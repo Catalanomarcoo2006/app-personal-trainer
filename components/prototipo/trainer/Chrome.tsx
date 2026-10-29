@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, ReactNode, useEffect, useRef, useState } from "react";
+import { memo, ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -28,6 +28,8 @@ import { BASE, navigate, ROUTES } from "./nav";
 import { BARRA_LATO } from "./leo/costanti";
 import { RicercaInBarra } from "./TopBarTools";
 import { AzioniRapide, BarraVetro, SuoniButton } from "./BarraAlta";
+import { useForma } from "./telefono/forma";
+import { TrainerTelefono } from "./telefono/TrainerTelefono";
 
 export { BASE, ROUTES, navigate };
 
@@ -254,12 +256,23 @@ export function Sidebar() {
 }
 
 // Cornice delle pagine del trainer, montata una volta sola dal layout: tela 1303 px, barra in alto,
-// barra laterale e Leo restano fermi mentre cambia solo il contenuto.
+// barra laterale e Leo restano fermi mentre cambia solo il contenuto. Sul telefono (o con ?telefono) al posto
+// della tela c'è l'area da telefono (telefono/TrainerTelefono.tsx), con gli stessi indirizzi.
 export function TrainerFrame({ children }: { children: ReactNode }) {
   // primo accesso: prima il benvenuto (lo stato salvato si legge solo nel browser, dopo il montaggio)
   useEffect(() => {
     if (!benvenutoAttuale().fatto) window.location.replace(BENVENUTO);
   }, []);
+  const forma = useForma();
+  // finché non si sa quale delle due (il browser non è ancora letto), niente: così non si vede un lampo dell'altra
+  if (!forma) return null;
+  if (forma === "telefono")
+    return (
+      <Suspense>
+        <TrainerTelefono />
+        <InstantLinks />
+      </Suspense>
+    );
   return (
     <FitCanvas width={1303} minHeight={640}>
       <AmbientBackdrop />

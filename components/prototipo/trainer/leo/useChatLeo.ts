@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { playSound, type SoundKind } from "@/libs/ui/sound";
 import { clientById } from "@/libs/prototipo/dati-finti";
+import { eSoldi } from "@/libs/prototipo/leo-azioni-soldi";
 import { daConfermare, inChiaro, notaPerLeo, primaDopo, riassunto, verificaAzione, type AzioneLeo } from "@/libs/prototipo/leo-azioni";
 import { estraiAzione, type Sezione } from "@/libs/prototipo/leo-contesto";
 import { datiLeo, eseguiAzione } from "@/libs/prototipo/leo-esegui";
@@ -34,6 +35,8 @@ export const SUONI: Record<AzioneLeo["nome"], SoundKind> = { fissa_appuntamento:
   cambia_aspetto: "confirm",
   imposta_notifiche: "tap",
 };
+
+export const SOLDI_DAL_COMPUTER = "Pagamenti e pacchetti si gestiscono dal computer";
 
 // ——— La chat (resta mentre si cambia pagina) ———
 
@@ -79,7 +82,8 @@ export function actionFor(vai: ReturnType<typeof estraiAzione>["vai"]): Answer["
 // Le risposte arrivano dall'AI (app/prototipo/api/leo) come eventi NDJSON: il testo si scrive man mano che arriva,
 // le azioni diventano schede sotto la frase e partono in ordine (quelle da confermare fermano la fila).
 // Senza chiave o se l'AI non risponde, Leo usa le risposte calcolate dai dati: la demo non si blocca mai.
-export function useCoachChat(): Chat {
+// senzaSoldi: dal telefono pagamenti e pacchetti non si toccano (Marco, 29/10): le schede lo dicono e non partono.
+export function useCoachChat({ senzaSoldi = false } = {}): Chat {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -371,6 +375,7 @@ export function useCoachChat(): Chat {
                 return { key, azione, titolo, stato: daConfermare(azione, !!allegato) ? "da-confermare" : "in-corso", dipendeDa: nuovo.key };
               }
               if (!chiara) return { key, azione: a, titolo: "Azione su un cliente che non conosco", stato: "errore", motivo: "Cliente non trovato" };
+              if (senzaSoldi && eSoldi(chiara.nome)) return { key, azione: chiara, titolo: riassunto(chiara, dati), stato: "rifiutato", motivo: SOLDI_DAL_COMPUTER };
               // il sollecito si legge e si può cambiare prima dell'invio: se Leo non l'ha scritto, quello standard
               if (chiara.nome === "sollecita" && !chiara.dati.testo) {
                 const testo = testoDaScrivere(chiara, dati)?.testo;
@@ -404,7 +409,7 @@ export function useCoachChat(): Chat {
         );
       }
     },
-    [procedi, salvaSchede],
+    [procedi, salvaSchede, senzaSoldi],
   );
 
   return { messages, typing, thinking, ask, conferma, confermaTutte, segnaModifica, rifiuta, annulla, torna, partenza, compatta };

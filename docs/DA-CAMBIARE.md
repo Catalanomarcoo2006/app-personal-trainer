@@ -4,7 +4,8 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 
 ## Area trainer
 
-- [ ] **Area trainer da telefono, tutta da fare**: prima conta che Leo sappia fare quello che deve; poi si valuta come portare tutto sul telefono (estetica, chat di Leo durante il viaggio, il resto). (2026-10-25)
+- [x] **Area trainer da telefono**: prima conta che Leo sappia fare quello che deve; poi si valuta come portare tutto sul telefono (estetica, chat di Leo durante il viaggio, il resto). (2026-10-25) **Fatta il 29/10** (Marco: solo l'ottimizzazione per il telefono, senza Incassi né Schede): stesso guscio dell'app del cliente con Oggi · Clienti · Messaggi · Calendario, Leo completo in un foglio dal basso (azioni, vocali, file; pagamenti e pacchetti bloccati con "si gestiscono dal computer"), durante il viaggio di un'azione il foglio scende e una pillola dice "Leo sta lavorando…". Si apre da sola sul telefono; dal computer con `?telefono` (`?computer` per tornare). Spec `docs/specs/2026-10-29-trainer-telefono-design.md`.
+- [ ] **Trainer da telefono, dopo**: notifiche push (con il backend), impostazioni minime (tema e suoni ci sono già), sposta seduta con il dito nel calendario.
 - [x] **Benvenuto, passo "Conosci Leo"**: rifatto il 25/10 (via piegamenti, pannello a metà, "Eccomi" e frasi che scorrono; Leo in piedi con le schede di quello che fa, capacità a righe). Sistemato anche lo scorrimento dei passi su schermi bassi (titolo tagliato). (2026-10-25)
 - [x] **Vocali a Leo**: il trainer tiene premuto il microfono e parla; quando lo lascia il vocale parte. Al primo vocale si sceglie se inviarlo subito al rilascio o rivederlo e confermarlo (scelta poi in Impostazioni). L'onboarding lo descrive già come fatto. (2026-10-25) **Fatto 2026-10-25** con la dettatura del browser (spec e piano `2026-10-25-vocali-leo`); resta da fare il trascrittore del server UE per i clienti veri.
 - [x] **Testa di Leo in basso a sinistra (sezioni diverse dalla home)**: non è centrata bene rispetto a ciò che ha sotto, esteticamente non convince. Da valutare: ingrandirla in modo che copra un pelo la barra laterale di vetro, oppure spostarla in un altro punto. (2026-10-23) **Fatto 2026-10-25**: ingrandita a 64 px e centrata sotto la barra laterale (sborda di 4 px per lato). **Rifatto 2026-10-26**: ancora poco estetica (copriva le schede); ora la testa (44 px) sta in fondo alla barra laterale, sotto una lineetta, e la barra fuori dalla home si allunga per farle posto.
@@ -34,5 +35,19 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 - [ ] **Leo, vocali: bug nella chat**: ogni tanto il microfono sembra ancora attivo dopo l'invio di un vocale, e ci sono piccoli problemi di trascrizione e qualche bug visivo nella chat. Da riprodurre e sistemare (stato del microfono dopo l'invio, `MicrofonoLeo.tsx` e `libs/prototipo/leo-voce*.ts`). (2026-10-27) **Microfono fatto 2026-10-28** (`24df011`): `lascia()` spegne subito il tasto, senza aspettare fino a 3 s che il browser chiuda la dettatura (con test). Restano i problemi di trascrizione e i bug visivi della chat, da riprodurre.
 
 ## Area cliente
+
+Approvata da Marco così com'è il 29/10 ("per ora diamo per buona questa area cliente"). Fatto il 28-29/10:
+
+- [x] **Guscio da telefono**: cornice sul computer alta quanto la finestra, intestazione che si rimpicciolisce come su iOS, barra in basso a pillola con la goccia (Home · Allenamento · Progressi · Messaggi; Profilo dalla foto), scorrimento anche trascinando col mouse, indicatore di scorrimento sul bordo destro, luna/sole per il tema al posto della campanella. (2026-10-28/29)
+- [x] **Home**: allenamento di oggi o, se oggi non c'è, il prossimo; toccandolo si apre la scheda intera; promemoria della pesata; agenda con i giorni; tasto "Chiedi a Leo" con il viso nel cerchio e il bordo neon. (2026-10-28/29)
+- [x] **Allenamento**: scheda intera a giorni, spunte di oggi, "Vedi la scheda in PDF". (2026-10-28/29)
+- [x] **Progressi**: obiettivo, peso col grafico, misure con il calo, storico, "Aggiungi misure", ogni quanto pesarsi. Il peso entra subito; circonferenze e obiettivo li conferma il trainer (riquadro "Da confermare" nel profilo del cliente). (2026-10-28/29)
+- [x] **Messaggi**: chat con Marco dallo stesso store del trainer, casella sopra la barra, parole lunghe a capo, "1" sui messaggi nuovi del coach. (2026-10-28/29)
+- [x] **Profilo**: trainer con "Scrivi", pacchetto, obiettivo, pesata, documenti (scheda PDF, dieta del nutrizionista, analisi, carica PDF o foto), suoni, tema, informativa, "Rifai la registrazione". (2026-10-29)
+- [x] **Registrazione** al primo accesso: invito, consenso, obiettivo proposto, ogni quanto pesarsi; poi si entra dalla Home. Tasti spenti pieni (prima traspariva il testo). (2026-10-29)
+- [x] **Leo del cliente** con l'AI (solo dati finti), risposte di riserva, prudenza sul dolore con avviso, vocali e file; si affaccia dal bordo del suo foglio e sbircia la chat (foto di Gemini). (2026-10-28/29)
+- [x] **Area trainer e cliente collegate dal vivo** tra le schede dello stesso browser (BroadcastChannel). (2026-10-29)
+- [ ] **Avvisi del cliente negli Urgenti del trainer**: dolore segnalato a Leo, misure da confermare, documenti caricati (oggi le misure si vedono solo nel profilo del cliente, il dolore solo nella chat del cliente). (2026-10-29)
+- [ ] **Documenti del cliente visibili al trainer** nel profilo del cliente. (2026-10-29)
 
 ## Varie

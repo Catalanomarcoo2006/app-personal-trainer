@@ -43,7 +43,8 @@ function Tasti({ onSi, onNo }: { onSi: () => void; onNo: () => void }) {
   );
 }
 
-export function DaConfermare({ clientId, nome }: { clientId: string; nome: string }) {
+// posto: dove sta il riquadro (sul computer in basso a destra nel profilo; da telefono nella pagina, ProfiloTelefono).
+export function DaConfermare({ clientId, nome, posto = "absolute right-[30px] bottom-[22px] z-30 w-[330px]" }: { clientId: string; nome: string; posto?: string }) {
   const d = useStato((s) => s.dati);
   const attesa = misureInAttesa(d, clientId);
   const proposto = d.clienti.find((c) => c.id === clientId)?.obiettivoProposto;
@@ -60,7 +61,7 @@ export function DaConfermare({ clientId, nome }: { clientId: string; nome: strin
           exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.25 }}
           aria-label="Da confermare"
-          className="glass glass-3d absolute right-[30px] bottom-[22px] z-30 w-[330px] rounded-[18px] px-[14px] pt-[12px] pb-[10px]"
+          className={`glass glass-3d rounded-[18px] px-[14px] pt-[12px] pb-[10px] ${posto}`}
         >
           <p className="flex items-center gap-[6px] text-[13px] font-bold">
             <Clock size={14} style={{ color: "var(--trainer)" }} /> Da confermare
