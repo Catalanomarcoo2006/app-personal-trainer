@@ -10,6 +10,9 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "
 
 export const metadata: Metadata = {
   title: "Prototipo · APP PERSONAL TRAINER",
+  // il nome sotto l'icona quando si aggiunge alla schermata Home dell'iPhone (nome provvisorio, Marco 27/10)
+  applicationName: "Spotter",
+  appleWebApp: { title: "Spotter" },
   robots: { index: false, follow: false },
   other: { google: "notranslate" },
 };
