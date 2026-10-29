@@ -14,7 +14,13 @@ export async function invitaClienteAction(clientId: string): Promise<EsitoInvito
   const { data: t } = await supabase.from("trainers").select("slug, name").eq("id", c.trainer_id).single();
   if (!t) return { ok: false, messaggio: "Area del trainer non trovata" };
 
-  const r = await invitaCliente(c, t.slug, await indirizzoSito());
+  let r: Awaited<ReturnType<typeof invitaCliente>>;
+  try {
+    r = await invitaCliente(c, t.slug, await indirizzoSito());
+  } catch (e) {
+    console.error("Invito del cliente non riuscito", e);
+    return { ok: false, messaggio: `Invito non riuscito: ${e instanceof Error ? e.message : String(e)}` };
+  }
   if ("error" in r) return { ok: false, messaggio: ERRORI_INVITO[r.error] };
   const inviata = await mandaLink({
     email: c.email!,

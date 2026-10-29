@@ -21,7 +21,7 @@ export default function RigaTrainer({ trainer: t, scaduta }: { trainer: Trainer;
         if (r?.ok) {
           toast.success(r.messaggio);
           if (r.link) setLink(r.link);
-        }
+        } else if (r) toast.error(r.messaggio);
       } catch {
         toast.error("Non è riuscito, riprova");
       }

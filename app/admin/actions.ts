@@ -15,7 +15,22 @@ async function soloAdmin() {
   if (data !== true) throw new Error("Solo l'amministratore può farlo");
 }
 
-export async function creaTrainerAction(_: EsitoAzione, form: FormData): Promise<EsitoAzione> {
+// Un errore imprevisto (database, chiave di servizio) torna come messaggio nel pannello, invece della pagina
+// "Qualcosa è andato storto": all'admin serve sapere cosa non va.
+async function conErrore(fn: () => Promise<EsitoAzione>): Promise<EsitoAzione> {
+  try {
+    return await fn();
+  } catch (e) {
+    console.error("Azione admin non riuscita", e);
+    return { ok: false, messaggio: `Non riuscito: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
+export async function creaTrainerAction(prima: EsitoAzione, form: FormData): Promise<EsitoAzione> {
+  return conErrore(() => creaTrainer_(prima, form));
+}
+
+async function creaTrainer_(_: EsitoAzione, form: FormData): Promise<EsitoAzione> {
   await soloAdmin();
   const name = String(form.get("name") ?? "");
   const email = String(form.get("email") ?? "");
@@ -39,21 +54,27 @@ export async function creaTrainerAction(_: EsitoAzione, form: FormData): Promise
 }
 
 export async function rinnovaAction(trainerId: string): Promise<EsitoAzione> {
-  await soloAdmin();
-  const scadenza = await renewTrainer(trainerId);
-  revalidatePath("/admin");
-  return { ok: true, messaggio: `Rinnovato fino al ${scadenza.split("-").reverse().join("/")}` };
+  return conErrore(async () => {
+    await soloAdmin();
+    const scadenza = await renewTrainer(trainerId);
+    revalidatePath("/admin");
+    return { ok: true, messaggio: `Rinnovato fino al ${scadenza.split("-").reverse().join("/")}` };
+  });
 }
 
 export async function cambiaStatoAction(trainerId: string, status: "active" | "suspended"): Promise<EsitoAzione> {
-  await soloAdmin();
-  await setTrainerStatus(trainerId, status);
-  revalidatePath("/admin");
-  return { ok: true, messaggio: status === "suspended" ? "Sospeso: lui e i suoi clienti non entrano più" : "Riattivato" };
+  return conErrore(async () => {
+    await soloAdmin();
+    await setTrainerStatus(trainerId, status);
+    revalidatePath("/admin");
+    return { ok: true, messaggio: status === "suspended" ? "Sospeso: lui e i suoi clienti non entrano più" : "Riattivato" };
+  });
 }
 
 export async function nuovoLinkAction(trainerId: string): Promise<EsitoAzione> {
-  await soloAdmin();
-  const link = await newInviteLink(trainerId, await indirizzoSito());
-  return { ok: true, messaggio: "Nuovo link d'accesso (vale 24 ore): mandalo al trainer", link };
+  return conErrore(async () => {
+    await soloAdmin();
+    const link = await newInviteLink(trainerId, await indirizzoSito());
+    return { ok: true, messaggio: "Nuovo link d'accesso (vale 24 ore): mandalo al trainer", link };
+  });
 }
