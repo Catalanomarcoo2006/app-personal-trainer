@@ -4,6 +4,8 @@
 // public/brand/logo-leo-anello.svg): al centro compare la testa di Leo nel suo cerchio; intorno l'anello arancione,
 // che all'inizio non c'è, si disegna fino a chiudere il cerchio; poi la testa vola, rimpicciolendo, fino alla faccia di
 // Leo in basso a destra (telefono/TastoLeo.tsx, che fino ad allora resta nascosta) e l'app si scopre.
+// Il contenitore (Marco, 30/10): fin dal primo istante in basso a destra c'è già il cerchio colorato col bordo al
+// neon, vuoto, al posto della faccia; la testa ci atterra dentro con un piccolo colpo.
 // Una volta per apertura dell'app (cambiando sezione non riparte). Un tocco la salta. Con "riduci movimento": il logo
 // fermo per un attimo, poi una dissolvenza.
 
@@ -42,6 +44,8 @@ const SPESSORE = 17;
 const LATO = 2 * (R + SPESSORE + 8);
 const GIRO = 2 * Math.PI * R;
 const VOLO = { duration: 0.75, ease: [0.65, 0, 0.35, 1] } as const;
+const NEON = "conic-gradient(from 0deg, var(--trainer), #ffcf5c, #7cf0d0, #7cc4ff, var(--trainer))";
+
 
 export function IngressoLeo() {
   const [via] = useState(() => !fatto); // già vista in questa apertura: niente
@@ -63,6 +67,11 @@ export function IngressoLeo() {
       const anello = el.querySelectorAll<SVGCircleElement>("[data-arco]");
       const fondo = el.querySelector<HTMLElement>("[data-fondo]")!;
       const cerchio = el.querySelector<HTMLElement>("[data-cerchio]")!;
+      // il contenitore va dove sta la faccia di Leo (ancora nascosta sotto)
+      const tasto = document.getElementById(ID_FACCIA_LEO)?.parentElement?.getBoundingClientRect();
+      const io = el.getBoundingClientRect();
+      const contenitore = tasto?.width ? el.querySelector<HTMLElement>("[data-contenitore]") : null;
+      if (contenitore && tasto) Object.assign(contenitore.style, { left: `${tasto.left - io.left}px`, top: `${tasto.top - io.top}px`, width: `${tasto.width}px`, height: `${tasto.height}px` });
       if (reduce) {
         anello.forEach((a) => {
           a.style.strokeDashoffset = "0";
@@ -74,7 +83,8 @@ export function IngressoLeo() {
         await animate(el, { opacity: 0 }, { duration: 0.35 });
         return setFinita(true);
       }
-      // 1. la testa compare
+      // 1. la testa compare al centro, il contenitore in basso a destra
+      if (contenitore) void animate(contenitore, { opacity: [0, 1], scale: [0.5, 1] }, { type: "spring", duration: 0.5, bounce: 0.35 });
       await animate(testa, { opacity: [0, 1], scale: [0.72, 1] }, { duration: 0.45, ease: [0.22, 1, 0.36, 1] });
       if (fermo) return;
       // 2. l'anello si disegna fino a chiudersi
@@ -99,8 +109,13 @@ export function IngressoLeo() {
           animate(testa, { scale: dove.width / TESTA }, VOLO),
         ]);
         if (fermo) return;
-        segnaFatto(); // sotto, la faccia vera è già al suo posto
-        await animate(testa, { opacity: 0 }, { duration: 0.18 });
+        // l'atterraggio: il contenitore accusa il colpo, poi tutto sfuma sulla faccia vera, già al suo posto sotto
+        const piccola = dove.width / TESTA;
+        const colpo = { duration: 0.3, ease: "easeOut" } as const;
+        await Promise.all([animate(testa, { scale: [piccola, piccola * 1.1, piccola] }, colpo), contenitore && animate(contenitore, { scale: [1, 1.12, 1] }, colpo)]);
+        if (fermo) return;
+        segnaFatto();
+        await animate(el, { opacity: 0 }, { duration: 0.2 });
       } else {
         await animate(testa, { opacity: 0, scale: 0.6 }, { duration: 0.4 });
       }
@@ -126,6 +141,22 @@ export function IngressoLeo() {
     >
       {/* il fondo del logo: salvia con un velo del colore del trainer */}
       <div data-fondo className="absolute inset-0 bg-salvia" style={{ backgroundImage: "radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--trainer) 14%, transparent), transparent 60%)" }} />
+      {/* il contenitore: la faccia di Leo senza Leo, piena di colore, che aspetta la testa */}
+      {/* posizione e misura le mette l'animazione: quelle della faccia di Leo */}
+      {(
+        <div
+          data-contenitore
+          className="absolute grid place-items-center rounded-full opacity-0"
+          style={{
+            boxShadow: "0 0 0 1px color-mix(in srgb, var(--trainer) 35%, transparent), 0 12px 30px -6px color-mix(in srgb, var(--trainer) 75%, transparent), 0 0 30px -2px color-mix(in srgb, var(--trainer) 60%, transparent)",
+          }}
+        >
+          <span className="absolute inset-0 overflow-hidden rounded-full">
+            <motion.span aria-hidden className="absolute top-1/2 left-1/2 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2" style={{ background: NEON }} animate={reduce ? undefined : { rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
+          </span>
+          <span className="absolute inset-[3px] rounded-full" style={{ background: "radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--trainer) 35%, white), var(--trainer))" }} />
+        </div>
+      )}
       <div className="relative grid place-items-center" style={{ width: LATO, height: LATO }}>
         <div data-cerchio className="absolute inset-0">
           <svg viewBox={`0 0 ${LATO} ${LATO}`} className="size-full -rotate-90 overflow-visible">
