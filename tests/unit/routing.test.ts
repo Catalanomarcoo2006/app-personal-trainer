@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveRoute, type Access } from "@/libs/auth/routing";
+import { isPublicPath, resolveRoute, type Access } from "@/libs/auth/routing";
+import { homeOf } from "@/libs/auth/profile";
 
 const anon: Access = { role: null, trainerActive: false, clientTrainerSlug: null };
 const trainer: Access = { role: "trainer", trainerActive: true, clientTrainerSlug: null };
@@ -55,5 +56,23 @@ describe("resolveRoute", () => {
       expect(resolveRoute("/privacy-policy", a)).toEqual(next);
       expect(resolveRoute("/tos", a)).toEqual(next);
     }
+  });
+
+  it("pagine pubbliche: il middleware non chiede l'accesso al database", () => {
+    expect(isPublicPath("/api/leo")).toBe(true);
+    expect(isPublicPath("/sospeso")).toBe(true);
+    expect(isPublicPath("/dashboard")).toBe(false);
+    expect(isPublicPath("/marco-rossi")).toBe(false);
+  });
+});
+
+describe("homeOf", () => {
+  it("dopo l'accesso ognuno va nella sua area", () => {
+    expect(homeOf(admin)).toBe("/admin");
+    expect(homeOf(trainer)).toBe("/dashboard");
+    expect(homeOf(suspended)).toBe("/sospeso");
+    expect(homeOf(client)).toBe("/marco-rossi");
+    expect(homeOf(orphan)).toBe("/sospeso");
+    expect(homeOf(anon)).toBe("/signin");
   });
 });

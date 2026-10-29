@@ -16,9 +16,15 @@ const go = (to: string): RouteDecision => ({ action: "redirect", to });
 const PUBLIC = ["api", "auth", "privacy-policy", "tos", "prototipo", "_next"];
 const PRIVATE = ["dashboard", "admin"];
 
+// Pagine che si aprono senza guardare chi è collegato: il middleware non chiede nemmeno l'accesso al database.
+export function isPublicPath(path: string): boolean {
+  const first = path.split("/")[1] ?? "";
+  return PUBLIC.includes(first) || first === "sospeso";
+}
+
 export function resolveRoute(path: string, access: Access): RouteDecision {
   const first = path.split("/")[1] ?? "";
-  if (PUBLIC.includes(first) || first === "sospeso") return NEXT;
+  if (isPublicPath(path)) return NEXT;
 
   switch (access.role) {
     case null:

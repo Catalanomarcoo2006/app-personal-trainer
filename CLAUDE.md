@@ -20,7 +20,8 @@ Il design approvato è in `docs/specs/2026-10-21-design.md`, il piano in `docs/p
 ## Comandi
 - Installare: `npm install`
 - Avviare in locale: `npm run dev`
-- Test: `npm test` (Vitest, `tests/unit/`); poi test RLS e Playwright come da piano
+- Test: `npm test` (Vitest, `tests/unit/`); `npm run test:db` (schema, RLS, admin in `tests/integration/`: usa SUPABASE_TEST_* da `.env.test.local` o il Supabase locale)
+- Database: `npx supabase start` (locale, Docker), `npm run db:reset` (riapplica le migrazioni), `npm run db:types` (rigenera `types/db.ts`), `npm run db:push` (sul progetto collegato). Guida: `docs/supabase.md`
 - Build: `npm run build` (serve `.env.local` con le chiavi Supabase)
 
 ## Struttura

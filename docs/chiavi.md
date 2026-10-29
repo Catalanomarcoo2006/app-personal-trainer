@@ -4,7 +4,7 @@ Elenco delle chiavi API del progetto: **quali esistono e dove sono usate, mai i 
 I valori stanno solo in `.env.local` (sul computer di Marco, escluso da git) e nelle Environment Variables di Vercel.
 Aggiornare questa tabella ogni volta che si crea, si sposta o si cancella una chiave.
 
-**Ultimo aggiornamento:** 2026-10-28
+**Ultimo aggiornamento:** 2026-10-29
 
 ## Chiavi attive
 
@@ -19,7 +19,7 @@ Le stesse variabili `AI_*` servono a **due rotte**: Leo del trainer (`app/protot
 
 | Servizio | Variabili | Quando |
 |---|---|---|
-| Supabase (progetto di sviluppo, regione UE) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Task 3 del piano `docs/plans/2026-10-21-piano-v1.md`; su Vercel ora ci sono valori segnaposto |
+| Supabase (progetto di sviluppo, regione UE) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Ora: il codice è pronto (passi in `docs/supabase.md`); su Vercel ora ci sono valori segnaposto. La chiave di servizio la usano solo il server (`libs/supabase/admin.ts`, pannello admin) e i test |
 | Resend (email) | `RESEND_API_KEY` | Fase 5, avvisi email |
 | Fornitore AI in UE | `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | Prima del primo cliente vero: con dati veri DeepSeek non si usa |
 | Trascrizione della voce in UE (vocali a Leo) | `AI_STT_BASE_URL`, `AI_STT_API_KEY`, `AI_STT_MODEL` | Prima dei vocali con clienti veri; oggi i vocali usano la dettatura del browser (solo dati finti) |

@@ -1,19 +1,22 @@
 import { NextResponse, NextRequest } from "next/server";
 import { createClient } from "@/libs/supabase/server";
-import config from "@/config";
+import { getAccess, homeOf } from "@/libs/auth/profile";
+import { safeNext } from "@/libs/auth/next-path";
 
 export const dynamic = "force-dynamic";
 
-// This route is called after a successful login. It exchanges the code for a session and redirects to the callback URL (see config.js).
+// Dopo un accesso con codice (PKCE): scambia il codice con la sessione e manda ognuno nella sua area,
+// o in ?next= se c'è (per esempio /nuova-password).
 export async function GET(req: NextRequest) {
   const requestUrl = new URL(req.url);
   const code = requestUrl.searchParams.get("code");
+  const supabase = await createClient();
 
   if (code) {
-    const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) return NextResponse.redirect(`${requestUrl.origin}/signin?errore=link`);
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin + config.auth.callbackUrl);
+  const home = homeOf(await getAccess(supabase));
+  return NextResponse.redirect(requestUrl.origin + safeNext(requestUrl.searchParams.get("next"), home));
 }

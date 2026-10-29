@@ -541,3 +541,7 @@ progress::-webkit-progress-value {
 .btn {
   text-transform: capitalize !important;
 }
+/* Pagine d'accesso e pannello admin: tasti in italiano, senza le maiuscole a ogni parola della regola qui sopra */
+.testo-normale .btn {
+  text-transform: none !important;
+}

@@ -76,7 +76,9 @@ export async function resetTestData(): Promise<void> {
   const db = adminClient();
   const ids: string[] = [];
   for (let page = 1; ; page++) {
-    const { users } = ok(await db.auth.admin.listUsers({ page, perPage: 1000 }), "elenco utenti");
+    const r = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (r.error) throw new Error(`elenco utenti: ${r.error.message}`);
+    const users: { id: string; email?: string }[] = r.data.users;
     ids.push(...users.filter((u) => u.email?.endsWith(DOMINIO_PROVA)).map((u) => u.id));
     if (users.length < 1000) break;
   }

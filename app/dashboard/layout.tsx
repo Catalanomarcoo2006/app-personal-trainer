@@ -1,27 +1,14 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/libs/supabase/server";
-import config from "@/config";
+import { getAccess, homeOf } from "@/libs/auth/profile";
 
-// This is a server-side component to ensure the user is logged in.
-// If not, it will redirect to the login page.
-// It's applied to all subpages of /dashboard in /app/dashboard/*** pages
-// You can also add custom static UI elements like a Navbar, Sidebar, Footer, etc..
-// See https://zerotoship.it/docs/tutorials/private-page
-export default async function LayoutPrivate({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const supabase = await createClient();
+export const dynamic = "force-dynamic";
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(config.auth.loginUrl);
-  }
-
+// Area del trainer: il middleware già smista, qui si ricontrolla (trainer attivo, o l'admin che guarda).
+export default async function LayoutPrivate({ children }: { children: ReactNode }) {
+  const access = await getAccess(await createClient());
+  const dentro = (access.role === "trainer" && access.trainerActive) || access.role === "admin";
+  if (!dentro) redirect(homeOf(access));
   return <>{children}</>;
 }

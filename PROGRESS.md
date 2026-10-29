@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-30 (fine sessione: grafiche da telefono chiuse per ora)
+**Ultimo aggiornamento:** 2026-10-29 (backend, Fase 1: schema, RLS, accessi e admin su Supabase locale)
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -10,7 +10,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Stato attuale (Completato)
 - Brainstorming, design approvato (`docs/specs/2026-10-21-design.md`), setup con boilerplate ZeroToShip, sito su Vercel. Area trainer del prototipo: tutte le sezioni, Leo con AI (presentazione alla prima apertura, identikit dalla "i" con Leo che si siede, luce intermittente sulla home).
 - **Leo agisce e fa tutto** (spec `docs/specs/2026-10-24-leo-azioni-design.md` e `2026-10-25-leo-fa-tutto-design.md`, piani in `docs/plans/`): sedute, messaggi (anche a più clienti, con `{nome}`), soldi (segna pagato, registra, rinnova con pagamento da incassare, sollecito), dati del cliente (misure, obiettivo, note, nuovo cliente con email scritta dal trainer), aspetto e notifiche; legge PDF con testo, CSV e TXT allegati (prima → dopo da confermare). "Conferma tutte", parti non capite segnalate. Dati dei clienti nella forma del database (`libs/dati/`: tipi, sportello con annulla, selettori; controlli in `libs/domain/`): con Supabase cambia solo lo sportello. Online dal 25/10 (unito a `setup-iniziale`), 230 test; revisione finale fatta (5 correzioni, 7 dettagli minori in `docs/DA-CAMBIARE.md`). Dopo: file Excel (.xlsx) letti, dettagli della revisione sistemati e **vocali** (si tocca il microfono nella chat: un tocco inizia, uno finisce; per ora con la dettatura del browser, provati da Marco con la voce vera il 25/10: vanno come voleva; scelta "invia subito / rivedi prima" al primo vocale e nelle Impostazioni; spec e piano `2026-10-25-vocali-leo`).
-- Piano Fase 1: Task 2 (pulizia boilerplate: via Stripe, blog, Crisp, GPT, testimonianze; slug) e Task 5 (logica di dominio in `libs/domain/`) fatti; del Task 6 c'è `resolveRoute` (`libs/auth/routing.ts`), manca il collegamento al middleware. 58 test Vitest.
+- **Backend, Fase 1 completa in locale** (guida `docs/supabase.md`): schema e RLS in `supabase/migrations/` (tabelle della spec + `messages` e colonne del prototipo; trainer sospeso → lui e i clienti non leggono più nulla, dati intatti), `types/db.ts`, middleware che smista per ruolo (`getAccess` → `my_access()`), `/signin` in italiano, `/nuova-password`, `/<slug>` col marchio e link via email per il cliente, `/sospeso`, `/admin` (crea con link d'invito, rinnova, sospendi). Provato con Supabase in Docker: `npm run test:db` 23 test + giro completo nel browser (admin → invito → trainer in dashboard → cliente dal link → sospensione → `/sospeso`). `npm test` = 335 test unitari.
 - **Estetica dell'area trainer (26/10)**: tema scuro rifatto (nero pece, vetro con bordo chiaro, colori schiariti, chat col colore del cliente); barra in alto con azioni rapide (Nuova seduta, Scrivi, Pagamento e Nuovo cliente con Leo), ricerca nella barra (Ctrl+K), suoni; "Novità" negli Urgenti; testa di Leo dentro la barra laterale; cambio tema con l'onda del video (`libs/ui/onda.ts`); Clienti che scorrono con avviso del cliente nuovo. 297 test.
 - Benvenuto del trainer (`/prototipo/benvenuto`, spec `docs/specs/2026-10-23-benvenuto-trainer-design.md`): primo passo finito e approvato da Marco (password, codice di 4 cifre con la verifica del video di riferimento, sveglia di Leo con lo stacco da terra, scritte subito e "Iniziamo" a ~3,7 s); vetrina con le grafiche dell'app che si scostano dal cursore. "Salta per ora" porta alla dashboard; nel prototipo ogni aggiornamento della pagina riparte dal primo passo (`?riprendi` riparte dal passo salvato). Tutti i passi finiti il 25/10 (marchio, privacy, primo cliente, conosci Leo, finale con le schede a meteoriti).
 
@@ -22,7 +22,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 
 ## Da fare (TODO)
 - Leo: foto e scansioni (serve un modello che vede le immagini), import dei clienti a fine onboarding con inviti (spec sua, serve il backend), trascrittore dei vocali sul server UE (`MediaRecorder` + rotta `api/leo/voce`, variabili `AI_STT_*`); trainer da telefono: push e spostare le sedute col dito.
-- Fase 1, con le chiavi Supabase: schema (Task 3), RLS con test (Task 4), `getAccess` e middleware (Task 6), pannello admin (Task 7).
+- Fase 1 online: Marco crea il progetto Supabase UE e segue `docs/supabase.md` (db push, iscrizioni chiuse, modelli email con `token_hash`, account admin). Poi piano della Fase 2.
 - Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate); video con Opus per presentare la piattaforma (da fare quando l'app è pronta, utile anche per la landing).
 - Marco: chiavi Supabase (progetto UE) e Resend; email di supporto e dominio del prodotto (`config.ts`).
 
@@ -47,7 +47,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Prossimi passi immediati (da qui si riparte)
 1. **Marco prova sul telefono vero**: vocale tenendo premuta la faccia di Leo, icona "Spotter", animazione d'apertura. Poi, se li vuole, i due pezzi aperti dell'area cliente: avvisi del cliente negli Urgenti del trainer, documenti del cliente visibili al trainer. Elenco completo e ordinato in `docs/DA-CAMBIARE.md` (aggiornato il 30/10).
    Nome del prodotto: **Spotter** provvisorio (Marco, 27/10; dominio e marchio da controllare). Logo provvisorio: Leo dentro l'anello arancione, vetro su salvia (`public/brand/logo-leo-anello.svg`; prove in https://claude.ai/artifact/JnpHq7uPDrLLRMF5Ykgj5a). Storia dell'area cliente in `docs/STORICO.md`.
-2. Poi backend: Marco crea il progetto Supabase UE → schema, RLS con test, accessi, admin → aree su database → assistente, account demo → landing vera.
+2. Backend: Fase 1 pronta. **Marco crea il progetto Supabase UE** (passi in `docs/supabase.md`) → piano Fase 2 (`docs/plans/`): sportello (`libs/dati/sportello.ts`) sulle tabelle, inviti dei clienti, Storage → assistente, account demo → landing vera.
 3. Prima del primo cliente vero: ricerca e scelta fornitore AI + trascrizione in UE (la fa Claude se Marco la chiede), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto, chiavi Resend, dominio.
 
 ## Contesto tecnico utile
@@ -56,4 +56,5 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git); `animazione-login.mp4` è il riferimento del benvenuto. Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista). Prove delle app da telefono (Playwright, 390 × 844): saltare benvenuto e registrazione con localStorage `benvenuto` = `{"v":1,"fatto":true}` e `registrazione-cliente` = `fatta`; dettatura finta mettendo `window.SpeechRecognition`; AI finta con `AI_API_KEY` + `AI_BASE_URL` verso un server locale.
 
 ## Changelog (le voci vecchie in `docs/STORICO.md`)
+- 2026-10-29: backend Fase 1 (Task 3, 4, 6, 7): schema, RLS con test, smistamento per ruolo, login e pannello admin; provati con Supabase locale in Docker. `@supabase/ssr` aggiornato a 0.12 (client tipizzati sul database).
 - 2026-10-30: trainer da telefono rifinito (Oggi con la giornata al centro, tieni premuto Leo per farlo agire, vocale vuoto corretto); faccia di Leo anche nel cliente (via "Chiedi a Leo"); animazione d'apertura dal logo con atterraggio senza tagli; icona e nome "Spotter" sulla schermata Home; grafiche da telefono chiuse per ora.
