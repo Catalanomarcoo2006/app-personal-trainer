@@ -2,7 +2,7 @@
 
 > Questo file viene caricato a ogni sessione (import `@PROGRESS.md` nel CLAUDE.md): tienilo sotto le 60 righe. Lo storico vecchio va in `docs/STORICO.md`, che NON viene importato.
 
-**Ultimo aggiornamento:** 2026-10-29 (versione vera delle tre app sul database, sei "siti")
+**Ultimo aggiornamento:** 2026-10-29 (versione vera online su Supabase UE e provata da Marco)
 
 ## Obiettivo
 App per personal trainer con il marchio del trainer: gestionale da computer (e versione minima da telefono) per il trainer, web app per i clienti con assistente virtuale. Demo "wow" e primo trainer pagante entro 4-6 settimane.
@@ -22,7 +22,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 
 ## Da fare (TODO)
 - Leo: foto e scansioni (serve un modello che vede le immagini), import dei clienti a fine onboarding con inviti (spec sua, serve il backend), trascrittore dei vocali sul server UE (`MediaRecorder` + rotta `api/leo/voce`, variabili `AI_STT_*`); trainer da telefono: push e spostare le sedute col dito.
-- **Per mettere online la versione vera**: Marco crea il progetto Supabase UE e segue `docs/supabase.md` (4 migrazioni, iscrizioni chiuse, modelli email con `token_hash`, account admin, chiavi su Vercel e Redeploy).
+- **Versione vera online dal 29/10** (progetto Supabase `Spotter`, West EU Irlanda, piano Free): 4 migrazioni, iscrizioni chiuse, admin = email di Marco, primo trainer `marco-catalano`; Marco ha provato tutto e funziona. Modelli email non modificabili senza SMTP proprio: si sistemano con Resend (link d'accesso del cliente e password dimenticata oggi in inglese e da aprire nello stesso browser). Piano Free: il progetto va in pausa dopo 1 settimana senza uso.
 - Versione vera, dopo: Storage per documenti e logo, finestre per misure e note, aggiornamento dal vivo (Realtime), Leo con fornitore UE.
 - Poi: aree trainer/cliente su database, assistente, account demo, landing vera (oggi `/` porta al prototipo; la landing è ancora quella in inglese del boilerplate); video con Opus per presentare la piattaforma (da fare quando l'app è pronta, utile anche per la landing).
 - Marco: chiavi Supabase (progetto UE) e Resend; email di supporto e dominio del prodotto (`config.ts`).
@@ -48,7 +48,7 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 ## Prossimi passi immediati (da qui si riparte)
 1. **Marco prova sul telefono vero**: vocale tenendo premuta la faccia di Leo, icona "Spotter", animazione d'apertura. Poi, se li vuole, i due pezzi aperti dell'area cliente: avvisi del cliente negli Urgenti del trainer, documenti del cliente visibili al trainer. Elenco completo e ordinato in `docs/DA-CAMBIARE.md` (aggiornato il 30/10).
    Nome del prodotto: **Spotter** provvisorio (Marco, 27/10; dominio e marchio da controllare). Logo provvisorio: Leo dentro l'anello arancione, vetro su salvia (`public/brand/logo-leo-anello.svg`; prove in https://claude.ai/artifact/JnpHq7uPDrLLRMF5Ykgj5a). Storia dell'area cliente in `docs/STORICO.md`.
-2. Versione vera pronta nel codice. **Marco crea il progetto Supabase UE** (passi in `docs/supabase.md`), mette le chiavi su Vercel e prova: `/admin` → crea un trainer → login → `/dashboard` → "Invita nell'app" un cliente.
+2. Versione vera online e provata. Prossimi pezzi: Storage (documenti e logo), finestre per misure e note, Resend (email e modelli in italiano), aggiornamento dal vivo.
 3. Prima del primo cliente vero: ricerca e scelta fornitore AI + trascrizione in UE (la fa Claude se Marco la chiede), DPA, informativa, partita IVA, licenza ZeroToShip, nome del prodotto, chiavi Resend, dominio.
 
 ## Contesto tecnico utile
@@ -57,4 +57,5 @@ App per personal trainer con il marchio del trainer: gestionale da computer (e v
 - Riferimenti di stile: `docs/riferimenti/` (registrazioni con ffmpeg, escluse da git); `animazione-login.mp4` è il riferimento del benvenuto. Verifiche delle animazioni: Playwright con `channel: "msedge"` (riproduce gli MP4; il pannello del browser non disegna se la finestra non è in vista). Prove delle app da telefono (Playwright, 390 × 844): saltare benvenuto e registrazione con localStorage `benvenuto` = `{"v":1,"fatto":true}` e `registrazione-cliente` = `fatta`; dettatura finta mettendo `window.SpeechRecognition`; AI finta con `AI_API_KEY` + `AI_BASE_URL` verso un server locale.
 
 ## Changelog (le voci vecchie in `docs/STORICO.md`)
+- 2026-10-29: Supabase UE collegato e versione vera online (corretti permessi di base dei progetti nuovi e barra laterale della dashboard vera).
 - 2026-10-29: versione vera delle tre app sul database e pagina d'ingresso con i sei siti; orologio unico (demo ferma al 21/10).

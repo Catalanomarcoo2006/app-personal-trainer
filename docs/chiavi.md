@@ -12,6 +12,9 @@ Aggiornare questa tabella ogni volta che si crea, si sposta o si cancella una ch
 |---|---|---|---|---|
 | DeepSeek (AI di Leo) | quella del computer | `AI_API_KEY` | `.env.local` sul PC di Marco | 22/10/2026 |
 | DeepSeek (AI di Leo) | `vercel-online` | `AI_API_KEY` | Vercel → progetto `app-personal-trainer` → Environment Variables → Production (tipo Secret) | 23/10/2026 |
+| Supabase, progetto `Spotter` (West EU) | Project URL | `NEXT_PUBLIC_SUPABASE_URL` | Vercel, Production e Preview (non segreta) | 29/10/2026 |
+| Supabase, progetto `Spotter` | Publishable key `default` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel, Production e Preview (pubblica per natura: decide la RLS) | 29/10/2026 |
+| Supabase, progetto `Spotter` | Secret key `vercel-online` | `SUPABASE_SERVICE_ROLE_KEY` | Vercel, solo Production (Sensitive). La secret `default` non è usata da nessuna parte | 29/10/2026 |
 
 Le stesse variabili `AI_*` servono a **due rotte**: Leo del trainer (`app/prototipo/api/leo`) e, dal 28/10, Leo del cliente (`app/prototipo/api/leo-cliente`). Nessuna chiave nuova: si usa quella che c'è già (sul computer e su Vercel). Le due rotte sono aperte a chiunque abbia l'indirizzo: tenere un limite di spesa sul pannello di DeepSeek.
 
@@ -19,7 +22,6 @@ Le stesse variabili `AI_*` servono a **due rotte**: Leo del trainer (`app/protot
 
 | Servizio | Variabili | Quando |
 |---|---|---|
-| Supabase (progetto di sviluppo, regione UE) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Ora: il codice è pronto (passi in `docs/supabase.md`); su Vercel ora ci sono valori segnaposto. La chiave di servizio la usano solo il server (`libs/supabase/admin.ts`, pannello admin) e i test |
 | Resend (email) | `RESEND_API_KEY` | Fase 5, avvisi email |
 | Fornitore AI in UE | `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | Prima del primo cliente vero: con dati veri DeepSeek non si usa |
 | Trascrizione della voce in UE (vocali a Leo) | `AI_STT_BASE_URL`, `AI_STT_API_KEY`, `AI_STT_MODEL` | Prima dei vocali con clienti veri; oggi i vocali usano la dettatura del browser (solo dati finti) |
