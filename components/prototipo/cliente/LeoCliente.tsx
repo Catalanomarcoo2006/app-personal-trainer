@@ -18,8 +18,8 @@ import { EASE_OUT } from "@/components/ui/motion";
 type Msg = { id: number; da: "cliente" | "leo" | "avviso"; testo: string; file?: string };
 export type Allegato = { nome: string; testo: string };
 const nomeTrainer = trainer.name.split(" ")[0];
-// in leo-bordo.webp (560 × 339) il bordo è alla riga 283: in proporzione alla larghezza, 283 / 560
-const LEO_BORDO = 283 / 560;
+// in leo-bordo.webp (560 × 433) il bordo è alla riga 378: in proporzione alla larghezza, 378 / 560
+const LEO_BORDO = 378 / 560;
 
 function useChatCliente() {
   const [messaggi, setMessaggi] = useState<Msg[]>([]);
@@ -200,9 +200,9 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
             transition={{ duration: 0.42, ease: EASE_OUT }}
             className="absolute inset-x-0 bottom-0 flex h-[80%] flex-col"
           >
-            {/* Leo si affaccia dal bordo alto come da dietro un muretto (leo-bordo.webp, ritagliato dalla foto di Marco
-                del 28/10): la riga del bordo della foto sta all'83,5% dell'altezza e combacia con il bordo del foglio;
-                le dita scendono sopra il foglio. Sta sopra il foglio, quindi entra solo con una dissolvenza breve. */}
+            {/* Leo si affaccia dal bordo alto e guarda giù, come se sbirciasse la chat (leo-bordo.webp, ritagliato dalla
+                foto di Gemini di Marco del 29/10): la riga del bordo della foto combacia con il bordo del foglio e le
+                dita scendono sopra il foglio. Sta sopra il foglio, quindi entra solo con una dissolvenza breve. */}
             <motion.img
               src="/prototipo/coach/leo-bordo.webp"
               alt=""
@@ -211,8 +211,8 @@ export function LeoCliente({ aperto, onChiudi }: { aperto: boolean; onChiudi: ()
               initial={{ opacity: 0, y: reduce ? 0 : 14, x: "-50%" }}
               animate={{ opacity: 1, y: 0, x: "-50%" }}
               transition={{ delay: 0.3, type: "spring", stiffness: 260, damping: 22 }}
-              className="pointer-events-none absolute left-1/2 z-10 w-[176px] select-none"
-              style={{ top: -LEO_BORDO * 176 }}
+              className="pointer-events-none absolute left-1/2 z-10 w-[168px] select-none"
+              style={{ top: -LEO_BORDO * 168 }}
             />
             {/* fondo pieno: dietro ci sono il corpo di Leo e la pagina, non devono trasparire */}
             <div className="panel relative flex min-h-0 flex-1 flex-col rounded-t-[30px] rounded-b-none pb-[max(12px,env(safe-area-inset-bottom))]" style={{ background: "var(--color-card)" }}>
