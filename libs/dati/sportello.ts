@@ -98,6 +98,51 @@ export async function rinnovaPacchetto(r: { clientId: string; lezioni?: number; 
   };
 }
 
+// Un pacchetto nuovo (a lezioni o a mesi) dalla finestra "Nuovo pacchetto": con il suo pagamento, già incassato
+// o da incassare. Diventa il pacchetto del cliente (il primo dell'elenco), quello vecchio resta nello storico.
+export async function creaPacchetto(
+  r: { clientId: string; kind: "lessons" | "time"; lezioni?: number; mesi?: number; amountCents: number; pagato: boolean },
+  oggi = giornoDiOggi(),
+): Promise<Esito> {
+  const c = cliente(r.clientId);
+  if (!c) return { ok: false, motivo: "Cliente non trovato" };
+  const n = r.kind === "lessons" ? r.lezioni : r.mesi;
+  if (!n || !Number.isInteger(n) || n < 1 || n > (r.kind === "lessons" ? 100 : 24))
+    return { ok: false, motivo: r.kind === "lessons" ? "Le lezioni vanno da 1 a 100" : "I mesi vanno da 1 a 24" };
+  const v = controllaImporto(r.amountCents);
+  if (!v.ok) return fallito(v);
+  const label = r.kind === "lessons" ? `Pacchetto ${n} ${n === 1 ? "lezione" : "lezioni"}` : `Abbonamento ${n} ${n === 1 ? "mese" : "mesi"}`;
+  const pacchetto: Pacchetto = {
+    id: nuovoId("K", dati().pacchetti.map((p) => p.id)),
+    clientId: c.id,
+    kind: r.kind,
+    label,
+    lessonsTotal: r.kind === "lessons" ? n : null,
+    lessonsUsed: 0,
+    startsOn: oggi,
+    endsOn: r.kind === "time" ? aggiungiMesi(oggi, n) : null,
+    priceCents: r.amountCents,
+  };
+  const pagamento: Pagamento = {
+    id: nuovoId("P", dati().pagamenti.map((p) => p.id)),
+    clientId: c.id,
+    packageId: pacchetto.id,
+    description: label,
+    amountCents: r.amountCents,
+    dueOn: oggi,
+    paidOn: r.pagato ? oggi : null,
+  };
+  scrivi((d) => ({ ...d, pacchetti: [pacchetto, ...d.pacchetti], pagamenti: [...d.pagamenti, pagamento] }));
+  return {
+    ok: true,
+    id: pacchetto.id,
+    annulla: async () => {
+      scrivi((d) => ({ ...d, pagamenti: d.pagamenti.filter((p) => p.id !== pagamento.id), pacchetti: d.pacchetti.filter((p) => p.id !== pacchetto.id) }));
+      return OK;
+    },
+  };
+}
+
 // ——— Misure, obiettivo, note ———
 
 export async function aggiungiMisura(m: Omit<Misura, "id">, oggi = giornoDiOggi()): Promise<Esito> {

@@ -8,7 +8,7 @@ import { IconCircle } from "@/components/ui/basics";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { Attachment, conversations, progressOf, toneColors } from "@/libs/prototipo/dati-finti";
-import { useTrovaCliente } from "@/libs/dati/selettori";
+import { useClienti, useTrovaCliente } from "@/libs/dati/selettori";
 import { MAX_MESSAGGIO } from "@/libs/dati/sportello";
 import { durataScrittura, TEMPI } from "@/libs/prototipo/leo-viaggio";
 import { stato, useStato, useFocusLeo } from "@/libs/prototipo/stato";
@@ -43,9 +43,10 @@ function PdfMessage({ a }: { a: Attachment }) {
 // search: i parametri dell'indirizzo (?cliente=), passati da TrainerApp.
 export function MessagesView({ search }: { search: string }) {
   const clientById = useTrovaCliente();
+  const primoCliente = useClienti()[0]?.id ?? "";
   const params = new URLSearchParams(search);
   const target = params.get("cliente");
-  const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : (conversations[0]?.clientId ?? "")));
+  const [activeId, setActiveId] = useState(() => (target && clientById(target) ? target : (conversations[0]?.clientId ?? primoCliente)));
   const threads = useStato((s) => s.threads);
   const [unread, setUnread] = useState(() => {
     const u = Object.fromEntries(conversations.map((c) => [c.clientId, c.unread])) as Record<string, number>;
@@ -139,7 +140,7 @@ export function MessagesView({ search }: { search: string }) {
     [allConversations, filter, unread, threads],
   );
 
-  const client = clientById(activeId)!;
+  const client = clientById(activeId);
   const messages = threads[activeId] ?? [];
 
   const open = (id: string) => {
@@ -170,6 +171,14 @@ export function MessagesView({ search }: { search: string }) {
     e.preventDefault();
     send(draft);
   };
+
+  // nessun cliente ancora (account appena creato): niente chat da mostrare
+  if (!client)
+    return (
+      <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid place-items-center pr-[18px] pl-[80px]">
+        <p className="panel rounded-[18px] px-[22px] py-[16px] text-[13px] text-muted">Qui arrivano i messaggi dei tuoi clienti: aggiungi il primo da Clienti.</p>
+      </main>
+    );
 
   return (
     <main className="absolute inset-x-0 top-[90px] bottom-[10px] grid grid-cols-[372px_minmax(0,1fr)] gap-x-[14px] pr-[18px] pl-[80px]">

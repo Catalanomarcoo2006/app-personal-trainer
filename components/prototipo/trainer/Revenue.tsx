@@ -1,5 +1,6 @@
 "use client";
 
+import { inDemo } from "@/libs/orologio";
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
@@ -129,9 +130,12 @@ export function RevenueCard() {
   const collected = incassi.collectedCents / 100;
   const outstanding = incassi.outstandingCents / 100;
   const clientById = (id: string) => clients.find((c) => c.id === id);
-  const collectedPct = (collected / revenue.forecast) * 100;
-  const outstandingPct = (outstanding / revenue.forecast) * 100;
-  const missing = Math.max(0, revenue.forecast - collected - outstanding);
+  // il previsto: nella demo fisso; nella versione vera incassato più da incassare, che seguono i pagamenti
+  const forecast = inDemo() ? revenue.forecast : collected + outstanding;
+  // senza niente in previsione (account nuovo) le barre restano vuote, senza dividere per zero
+  const collectedPct = forecast ? (collected / forecast) * 100 : 0;
+  const outstandingPct = forecast ? (outstanding / forecast) * 100 : 0;
+  const missing = Math.max(0, forecast - collected - outstanding);
 
   return (
     <section className="panel flex h-full flex-col rounded-[18px] px-[16px] pt-[13px] pb-[13px]">
@@ -178,7 +182,7 @@ export function RevenueCard() {
         </div>
         <div className="mt-[7px] flex items-center justify-between text-[10.5px]">
           <span className="text-muted">
-            <b className="font-bold text-ink">{Math.round(collectedPct)}%</b> del previsto · {formatEuro(revenue.forecast)}
+            <b className="font-bold text-ink">{Math.round(collectedPct)}%</b> del previsto · {formatEuro(forecast)}
           </span>
           <span className="text-muted">mancano {formatEuro(missing)}</span>
         </div>

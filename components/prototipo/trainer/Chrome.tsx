@@ -22,6 +22,7 @@ import { Appear, EASE_OUT } from "@/components/ui/motion";
 import { useAppearance } from "@/components/ui/appearance";
 import { playSound } from "@/libs/ui/sound";
 import { inDemo } from "@/libs/orologio";
+import { Moduli } from "@/components/vera/Moduli";
 import { benvenutoAttuale } from "@/libs/prototipo/benvenuto";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 import { CoachAssistant } from "./CoachAssistant";
@@ -34,13 +35,24 @@ import { TrainerTelefono } from "./telefono/TrainerTelefono";
 
 export { BASE, ROUTES, navigate };
 
-type Section = "Oggi" | "Messaggi" | "Clienti" | "Schede" | "Calendario" | "Incassi" | "Impostazioni";
+type Section =
+  | "Oggi"
+  | "Messaggi"
+  | "Clienti"
+  | "Schede"
+  | "Calendario"
+  | "Incassi"
+  | "Impostazioni";
 type NavItem = { label: Section; icon: LucideIcon; href: string };
 
 // Molla stile Apple per le "gocce" di vetro che scivolano tra le voci.
 const SPRING = { type: "spring" as const, duration: 0.38, bounce: 0.18 };
 
-const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { type: "spring" as const, stiffness: 500, damping: 28 } };
+const tap = {
+  whileTap: { scale: 0.92 },
+  whileHover: { y: -1.5 },
+  transition: { type: "spring" as const, stiffness: 500, damping: 28 },
+};
 
 // ——— Navigazione istantanea (vedi nav.ts) ———
 
@@ -48,12 +60,32 @@ const tap = { whileTap: { scale: 0.92 }, whileHover: { y: -1.5 }, transition: { 
 function InstantLinks(): null {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (
+        e.defaultPrevented ||
+        e.button !== 0 ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey
+      )
+        return;
+      const a = (e.target as Element | null)?.closest?.(
+        "a[href]",
+      ) as HTMLAnchorElement | null;
       // data-macchia: il link gestisce da sé la navigazione, con la macchia d'olio (link di Leo)
-      if (!a || a.target === "_blank" || a.hasAttribute("download") || a.hasAttribute("data-macchia")) return;
+      if (
+        !a ||
+        a.target === "_blank" ||
+        a.hasAttribute("download") ||
+        a.hasAttribute("data-macchia")
+      )
+        return;
       const url = new URL(a.href, window.location.href);
-      if (url.origin !== window.location.origin || !url.pathname.startsWith(BASE)) return;
+      if (
+        url.origin !== window.location.origin ||
+        !url.pathname.startsWith(BASE)
+      )
+        return;
       e.preventDefault();
       navigate(url.pathname + url.search);
     };
@@ -65,10 +97,18 @@ function InstantLinks(): null {
 
 function useSection(): Section {
   const at = usePathname();
-  const found = (["Messaggi", "Clienti", "Schede", "Calendario", "Incassi", "Impostazioni"] as const).find((s) => at.startsWith(ROUTES[s.toLowerCase() as "messaggi"]));
+  const found = (
+    [
+      "Messaggi",
+      "Clienti",
+      "Schede",
+      "Calendario",
+      "Incassi",
+      "Impostazioni",
+    ] as const
+  ).find((s) => at.startsWith(ROUTES[s.toLowerCase() as "messaggi"]));
   return found ?? "Oggi";
 }
-
 
 // Interruttore del tema: il nuovo tema parte dal punto del clic.
 export function ThemeButton({ size = 15 }: { size?: number }) {
@@ -95,7 +135,11 @@ export function ThemeButton({ size = 15 }: { size?: number }) {
           transition={{ duration: 0.25 }}
           className="grid"
         >
-          {dark ? <Sun size={size} strokeWidth={1.9} /> : <Moon size={size} strokeWidth={1.9} />}
+          {dark ? (
+            <Sun size={size} strokeWidth={1.9} />
+          ) : (
+            <Moon size={size} strokeWidth={1.9} />
+          )}
         </motion.span>
       </AnimatePresence>
     </motion.button>
@@ -120,27 +164,65 @@ const TopBarRight = memo(function TopBarRight() {
     <BarraVetro
       className="justify-self-end px-[8px] text-ink"
       voci={[
-        { chiave: "tema", nodo: <span className="grid size-[30px] place-items-center"><ThemeButton /></span> },
-        { chiave: "cerca", nodo: <span className="flex h-[30px] items-center px-[4px]"><RicercaInBarra /></span> },
-        { chiave: "suoni", nodo: <span className="grid size-[30px] place-items-center"><SuoniButton /></span> },
+        {
+          chiave: "tema",
+          nodo: (
+            <span className="grid size-[30px] place-items-center">
+              <ThemeButton />
+            </span>
+          ),
+        },
+        {
+          chiave: "cerca",
+          nodo: (
+            <span className="flex h-[30px] items-center px-[4px]">
+              <RicercaInBarra />
+            </span>
+          ),
+        },
+        {
+          chiave: "suoni",
+          nodo: (
+            <span className="grid size-[30px] place-items-center">
+              <SuoniButton />
+            </span>
+          ),
+        },
       ]}
     />
   );
 });
 
 // Riga del titolo: freccia indietro (se c'è dove tornare), titolo, contenuti a sinistra e a destra.
-export function TitleRow({ title, back, left, right }: { title: string; back?: string; left?: ReactNode; right?: ReactNode }) {
+export function TitleRow({
+  title,
+  back,
+  left,
+  right,
+}: {
+  title: string;
+  back?: string;
+  left?: ReactNode;
+  right?: ReactNode;
+}) {
   return (
     <div className="relative z-30 mt-[10px] flex h-[24px] items-center justify-between pr-[18px] pl-[24px]">
       <div className="flex items-center gap-[12px]">
         {back && (
-          <Link href={back} onClick={() => playSound("tap")} aria-label="Indietro" className="grid place-items-center">
+          <Link
+            href={back}
+            onClick={() => playSound("tap")}
+            aria-label="Indietro"
+            className="grid place-items-center"
+          >
             <motion.span whileHover={{ x: -2 }} whileTap={{ scale: 0.9 }}>
               <ArrowLeft size={17} strokeWidth={2.1} />
             </motion.span>
           </Link>
         )}
-        <h1 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{title}</h1>
+        <h1 className="text-[17px] font-bold tracking-[-0.02em] text-ink">
+          {title}
+        </h1>
         {left}
       </div>
       <div className="flex items-center gap-[8px]">{right}</div>
@@ -164,13 +246,82 @@ const sideItems: NavItem[] = [
 function AmbientBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
-      <span className="ambient-blob" style={{ left: -120, top: "calc(50% - 190px)", width: 250, height: 230, background: "var(--trainer)" }} />
-      <span className="ambient-blob" style={{ left: -100, top: "calc(50% + 30px)", width: 230, height: 190, background: "var(--color-sky-strong)", animationDelay: "-6s" }} />
-      <span className="ambient-blob" style={{ left: -40, top: "calc(50% + 170px)", width: 170, height: 140, background: "var(--color-mint-strong)", animationDelay: "-11s" }} />
-      <span className="ambient-blob" style={{ left: 470, top: -90, width: 220, height: 130, background: "var(--trainer)", animationDelay: "-3s" }} />
-      <span className="ambient-blob" style={{ left: 700, top: -80, width: 200, height: 120, background: "var(--color-violet-strong)", animationDelay: "-9s" }} />
-      <span className="ambient-blob" style={{ right: 40, top: -80, width: 180, height: 120, background: "var(--color-sky-strong)", animationDelay: "-13s" }} />
-      <span className="ambient-blob" style={{ left: 0, top: -70, width: 160, height: 110, background: "var(--color-mint-strong)", animationDelay: "-5s" }} />
+      <span
+        className="ambient-blob"
+        style={{
+          left: -120,
+          top: "calc(50% - 190px)",
+          width: 250,
+          height: 230,
+          background: "var(--trainer)",
+        }}
+      />
+      <span
+        className="ambient-blob"
+        style={{
+          left: -100,
+          top: "calc(50% + 30px)",
+          width: 230,
+          height: 190,
+          background: "var(--color-sky-strong)",
+          animationDelay: "-6s",
+        }}
+      />
+      <span
+        className="ambient-blob"
+        style={{
+          left: -40,
+          top: "calc(50% + 170px)",
+          width: 170,
+          height: 140,
+          background: "var(--color-mint-strong)",
+          animationDelay: "-11s",
+        }}
+      />
+      <span
+        className="ambient-blob"
+        style={{
+          left: 470,
+          top: -90,
+          width: 220,
+          height: 130,
+          background: "var(--trainer)",
+          animationDelay: "-3s",
+        }}
+      />
+      <span
+        className="ambient-blob"
+        style={{
+          left: 700,
+          top: -80,
+          width: 200,
+          height: 120,
+          background: "var(--color-violet-strong)",
+          animationDelay: "-9s",
+        }}
+      />
+      <span
+        className="ambient-blob"
+        style={{
+          right: 40,
+          top: -80,
+          width: 180,
+          height: 120,
+          background: "var(--color-sky-strong)",
+          animationDelay: "-13s",
+        }}
+      />
+      <span
+        className="ambient-blob"
+        style={{
+          left: 0,
+          top: -70,
+          width: 160,
+          height: 110,
+          background: "var(--color-mint-strong)",
+          animationDelay: "-5s",
+        }}
+      />
     </div>
   );
 }
@@ -218,8 +369,18 @@ export function Sidebar() {
       {sideItems.map(({ label, icon: Icon, href }) => {
         const isActive = section === label;
         return (
-          <div key={label} className="relative" onMouseEnter={() => enter(label)}>
-            {isActive && <motion.span layoutId="goccia-barra" className="glass-drop absolute inset-[-1px] rounded-full" transition={SPRING} />}
+          <div
+            key={label}
+            className="relative"
+            onMouseEnter={() => enter(label)}
+          >
+            {isActive && (
+              <motion.span
+                layoutId="goccia-barra"
+                className="glass-drop absolute inset-[-1px] rounded-full"
+                transition={SPRING}
+              />
+            )}
             <motion.button
               type="button"
               aria-label={label}
@@ -231,7 +392,9 @@ export function Sidebar() {
                 playSound("tap");
               }}
               className={`relative grid size-[36px] cursor-pointer place-items-center rounded-full transition-colors duration-200 ${
-                isActive ? "text-ink" : "text-ink/50 [@media(hover:hover)]:hover:text-ink"
+                isActive
+                  ? "text-ink"
+                  : "text-ink/50 [@media(hover:hover)]:hover:text-ink"
               }`}
             >
               <Icon size={18} strokeWidth={isActive ? 2.1 : 1.8} />
@@ -263,7 +426,8 @@ export function TrainerFrame({ children }: { children: ReactNode }) {
   // primo accesso: prima il benvenuto (lo stato salvato si legge solo nel browser, dopo il montaggio)
   useEffect(() => {
     // il benvenuto è della demo: nella versione vera il primo accesso passa dall'invito e dalla password
-    if (inDemo() && !benvenutoAttuale().fatto) window.location.replace(BENVENUTO);
+    if (inDemo() && !benvenutoAttuale().fatto)
+      window.location.replace(BENVENUTO);
   }, []);
   const forma = useForma();
   // finché non si sa quale delle due (il browser non è ancora letto), niente: così non si vede un lampo dell'altra
@@ -276,16 +440,20 @@ export function TrainerFrame({ children }: { children: ReactNode }) {
       </Suspense>
     );
   return (
-    <FitCanvas width={1303} minHeight={640}>
-      <AmbientBackdrop />
-      <Appear i={0} className="relative z-40 pt-[11px]">
-        <TopBar />
-      </Appear>
-      <Sidebar />
-      {children}
-      <CoachAssistant />
-      <InstantLinks />
-    </FitCanvas>
+    <>
+      <FitCanvas width={1303} minHeight={640}>
+        <AmbientBackdrop />
+        <Appear i={0} className="relative z-40 pt-[11px]">
+          <TopBar />
+        </Appear>
+        <Sidebar />
+        {children}
+        <CoachAssistant />
+        <InstantLinks />
+      </FitCanvas>
+      {/* fuori dalla tela (che è scalata): le finestre stanno sopra tutta la pagina */}
+      <Moduli />
+    </>
   );
 }
 
@@ -305,8 +473,18 @@ export function TrainerShell({
 }) {
   return (
     <>
-      <motion.div initial={{ opacity: 0, transform: "translateY(3px)" }} animate={{ opacity: 1, transform: "translateY(0px)" }} transition={{ duration: 0.18, ease: EASE_OUT }} className="mosso relative z-30">
-        <TitleRow title={title} back={back} left={titleLeft} right={titleRight} />
+      <motion.div
+        initial={{ opacity: 0, transform: "translateY(3px)" }}
+        animate={{ opacity: 1, transform: "translateY(0px)" }}
+        transition={{ duration: 0.18, ease: EASE_OUT }}
+        className="mosso relative z-30"
+      >
+        <TitleRow
+          title={title}
+          back={back}
+          left={titleLeft}
+          right={titleRight}
+        />
       </motion.div>
       {children}
     </>

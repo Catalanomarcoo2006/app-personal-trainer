@@ -263,3 +263,28 @@ describe("misure e obiettivo dall'app del cliente", () => {
     expect(dati().clienti.find((c) => c.id === "giulia-bianchi")?.pesata).toBe("giorno");
   });
 });
+
+describe("creaPacchetto", () => {
+  it("pacchetto a lezioni con il suo pagamento da incassare; diventa quello del cliente", async () => {
+    const { creaPacchetto } = await import("@/libs/dati/sportello");
+    const { stato } = await import("@/libs/prototipo/stato");
+    const prima = stato.get().dati;
+    const e = await creaPacchetto({ clientId: "giulia-bianchi", kind: "lessons", lezioni: 12, amountCents: 54000, pagato: false }, "2026-10-21");
+    expect(e.ok).toBe(true);
+    const d = stato.get().dati;
+    expect(d.pacchetti.find((p) => p.clientId === "giulia-bianchi")).toMatchObject({ label: "Pacchetto 12 lezioni", lessonsTotal: 12, lessonsUsed: 0, startsOn: "2026-10-21" });
+    expect(d.pagamenti.at(-1)).toMatchObject({ amountCents: 54000, paidOn: null, description: "Pacchetto 12 lezioni" });
+    if (e.ok) await e.annulla!();
+    expect(stato.get().dati.pacchetti).toEqual(prima.pacchetti);
+  });
+
+  it("abbonamento a mesi: scade dopo i mesi scelti; numeri fuori misura rifiutati", async () => {
+    const { creaPacchetto } = await import("@/libs/dati/sportello");
+    const { stato } = await import("@/libs/prototipo/stato");
+    const e = await creaPacchetto({ clientId: "luca-ferri", kind: "time", mesi: 3, amountCents: 30000, pagato: true }, "2026-10-31");
+    expect(e.ok).toBe(true);
+    expect(stato.get().dati.pacchetti.find((p) => p.clientId === "luca-ferri")).toMatchObject({ kind: "time", endsOn: "2027-01-31" });
+    expect(await creaPacchetto({ clientId: "luca-ferri", kind: "lessons", lezioni: 0, amountCents: 100, pagato: true })).toMatchObject({ ok: false });
+    expect(await creaPacchetto({ clientId: "nessuno", kind: "lessons", lezioni: 5, amountCents: 100, pagato: true })).toMatchObject({ ok: false, motivo: "Cliente non trovato" });
+  });
+});

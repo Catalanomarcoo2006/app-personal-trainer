@@ -1,5 +1,6 @@
 "use client";
 
+import { inDemo } from "@/libs/orologio";
 import { ReactNode, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
@@ -103,7 +104,7 @@ export function PaymentsView() {
           <span className={outstanding > 0 ? "text-[#d43b4f]" : "text-ok"}>{formatEuro(outstanding)}</span>
         </Kpi>
         <Kpi icon={CircleDollarSign} label="Previsto a fine mese" i={2} note={<span className="text-muted">pacchetti e rinnovi già fissati</span>}>
-          <CountUp value={revenue.forecast} format={formatEuro} />
+          <CountUp value={inDemo() ? revenue.forecast : collected + outstanding} format={formatEuro} />
         </Kpi>
         <Kpi icon={Users} label="Clienti che hanno pagato" i={3} note={<span className="text-muted">su {clients.length} clienti attivi</span>}>
           {paying} <span className="text-[14px] text-muted">/ {clients.length}</span>

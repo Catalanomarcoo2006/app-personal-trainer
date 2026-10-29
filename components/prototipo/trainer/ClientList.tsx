@@ -1,5 +1,6 @@
 "use client";
 
+import { apriModulo } from "@/components/vera/Moduli";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
@@ -139,7 +140,7 @@ export function ClientList({ search }: { search: string }) {
             whileTap={{ scale: 0.95 }}
             onClick={() => {
               playSound("tap");
-              toast("Nuovo cliente: arriva nella Fase 2", { icon: "🛠️" });
+              apriModulo({ tipo: "cliente" });
             }}
             className="flex h-[30px] cursor-pointer items-center gap-[6px] rounded-full btn-trainer px-[13px] text-[12px] font-semibold"
           >

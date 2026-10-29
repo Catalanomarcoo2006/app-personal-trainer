@@ -1,5 +1,7 @@
 "use client";
 
+import { inDemo } from "@/libs/orologio";
+import { apriModulo } from "@/components/vera/Moduli";
 import { ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarPlus, MessageSquare, UserPlus, Volume2, VolumeX, Wallet, type LucideIcon } from "lucide-react";
@@ -40,8 +42,9 @@ const azioni: Azione[] = [
     },
   },
   { label: "Scrivi", icon: MessageSquare, fai: () => navigate(ROUTES.messaggi) },
-  { label: "Pagamento", icon: Wallet, fai: () => apriLeo("Registra un pagamento di ") },
-  { label: "Nuovo cliente", icon: UserPlus, fai: () => apriLeo("Nuovo cliente: ") },
+  // nella demo li fa Leo; nella versione vera (Leo senza AI finché non c'è il fornitore in Europa) le finestre
+  { label: "Pagamento", icon: Wallet, fai: () => (inDemo() ? apriLeo("Registra un pagamento di ") : apriModulo({ tipo: "pagamento" })) },
+  { label: "Nuovo cliente", icon: UserPlus, fai: () => (inDemo() ? apriLeo("Nuovo cliente: ") : apriModulo({ tipo: "cliente" })) },
 ];
 
 export function AzioniRapide() {

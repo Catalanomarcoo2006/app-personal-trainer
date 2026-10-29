@@ -213,8 +213,8 @@ export function incassiDa(pagamenti: Riga<"payments">[], oggi: string): Revenue 
     range: `${MESI_LUNGHI[primo.mese].slice(0, 3)}${primo.anno !== ultimo.anno ? ` ${primo.anno}` : ""} – ${MESI_LUNGHI[ultimo.mese].slice(0, 3)} ${ultimo.anno}`,
     collected: questo,
     outstanding: daIncassare,
-    // il previsto: quello che si è incassato più quello che manca (almeno 1 €, per le percentuali)
-    forecast: Math.max(1, questo + daIncassare),
+    // il previsto: quello che si è incassato più quello che manca
+    forecast: questo + daIncassare,
     delta: prima > 0 ? Math.round(((questo - prima) / prima) * 100) : 0,
     months: mesi.map((m, i) => ({ label: MESI[m.mese], value: valori[i] })),
   };
