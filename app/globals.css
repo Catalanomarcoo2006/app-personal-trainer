@@ -380,22 +380,18 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02));
   box-shadow: inset 0 2px 0 var(--trainer), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
 }
-/* Scheda dell'allenamento del cliente (Marco, 30/10: troppo chiara e monocolore). Intestazione del giorno scura con
-   l'alone del trainer nell'angolo; esercizi come schede piene su un fondo più scuro, così si staccano tra loro. */
+/* Scheda dell'allenamento del cliente (Marco, 30/10: troppo chiara e monocolore; poi niente nero, colori coerenti).
+   Intestazione del giorno piena nel colore del trainer, come i suoi tasti, con un riflesso in alto; esercizi come
+   schede piene su un fondo tinto, così si staccano tra loro. */
 .scheda-testa {
   color: #fff;
   background:
-    radial-gradient(120% 150% at 100% 0%, color-mix(in srgb, var(--trainer) 42%, transparent), transparent 58%),
-    linear-gradient(160deg, #262a31, #15171b);
-}
-.dark .scheda-testa {
-  background:
-    radial-gradient(120% 150% at 100% 0%, color-mix(in srgb, var(--trainer) 30%, transparent), transparent 58%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.07);
+    radial-gradient(90% 120% at 100% 0%, rgba(255, 255, 255, 0.28), transparent 60%),
+    linear-gradient(135deg, var(--trainer), color-mix(in srgb, var(--trainer) 70%, #ffc6a1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 .scheda-lista {
-  background: color-mix(in srgb, var(--color-ink) 5%, var(--color-card));
+  background: color-mix(in srgb, var(--trainer) 8%, var(--color-card));
 }
 .dark .scheda-lista {
   background: rgba(0, 0, 0, 0.28);
@@ -404,6 +400,14 @@
   background: var(--color-card);
   border: 1px solid rgba(20, 24, 28, 0.07);
   box-shadow: 0 10px 20px -14px rgba(20, 30, 25, 0.45);
+}
+.numero-esercizio {
+  background: color-mix(in srgb, var(--trainer) 16%, var(--color-card));
+  color: var(--trainer);
+}
+/* al buio la tinta del colore sul nero diventa marrone: vetro chiaro */
+.dark .numero-esercizio {
+  background: rgba(255, 255, 255, 0.1);
 }
 .dark .riga-esercizio {
   background: rgba(255, 255, 255, 0.075);
