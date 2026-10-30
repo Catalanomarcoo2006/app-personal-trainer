@@ -31,6 +31,13 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 - [ ] **Vocali: trascrittore del server UE** (`MediaRecorder` + rotta `api/leo/voce`, variabili `AI_STT_*`) al posto della dettatura del browser, che manda l'audio a Google. (2026-10-25)
 - [ ] **Leo, vocali: bug nella chat**: ogni tanto il microfono sembra ancora attivo dopo l'invio di un vocale, e ci sono piccoli problemi di trascrizione e qualche bug visivo nella chat. Da riprodurre e sistemare (stato del microfono dopo l'invio, `MicrofonoLeo.tsx` e `libs/prototipo/leo-voce*.ts`). (2026-10-27) **Microfono fatto 2026-10-28** (`24df011`): `lascia()` spegne subito il tasto, senza aspettare fino a 3 s che il browser chiuda la dettatura (con test). Restano i problemi di trascrizione e i bug visivi della chat, da riprodurre.
 
+### Pulizia prima di vendere (trovate nei test del 30/10)
+- [ ] **Mappa del sito con l'indirizzo del boilerplate**: `next-sitemap.config.js` usa `https://zerotoship.it` se manca `SITE_URL`. Mettere `SITE_URL` su Vercel (o il dominio vero) quando c'è il dominio. (2026-10-30)
+- [ ] **Email di Alberto Ravasini in Privacy e Termini** (`app/privacy-policy/page.tsx`, `app/tos/page.tsx`, testi del boilerplate in inglese): da sostituire con informativa e termini veri in italiano, rivisti da un professionista. (2026-10-30)
+- [ ] **Mittente email di prova** (`onboarding@resend.dev` in `config.ts`): cambiarlo con il dominio vero insieme a Resend. (2026-10-30)
+- [ ] **Repo GitHub pubblica dal 28/10**: rimetterla privata (Settings → Danger Zone → Change visibility); per far lavorare altri account, invitarli come collaboratori. (2026-10-30)
+- [ ] **Test sul database (23) non rifatti il 30/10**: servono Docker acceso o `.env.test.local`; da rilanciare (`npm run test:db`) prima del primo cliente vero. (2026-10-30)
+
 ## Fatto
 
 ### Telefono: area trainer e cose comuni (29-30/10)
