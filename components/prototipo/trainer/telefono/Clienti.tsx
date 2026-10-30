@@ -8,7 +8,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { motion } from "motion/react";
 import { CalendarPlus, Mail, MessageCircle, Phone, Search, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
-import { progressOf, toneColors } from "@/libs/prototipo/dati-finti";
+import { progressOf } from "@/libs/prototipo/dati-finti";
 import { useStato } from "@/libs/prototipo/stato";
 import { ADESSO } from "@/libs/prototipo/leo-azioni";
 import { giornoDi, isoDi, SHORT } from "@/libs/prototipo/calendario";
@@ -120,7 +120,8 @@ const giornoBreve = (iso: string) => {
 
 export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuovaSeduta: (clientId: string) => void }) {
   const prossime = useProssime(c.id);
-  const tono = toneColors[c.tone];
+  // un solo colore, quello del trainer (come le percentuali dell'elenco): il tono del cliente qui era un colore in più
+  const tono = { strong: "var(--trainer)", track: "var(--trainer-velo)" }; // al buio il velo diventa vetro (classi dark:)
   const p = progressOf(c);
   const primo = c.name.split(" ")[0];
   const pesi = c.weights;
@@ -160,7 +161,7 @@ export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuova
 
       <DaConfermare clientId={c.id} nome={c.name} posto="relative mt-[14px] w-full" />
 
-      {/* obiettivo: i numeri in evidenza, la barra nel colore del cliente */}
+      {/* obiettivo: i numeri in evidenza, la barra nel colore del trainer */}
       <Riquadro className="mt-[14px] px-[16px] py-[14px]">
         <div className="flex items-baseline justify-between">
           <p className="text-[13px] font-semibold text-muted">{c.goal}</p>
@@ -188,7 +189,7 @@ export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuova
             </span>
           </span>
         </div>
-        <div className="mt-[12px] h-[8px] overflow-hidden rounded-full" style={{ background: tono.track }}>
+        <div className="mt-[12px] h-[8px] overflow-hidden rounded-full bg-[var(--trainer-velo)] dark:bg-white/12">
           <motion.div className="h-full rounded-full" style={{ background: tono.strong }} initial={{ width: 0 }} animate={{ width: `${p}%` }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} />
         </div>
         {pesi.length > 1 && (
