@@ -56,7 +56,9 @@ export function testoDaRisultati(r: Risultati): string {
 }
 
 const ATTESA_AUDIO_MS = 1500; // se il browser non manda l'evento dell'audio, dopo l'avvio si considera pronto lo stesso
-const ATTESA_FINE_MS = 3000; // alcuni browser non mandano mai la fine dopo stop(): si chiude comunque
+// alcuni browser (Safari su iPhone, a volte Chrome su Android) non mandano mai la fine dopo stop(): si chiude
+// comunque, e il riconoscimento si spegne a forza con abort(), se no il microfono resta acceso (Marco, 30/10)
+const ATTESA_FINE_MS = 3000;
 
 export function trascrittoreBrowser(): Trascrittore {
   let rec: Riconoscitore | null = null;
@@ -70,6 +72,8 @@ export function trascrittoreBrowser(): Trascrittore {
     avvia(onTesto) {
       const Costruttore = costruttore();
       if (!Costruttore) return Promise.reject(new VoceErrore("non-supportato"));
+      // un riconoscimento di prima ancora acceso: si spegne prima di accenderne un altro
+      if (rec && !terminato) rec.abort();
       const r = (rec = new Costruttore());
       r.continuous = true;
       r.interimResults = true;
@@ -122,6 +126,8 @@ export function trascrittoreBrowser(): Trascrittore {
         const chiudi = () => {
           alTermine = null;
           attivo = false;
+          // il browser non ha chiuso da solo (vedi ATTESA_FINE_MS): il microfono si spegne qui
+          if (rec && !terminato) rec.abort();
           if (errore && errore !== "no-speech" && errore !== "aborted") {
             if (ultimo) ok({ testo: ultimo, parziale: true });
             else no(new VoceErrore(erroreDaBrowser(errore)));

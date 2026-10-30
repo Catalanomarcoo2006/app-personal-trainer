@@ -130,6 +130,47 @@ describe("trascrittore del browser", () => {
     expect(dalVivo).toEqual([]);
   });
 
+  it("se il browser non chiude dopo stop(), il microfono si spegne a forza e il testo arriva lo stesso", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("SpeechRecognition", Finto);
+    const t = trascrittoreBrowser();
+    const partito = t.avvia(() => {});
+    const r = Finto.ultimo;
+    r.stop = vi.fn(); // come Safari su iPhone: nessuna fine dopo stop()
+    r.onaudiostart?.();
+    await partito;
+    r.risultati("Luca ha pagato");
+    const fine = t.ferma();
+    expect(r.abort).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(3100);
+    await expect(fine).resolves.toEqual({ testo: "Luca ha pagato", parziale: false });
+    expect(r.abort).toHaveBeenCalledTimes(1);
+  });
+
+  it("se il browser chiude da solo dopo stop(), niente abort", async () => {
+    vi.stubGlobal("SpeechRecognition", Finto);
+    const t = trascrittoreBrowser();
+    const partito = t.avvia(() => {});
+    const r = Finto.ultimo;
+    r.onaudiostart?.();
+    await partito;
+    r.risultati("ciao");
+    await expect(t.ferma()).resolves.toEqual({ testo: "ciao", parziale: false });
+    expect(r.abort).not.toHaveBeenCalled();
+  });
+
+  it("un vocale nuovo spegne il riconoscimento di prima rimasto acceso", async () => {
+    vi.stubGlobal("SpeechRecognition", Finto);
+    const t = trascrittoreBrowser();
+    const partito = t.avvia(() => {});
+    const primo = Finto.ultimo;
+    primo.onaudiostart?.();
+    await partito;
+    void t.avvia(() => {});
+    expect(primo.abort).toHaveBeenCalledTimes(1);
+    expect(Finto.ultimo).not.toBe(primo);
+  });
+
   it("il microfono è pronto quando parte l'audio, non appena parte il riconoscimento", async () => {
     vi.stubGlobal("SpeechRecognition", Finto);
     const partito = vi.fn();
