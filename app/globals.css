@@ -117,6 +117,8 @@
 
 /* Colore del trainer: lo imposta ogni trainer, qui il valore di default */
 :root {
+  /* app da telefono: distanza della barra in basso dal bordo (sull'iPhone appena sopra l'indicatore Home) */
+  --fondo-barra: max(8px, calc(env(safe-area-inset-bottom) - 10px));
   --trainer: #ff6b2c;
 }
 
@@ -189,11 +191,12 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     0 18px 40px -16px rgba(0, 0, 0, 0.9);
 }
-/* Vetro quasi pieno per i fumetti che passano sopra il testo (Leo da telefono): le scritte sotto non si mescolano */
-.fumetto-pieno {
+/* Vetro quasi pieno per quello che passa sopra il testo (fumetti di Leo, barra sottile in alto delle app da
+   telefono): le scritte sotto non si mescolano */
+.vetro-pieno {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.9));
 }
-.dark .fumetto-pieno {
+.dark .vetro-pieno {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)),
     rgba(14, 14, 17, 0.94);

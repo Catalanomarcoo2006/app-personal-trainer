@@ -14,7 +14,7 @@ import { IngressoLeo } from "./IngressoLeo";
 import { FacciaLeo } from "@/components/prototipo/trainer/telefono/TastoLeo";
 import { Home, TrainerDiGiulia } from "./Home";
 import { Progressi } from "./Progressi";
-import { Messaggi, useNonLettiCliente } from "./Messaggi";
+import { ConChiParli, Messaggi, useNonLettiCliente } from "./Messaggi";
 import { Allenamento } from "./Allenamento";
 import { Profilo } from "./Profilo";
 import { ROTTE_CLIENTE, sezioneDa, VOCI_BARRA, type SezioneCliente } from "./nav";
@@ -47,7 +47,8 @@ export function ClientApp() {
       voci={VOCI_BARRA.map((v) => ({ chiave: v.sezione, label: v.label, icon: v.icon, href: ROTTE_CLIENTE[v.sezione], badge: v.sezione === "messaggi" ? nonLetti : undefined }))}
       foto={{ src: FOTO_CLIENTE, label: "Il tuo profilo", href: ROTTE_CLIENTE.profilo }}
       titolo={t.titolo}
-      titoloBreve={t.breve}
+      titoloBreve={sezione === "messaggi" ? <ConChiParli /> : t.breve}
+      conLeo={sezione !== "messaggi"}
       sotto={sezione === "home" ? <TrainerDiGiulia /> : undefined}
       fuori={
         <>

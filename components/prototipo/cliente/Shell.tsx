@@ -221,13 +221,14 @@ function Scorrimento({ scorre, chiave }: { scorre: RefObject<HTMLDivElement | nu
 // Barra in basso: pillola di vetro in rilievo; la goccia (glass-drop, la stessa della barra laterale del trainer)
 // scivola sotto la voce attiva. La voce attiva prende il colore del trainer.
 // A destra resta il posto per la faccia di Leo (FacciaLeo, 64 px + 8 di stacco), sulla stessa riga: così Leo
-// non copre mai le schede, perché quella fascia è già riservata alla barra (Marco, 30/10).
-function BarraSezioni({ voci, attiva }: { voci: VoceBarra[]; attiva: string }) {
+// non copre mai le schede, perché quella fascia è già riservata alla barra (Marco, 30/10). Dove Leo non c'è
+// (Messaggi, con la casella) la barra scivola al centro.
+function BarraSezioni({ voci, attiva, conLeo }: { voci: VoceBarra[]; attiva: string; conLeo: boolean }) {
   return (
     <nav
       aria-label="Sezioni"
-      className="glass glass-3d absolute right-[86px] left-[14px] z-40 grid h-[64px] rounded-full px-[5px]"
-      style={{ bottom: "max(14px, env(safe-area-inset-bottom))", gridTemplateColumns: `repeat(${voci.length}, 1fr)` }}
+      className={`glass glass-3d absolute z-40 grid h-[64px] rounded-full px-[5px] transition-[left,right] duration-300 ease-out ${conLeo ? "right-[86px] left-[14px]" : "right-[50px] left-[50px]"}`}
+      style={{ bottom: "var(--fondo-barra)", gridTemplateColumns: `repeat(${voci.length}, 1fr)` }}
     >
       {voci.map(({ chiave, label, icon: Icon, href, badge }) => {
         const qui = chiave === attiva;
@@ -331,6 +332,7 @@ export function Guscio({
   sotto,
   fuori,
   indietro,
+  conLeo = true,
   children,
 }: {
   sezione: string; // la pagina mostrata: cambiandola si torna in cima
@@ -338,19 +340,20 @@ export function Guscio({
   attiva?: string; // la voce accesa nella barra (una sottopagina accende la voce da cui viene)
   foto: FotoGuscio;
   titolo: string;
-  titoloBreve: string;
+  titoloBreve: ReactNode; // nella barra sottile: anche più di un titolo (in Messaggi la foto e il nome del trainer)
   sotto?: ReactNode;
   fuori?: ReactNode; // sopra tutto, dentro la cornice (fogli come Leo): non scorre con il contenuto
   indietro?: { label: string; href: string }; // le sottopagine (profilo di un cliente, una conversazione): sopra il titolo
+  conLeo?: boolean; // c'è la faccia di Leo accanto alla barra in basso (in Messaggi no: la barra si centra)
   children: ReactNode;
 }) {
   const scorre = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollY } = useScroll({ container: scorre });
   useTrascina(scorre);
-  const barra = useTransform(scrollY, [36, 60], [0, 1]);
-  const grande = useTransform(scrollY, [0, 60], [1, reduce ? 1 : 0.9]);
-  const grandeVisibile = useTransform(scrollY, [0, 36], [1, 0]);
+  const barra = useTransform(scrollY, [20, 44], [0, 1]);
+  const grande = useTransform(scrollY, [0, 44], [1, reduce ? 1 : 0.92]);
+  const grandeVisibile = useTransform(scrollY, [0, 28], [1, 0]);
   const barraTocca = useTransform(barra, (v) => (v > 0.5 ? "auto" : "none"));
 
   // cambiando sezione si riparte dall'alto, con il titolo grande
@@ -363,26 +366,30 @@ export function Guscio({
       {/* la barra sottile che compare scorrendo */}
       <motion.div
         style={{ opacity: barra, pointerEvents: barraTocca }}
-        className="glass absolute inset-x-0 top-0 z-30 rounded-none border-x-0 border-t-0 pt-[max(10px,env(safe-area-inset-top))] sm:pt-[50px]"
+        className="glass vetro-pieno absolute inset-x-0 top-0 z-30 rounded-none border-x-0 border-t-0 pt-[max(10px,env(safe-area-inset-top))] sm:pt-[50px]"
       >
-        <div className="flex h-[46px] items-center justify-between px-[16px]">
+        <div className="relative flex h-[46px] items-center px-[16px]">
           {indietro ? (
             <button type="button" aria-label={`Torna a ${indietro.label}`} onClick={() => navigate(indietro.href)} className="grid size-[34px] cursor-pointer place-items-center rounded-full" style={{ color: "var(--trainer)" }}>
               <ChevronLeft size={22} strokeWidth={2.4} />
             </button>
-          ) : (
-            <span className="w-[34px]" />
-          )}
-          <p className="text-[15px] font-bold tracking-[-0.01em]">
+          ) : null}
+          <div className="absolute left-1/2 max-w-[calc(100%-220px)] -translate-x-1/2 truncate text-center text-[15px] font-bold tracking-[-0.01em]">
             {titoloBreve}
-          </p>
-          <FotoTonda size={34} foto={foto} />
+          </div>
         </div>
       </motion.div>
 
+      {/* luna e foto restano ferme in alto a destra, sia sopra il titolo grande sia nella barra sottile: scorrendo
+          non si spostano (Marco, 30/10: la foto che scivolava e cambiava posto non piaceva) */}
+      <div className="absolute top-[calc(max(10px,env(safe-area-inset-top))+3px)] right-[16px] z-40 flex h-[40px] items-center gap-[8px] sm:top-[53px]">
+        <TastoTema />
+        <FotoTonda size={40} foto={foto} />
+      </div>
+
       <div
         ref={scorre}
-        className="relative h-full overflow-y-auto overscroll-contain px-[16px] pt-[max(14px,env(safe-area-inset-top))] pb-[110px] [scrollbar-width:none] sm:pt-[58px] [&::-webkit-scrollbar]:hidden"
+        className="relative h-full overflow-y-auto overscroll-contain px-[16px] pt-[calc(max(10px,env(safe-area-inset-top))+3px)] pb-[110px] [scrollbar-width:none] sm:pt-[53px] [&::-webkit-scrollbar]:hidden"
       >
         <motion.header
           style={{ scale: grande, opacity: grandeVisibile }}
@@ -393,14 +400,11 @@ export function Guscio({
               <ChevronLeft size={20} strokeWidth={2.4} /> {indietro.label}
             </button>
           )}
-          <div className="flex items-center justify-between gap-[10px]">
+          {/* a destra il posto per luna e foto, che stanno ferme sopra (qui sotto) */}
+          <div className="flex min-h-[40px] items-center pr-[96px]">
             <h1 className="min-w-0 truncate text-[28px] leading-[1.1] font-extrabold tracking-[-0.03em]">
               {titolo}
             </h1>
-            <div className="flex items-center gap-[8px]">
-              <TastoTema />
-              <FotoTonda size={40} foto={foto} />
-            </div>
           </div>
           {sotto}
         </motion.header>
@@ -415,7 +419,13 @@ export function Guscio({
       </div>
 
       <Scorrimento scorre={scorre} chiave={sezione} />
-      <BarraSezioni voci={voci} attiva={attiva} />
+      {/* sotto e attorno alla barra non si vede quello che scorre: il fondo copre e sfuma verso l'alto */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[calc(var(--fondo-barra)+92px)]"
+        style={{ background: "linear-gradient(to top, var(--color-salvia) calc(var(--fondo-barra) + 50px), color-mix(in srgb, var(--color-salvia) 70%, transparent) calc(var(--fondo-barra) + 66px), transparent)" }}
+      />
+      <BarraSezioni voci={voci} attiva={attiva} conLeo={conLeo} />
       {fuori}
       {/* qui si agganciano i fogli delle sezioni (createPortal): sopra tutto, dentro il telefono */}
       <div id={ID_FOGLI} />

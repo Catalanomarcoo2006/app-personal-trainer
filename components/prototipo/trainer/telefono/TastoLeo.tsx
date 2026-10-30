@@ -162,8 +162,8 @@ export function FacciaLeo({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.2 }}
-            className={`glass glass-3d fumetto-pieno absolute right-[14px] z-40 origin-bottom-right rounded-[20px] rounded-br-[6px] px-[14px] py-[11px] text-[13px] leading-snug ${fumetto?.tipo === "consiglio" ? "w-[min(232px,calc(100%-28px))]" : "w-[min(300px,calc(100%-28px))]"} ${fumetto?.tipo === "comando" && !inAscolto ? "" : "pointer-events-none"}`}
-            style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 74px)" }}
+            className={`glass glass-3d vetro-pieno absolute right-[14px] z-40 origin-bottom-right rounded-[20px] rounded-br-[6px] px-[14px] py-[11px] text-[13px] leading-snug ${fumetto?.tipo === "consiglio" ? "w-[min(232px,calc(100%-28px))]" : "w-[min(300px,calc(100%-28px))]"} ${fumetto?.tipo === "comando" && !inAscolto ? "" : "pointer-events-none"}`}
+            style={{ bottom: "calc(var(--fondo-barra) + 74px)" }}
           >
             {inAscolto ? (
               <>
@@ -218,7 +218,7 @@ export function FacciaLeo({
         className="absolute right-[14px] z-40 grid size-[64px] cursor-pointer touch-none place-items-center rounded-full select-none [-webkit-touch-callout:none]"
         style={{
           // sulla stessa riga della barra in basso (Shell.tsx le lascia il posto a destra)
-          bottom: "max(14px, env(safe-area-inset-bottom))",
+          bottom: "var(--fondo-barra)",
           boxShadow: "0 0 0 1px color-mix(in srgb, var(--trainer) 35%, transparent), 0 12px 30px -6px color-mix(in srgb, var(--trainer) 75%, transparent), 0 0 30px -2px color-mix(in srgb, var(--trainer) 60%, transparent)",
         }}
       >

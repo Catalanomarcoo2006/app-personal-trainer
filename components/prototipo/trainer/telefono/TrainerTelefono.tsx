@@ -153,6 +153,7 @@ export function TrainerTelefono() {
       titoloBreve={breve}
       sotto={sotto}
       indietro={indietro}
+      conLeo={!conCliente}
       fuori={
         <>
           {!conCliente && !leo && <TastoLeo chat={chat} onApri={apriLeo} />}

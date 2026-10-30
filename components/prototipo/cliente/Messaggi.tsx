@@ -30,6 +30,22 @@ export function useNonLettiCliente(aperta: boolean): number {
   return aperta ? 0 : Math.max(0, delTrainer - visti);
 }
 
+// Nella barra sottile in alto, mentre si scorre la chat: con chi si sta parlando (Marco, 30/10), come in
+// Messaggi di iOS.
+export function ConChiParli() {
+  const foto = useTrainerPhoto();
+  return (
+    <span className="flex items-center justify-center gap-[8px]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={foto} alt="" className="size-[28px] shrink-0 rounded-full object-cover" />
+      <span className="min-w-0 text-left leading-none">
+        <span className="block truncate text-[14.5px] font-bold">{trainer.name}</span>
+        <span className="mt-[3px] block truncate text-[11px] font-medium text-muted">Il tuo trainer</span>
+      </span>
+    </span>
+  );
+}
+
 export function Messaggi() {
   const reduce = useReducedMotion();
   const thread = visibili(useStato((s) => s.threads[CLIENTE_IO]) ?? []);
@@ -144,7 +160,7 @@ export function Messaggi() {
             onSubmit={invia}
             className="absolute inset-x-[14px] z-30 flex items-center gap-[8px] rounded-full border border-line bg-card py-[5px] pr-[5px] pl-[16px] shadow-[0_8px_24px_-10px_rgba(0,0,0,0.25)]"
             style={{
-              bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 74px)",
+              bottom: "calc(var(--fondo-barra) + 74px)",
             }}
           >
             <input

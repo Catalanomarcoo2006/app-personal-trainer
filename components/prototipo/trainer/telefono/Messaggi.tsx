@@ -151,7 +151,7 @@ export function ChatCliente({ id }: { id: string }) {
           <form
             onSubmit={invia}
             className="absolute inset-x-[14px] z-30 flex items-center gap-[8px] rounded-full border border-line bg-card py-[5px] pr-[5px] pl-[16px] shadow-[0_8px_24px_-10px_rgba(0,0,0,0.25)]"
-            style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 74px)" }}
+            style={{ bottom: "calc(var(--fondo-barra) + 74px)" }}
           >
             <input
               value={bozza}
