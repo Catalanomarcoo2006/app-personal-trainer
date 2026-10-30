@@ -88,65 +88,68 @@ export function Allenamento() {
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        <motion.section key={qui} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: EASE_OUT }} className="panel mt-[12px] overflow-hidden rounded-[24px]">
-          {/* intestazione del giorno piena nel colore del trainer (scheda-testa): il contrasto che mancava alla scheda */}
-          <div className="scheda-testa px-[16px] pt-[15px] pb-[14px]">
+        <motion.section key={qui} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: EASE_OUT }} className="mt-[12px]">
+          {/* Come le altre schermate (Marco, 30/10: troppo arancio in troppe tonalità e scatole una dentro l'altra):
+              una scheda per il giorno con il numero in evidenza, poi una scheda per esercizio. L'arancio solo dove
+              conta: la barra dei fatti e le spunte. */}
+          <div className="panel rounded-[24px] px-[16px] pt-[15px] pb-[14px]">
             <div className="flex items-start justify-between gap-[10px]">
               <div className="min-w-0 leading-none">
                 <p className="text-[19px] font-extrabold tracking-[-0.02em]">{giorno.focus || giorno.label}</p>
-                <p className="mt-[6px] text-[12.5px] text-white/80">
+                <p className="mt-[6px] text-[12.5px] text-muted">
                   {giorno.label} · {giorno.rows.length} esercizi
                 </p>
               </div>
               {oggi && (
-                <motion.span key={quante} initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="shrink-0 rounded-full bg-white px-[11px] py-[6px] text-[12px] font-extrabold tabular-nums shadow-[0_6px_14px_-6px_rgba(0,0,0,0.3)]" style={{ color: "var(--trainer)" }}>
-                  {quante}/{fatte.length}
-                </motion.span>
+                <p className="shrink-0 text-right leading-none">
+                  <motion.span key={quante} initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="inline-block text-[26px] font-extrabold tracking-[-0.03em] tabular-nums">
+                    {quante}
+                    <span className="text-[15px] text-muted">/{fatte.length}</span>
+                  </motion.span>
+                  <span className="mt-[3px] block text-[11px] text-muted">fatti</span>
+                </p>
               )}
             </div>
-            <p className="mt-[11px] inline-flex items-center gap-[5px] rounded-full bg-white/22 px-[9px] py-[5px] text-[11.5px] font-medium text-white">
-              <CalendarClock size={12} />
-              {quando ? `${quandoSeduta(quando)} con ${nomeTrainer()}` : "Nessuna seduta in programma per questo giorno"}
-            </p>
             {oggi && (
-              <div className="mt-[12px] h-[5px] overflow-hidden rounded-full bg-white/30" aria-hidden>
-                <motion.div className="h-full rounded-full bg-white" initial={false} animate={{ width: `${(quante / Math.max(1, fatte.length)) * 100}%` }} transition={{ duration: 0.45, ease: EASE_OUT }} />
+              <div className="mt-[12px] h-[6px] overflow-hidden rounded-full bg-ink/8" aria-hidden>
+                <motion.div className="h-full rounded-full" style={{ background: "var(--trainer)" }} initial={false} animate={{ width: `${(quante / Math.max(1, fatte.length)) * 100}%` }} transition={{ duration: 0.45, ease: EASE_OUT }} />
               </div>
             )}
+            <p className="mt-[12px] flex items-center gap-[6px] text-[12px] text-ink/70">
+              <CalendarClock size={13} className="text-muted" />
+              {quando ? `${quandoSeduta(quando)} con ${nomeTrainer()}` : "Nessuna seduta in programma per questo giorno"}
+            </p>
           </div>
 
-          <ol className="scheda-lista flex flex-col gap-[8px] px-[10px] pt-[10px] pb-[12px]">
+          <ol className="mt-[10px] flex flex-col gap-[8px]">
             {giorno.rows.map((r, i) => {
               const e = esercizio(r);
               const fatta = oggi && fatte[i];
-              const adesso = oggi && !fatta && fatte.findIndex((f) => !f) === i; // il prossimo da fare
               return (
                 <motion.li
                   key={r.key}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.05 + i * 0.05, duration: 0.35, ease: EASE_OUT }}
-                  className={`riga-esercizio flex items-center gap-[11px] rounded-[16px] py-[11px] pr-[10px] pl-[12px] transition-colors duration-300 ${fatta ? "fatta" : adesso ? "adesso" : ""}`}
+                  className="panel flex items-center gap-[12px] rounded-[20px] py-[12px] pr-[12px] pl-[14px]"
                 >
-                  {/* il numero: tinto del colore del trainer; quello da fare adesso pieno, quelli fatti con la spunta */}
-                  <span
-                    className={`grid size-[28px] shrink-0 place-items-center rounded-full text-[12px] font-extrabold tabular-nums transition-colors duration-300 ${adesso ? "btn-trainer" : fatta ? "spunta-fatta" : "numero-esercizio"}`}
-                  >
-                    {fatta ? <Check size={14} strokeWidth={3} /> : i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1 leading-none">
-                    <p className={`truncate text-[14.5px] font-bold transition-opacity ${fatta ? "line-through decoration-[1.5px] opacity-45" : ""}`}>{e.nome}</p>
-                    <p className="mt-[5px] truncate text-[12px] font-medium text-ink/60">{e.dettaglio}</p>
+                  {/* fatti: tutto smorzato tranne la spunta piena; da fare: a piena intensità con la spunta vuota */}
+                  <span className={`w-[16px] shrink-0 text-[14px] font-extrabold tabular-nums transition-opacity duration-300 ${fatta ? "opacity-30" : "text-ink/35"}`}>{i + 1}</span>
+                  <div className={`min-w-0 flex-1 leading-none transition-opacity duration-300 ${fatta ? "opacity-45" : ""}`}>
+                    <p className="truncate text-[15px] font-bold">{e.nome}</p>
+                    <p className="mt-[5px] truncate text-[12.5px] text-ink/60">{e.dettaglio}</p>
                     {e.video && (
                       <a
                         href={e.video}
                         target="_blank"
                         rel="noreferrer"
                         onClick={() => playSound("tap")}
-                        className="mt-[7px] inline-flex items-center gap-[4px] rounded-full px-[8px] py-[4px] text-[11px] font-semibold"
-                        style={{ color: "var(--trainer)", background: "color-mix(in srgb, var(--trainer) 12%, transparent)" }}
+                        className="mt-[8px] inline-flex items-center gap-[5px] text-[12px] font-semibold text-ink/70"
                       >
-                        <Play size={9} strokeWidth={2.6} fill="currentColor" /> Guarda l&apos;esecuzione
+                        <span className="grid size-[18px] place-items-center rounded-full bg-ink/8">
+                          <Play size={8} strokeWidth={2.6} fill="currentColor" />
+                        </span>
+                        Guarda l&apos;esecuzione
                       </a>
                     )}
                   </div>
@@ -157,7 +160,7 @@ export function Allenamento() {
                       aria-pressed={fatta}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => spunta(i)}
-                      className={`grid size-[40px] shrink-0 cursor-pointer place-items-center rounded-full border-2 transition-colors duration-300 ${fatta ? "spunta-fatta border-transparent" : "border-ink/15 bg-card text-ink/30"}`}
+                      className={`grid size-[40px] shrink-0 cursor-pointer place-items-center rounded-full border-2 transition-colors duration-300 ${fatta ? "btn-trainer border-transparent" : "border-ink/15 text-ink/25"}`}
                     >
                       <motion.span animate={{ scale: fatta ? [1, 1.25, 1] : 1 }} transition={{ duration: 0.3 }}>
                         <Check size={17} strokeWidth={2.8} />
@@ -176,7 +179,7 @@ export function Allenamento() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8 }}
                 transition={{ type: "spring", stiffness: 380, damping: 24 }}
-                className="btn-trainer mx-[12px] mb-[14px] rounded-[16px] px-[14px] py-[12px] text-center text-[13px] font-bold"
+                className="btn-trainer mt-[10px] rounded-[18px] px-[14px] py-[12px] text-center text-[13px] font-bold"
               >
                 Allenamento completato! 🎉 {nomeTrainer()} lo vedrà nella tua scheda.
               </motion.p>
