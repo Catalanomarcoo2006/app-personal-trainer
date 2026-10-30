@@ -32,6 +32,7 @@ Il design approvato è in `docs/specs/2026-10-21-design.md`, il piano in `docs/p
 - `docs/specs/`, `docs/plans/`: design e piani; `docs/riferimenti/`: registrazioni di riferimento per lo stile (non versionate)
 - `docs/boilerplate-regole.md`: regole complete del boilerplate
 - `docs/DA-CAMBIARE.md`: lista delle modifiche, anche piccole, che Marco vuole fare (si aggiunge man mano, si spunta quando è fatta)
+- `docs/video/`: kit del video pubblicitario (brief, copione, storyboard, tecnica, reference, messaggio di avvio): si parte da `docs/video/README.md`
 - `docs/chiavi.md`: elenco delle chiavi API e di dove sono usate, senza valori (da aggiornare a ogni chiave nuova)
 
 ## Convenzioni
