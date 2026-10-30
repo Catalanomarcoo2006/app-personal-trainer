@@ -84,8 +84,9 @@ export function Messaggi() {
         </div>
       </div>
 
-      {/* pb: lo spazio della casella, che sta sopra la barra */}
-      <div className="mt-[14px] flex flex-col gap-[6px] pb-[64px]">
+      {/* lo spazio della casella è lo spaziatore in fondo: con un pb in più la chat sforava e il primo messaggio
+          finiva sotto l'intestazione */}
+      <div className="mt-[14px] flex flex-col gap-[6px]">
         {thread.map((m, i) => {
           const mio = m.from === "client";
           const primoDelGruppo = i === 0 || thread[i - 1].from !== m.from;
