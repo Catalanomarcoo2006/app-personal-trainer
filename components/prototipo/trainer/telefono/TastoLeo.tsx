@@ -82,7 +82,9 @@ export function FacciaLeo({
     consiglioVisto = true;
     try {
       localStorage.setItem(CHIAVE_CONSIGLIO, "visto");
-    } catch {}
+    } catch {
+      // niente salvataggio (navigazione privata): resta la variabile, una volta per scheda
+    }
     const su = window.setTimeout(() => setFumetto((f) => f ?? { tipo: "consiglio" }), 700);
     const giu = window.setTimeout(() => setFumetto((f) => (f?.tipo === "consiglio" ? null : f)), 6000);
     return () => {
