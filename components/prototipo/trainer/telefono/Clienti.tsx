@@ -198,8 +198,9 @@ export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuova
               <motion.span
                 key={i}
                 title={`${numero(w)} kg`}
-                // le settimane passate: al buio vetro chiaro, perché il colore pallido sul nero diventa marrone
-                className={`flex-1 rounded-t-[6px] ${i === pesi.length - 1 ? "" : "bg-[var(--barra)] dark:bg-white/15"}`}
+                // le settimane passate: al buio vetro chiaro che sfuma verso il basso, con il bordo alto illuminato
+                // (il colore pallido sul nero diventa marrone, il grigio pieno si confondeva col fondo)
+                className={`flex-1 rounded-t-[6px] ${i === pesi.length - 1 ? "" : "bg-[var(--barra)] dark:bg-transparent dark:bg-linear-to-b dark:from-white/32 dark:to-white/8 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"}`}
                 style={i === pesi.length - 1 ? { background: tono.strong } : ({ "--barra": tono.track } as CSSProperties)}
                 initial={{ height: 0 }}
                 animate={{ height: `${30 + (max === min ? 70 : ((w - min) / (max - min)) * 70)}%` }}

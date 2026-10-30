@@ -24,7 +24,7 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 - [x] **7. Fumetto "Tocca per scrivere a Leo…" trasparente e ripetuto** **Fatto 30/10: fumetti di Leo da telefono in vetro quasi pieno (`.fumetto-pieno`), consiglio una volta per dispositivo (localStorage `consiglio-leo`).**: è di vetro chiaro, sopra il testo delle schede (es. "Piano alimentare.pdf" nel Profilo) le due scritte si mescolano; ricompare a ogni ricarica della pagina e copre per qualche secondo l'agenda della Home. Più pieno e una volta sola. (2026-10-30)
 - [x] **8. Scheda cliente (trainer): barra del traguardo e "65%" ocra/marroni** **Fatto 30/10: percentuale, barra, ultima settimana e cali delle misure nel colore del trainer; fondo della barra in vetro al buio.** nel chiaro (giallo chiaro al buio): un colore in più rispetto a quello del trainer. (2026-10-30)
 - [ ] **9. Messaggi del cliente: primo messaggio tagliato sotto l'intestazione** ("Buongiorno Giulia! Ti ho preparato la…"): è la prima cosa che si legge aprendo la chat. (2026-10-30)
-- [ ] **10. Grafico del peso nella scheda cliente (trainer) al buio**: barre grigio scuro piene, si distinguono poco dal fondo. (2026-10-30)
+- [x] **10. Grafico del peso nella scheda cliente (trainer) al buio** **Fatto 30/10: settimane passate in vetro che sfuma verso il basso, con il bordo alto illuminato.**: barre grigio scuro piene, si distinguono poco dal fondo. (2026-10-30)
 
 ### Area cliente
 - [ ] **Avvisi del cliente negli Urgenti del trainer**: dolore segnalato a Leo, misure da confermare, documenti caricati (oggi le misure si vedono solo nel profilo del cliente, il dolore solo nella chat del cliente). (2026-10-29)
