@@ -4,7 +4,7 @@
 // prossime sedute, pacchetto, note), con le proposte dalla sua app da confermare. Niente pagamenti né schede:
 // quelli restano sul computer (Marco, 29/10).
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { motion } from "motion/react";
 import { CalendarPlus, Mail, MessageCircle, Phone, Search, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
@@ -82,12 +82,13 @@ export function ClientiTelefono() {
   );
 }
 
-// La percentuale verso l'obiettivo, nel colore del cliente.
+// La percentuale verso l'obiettivo: un solo colore per tutti (nel colore di ogni cliente l'elenco sembrava un
+// arcobaleno, Marco 30/10); in rosso solo chi è da seguire.
 function Avanzamento({ c }: { c: ClienteVista }) {
   const p = progressOf(c);
   return (
     <span className="shrink-0 text-right leading-none">
-      <span className="block text-[16px] font-extrabold tabular-nums" style={{ color: toneColors[c.tone].strong }}>
+      <span className="block text-[16px] font-extrabold tabular-nums" style={{ color: c.needsAttention ? "#d43b4f" : undefined }}>
         {p}%
       </span>
       {c.needsAttention && <span className="mt-[4px] block text-[10.5px] font-semibold text-[#d43b4f]">da seguire</span>}
@@ -196,8 +197,9 @@ export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuova
               <motion.span
                 key={i}
                 title={`${numero(w)} kg`}
-                className="flex-1 rounded-t-[6px]"
-                style={{ background: i === pesi.length - 1 ? tono.strong : tono.track }}
+                // le settimane passate: al buio vetro chiaro, perché il colore pallido sul nero diventa marrone
+                className={`flex-1 rounded-t-[6px] ${i === pesi.length - 1 ? "" : "bg-[var(--barra)] dark:bg-white/15"}`}
+                style={i === pesi.length - 1 ? { background: tono.strong } : ({ "--barra": tono.track } as CSSProperties)}
                 initial={{ height: 0 }}
                 animate={{ height: `${30 + (max === min ? 70 : ((w - min) / (max - min)) * 70)}%` }}
                 transition={{ duration: 0.6, delay: 0.1 + i * 0.04, ease: [0.22, 1, 0.36, 1] }}

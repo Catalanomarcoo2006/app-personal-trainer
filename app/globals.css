@@ -358,6 +358,23 @@
   background: color-mix(in srgb, var(--trainer) 14%, var(--color-card));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--trainer) 34%, transparent);
 }
+/* Fascia colorata in testa a una scheda (allenamento di oggi nell'app del cliente). Al buio il colore del trainer
+   attenuato diventa marrone a qualunque percentuale (provato il 30/10, anche schiarito verso il bianco): lì la fascia
+   è vetro neutro come le altre schede scure, con una linea del colore del trainer sul bordo in alto come accento. */
+.tinta-trainer {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--trainer) 22%, transparent), color-mix(in srgb, var(--trainer) 6%, transparent));
+}
+.dark .tinta-trainer {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 2px 0 var(--trainer), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+/* Tasto spento al buio: grigio di vetro invece dell'arancione trasparente, che sul nero sembra sporco */
+.dark .btn-trainer:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
 /* Rotella dell'orario (components/ui/Rotella.tsx): si scorre ma la barra di scorrimento non si vede, come su iOS */
 .rotella {
   scrollbar-width: none;

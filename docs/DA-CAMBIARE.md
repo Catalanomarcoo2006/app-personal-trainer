@@ -14,6 +14,14 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 - [ ] **Icona "Spotter" sulla schermata Home dell'iPhone**: togliere il vecchio collegamento, chiudere Safari, rifarlo; se resta il peso arancione, cancellare i dati del sito in Impostazioni → Safari → Avanzate. (2026-10-30)
 - [ ] **Animazione d'apertura** (anello che si chiude, testa di Leo che atterra nel contenitore): tempi giusti? (2026-10-30)
 
+### Telefono, rifiniture per il video di vendita (revisione del 30/10, cliente e trainer)
+- [x] **1. La faccia di Leo copre i contenuti** **Fatto 30/10: Leo sulla stessa riga della barra, a destra (scelta di Marco); la barra si accorcia.**: il tasto in basso a destra finisce sopra "Aggiungi misure", la riga "Coscia", "80% da seguire" in Clienti, la freccia dei documenti nel Profilo. Più spazio in fondo alle pagine o posizione che non tocca le schede. (2026-10-30)
+- [x] **2. Colori sporchi al buio** **Fatto 30/10: al buio fascia in vetro neutro con linea del colore del trainer (`.tinta-trainer`), barre passate in vetro, tasto spento grigio.**: intestazione rosa di "Allenamento di oggi" e "Gambe e glutei", barre del peso nella scheda cliente (trainer) e "Salva" spento diventano marroni. Schiarire come sul computer. (2026-10-30)
+- [x] **3. Suggerimento "Tocca per scrivere a Leo…" copre l'agenda** **Fatto 30/10: fumetto più piccolo, attaccato a Leo appena sopra la barra; sparisce da solo dopo 6 s.** alla prima apertura (cliente e trainer): fumetto attaccato alla faccia di Leo che sparisce da solo. (2026-10-30)
+- [x] **4. Clienti del trainer: percentuali in cinque colori** **Fatto 30/10.** (sembra un arcobaleno): un solo colore, rosso solo per "da seguire". (2026-10-30)
+- [x] **5. Calendario del trainer** **Fatto 30/10: giorni passati grigi pieni, sotto "Nei prossimi giorni" (3 giorni con sedute).**: mezza pagina vuota sotto le sedute e giorni passati color beige poco chiaro; linea del tempo come in "Oggi", giorni passati più spenti. (2026-10-30)
+- [x] **6. Messaggi del cliente troppo vuoti per il video** **Fatto 30/10: 7 messaggi con la scheda PDF; la chat ora si apre dal fondo.**: conversazione più ricca nella demo, con una scheda PDF inviata dal trainer. (2026-10-30)
+
 ### Area cliente
 - [ ] **Avvisi del cliente negli Urgenti del trainer**: dolore segnalato a Leo, misure da confermare, documenti caricati (oggi le misure si vedono solo nel profilo del cliente, il dolore solo nella chat del cliente). (2026-10-29)
 - [ ] **Documenti del cliente visibili al trainer** nel profilo del cliente. (2026-10-29)

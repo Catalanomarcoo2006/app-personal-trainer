@@ -454,7 +454,17 @@ export let conversations: { clientId: string; unread: number; messages: ChatMess
   {
     clientId: "giulia-bianchi",
     unread: 1,
+    // conversazione piena: nell'app del cliente (e nel video di presentazione) la chat non deve sembrare vuota
     messages: [
+      {
+        from: "trainer",
+        text: "Buongiorno Giulia! Ti ho preparato la scheda nuova per queste settimane 💪",
+        time: "Lun 08:10",
+        attachment: { name: "Scheda di ottobre.pdf", url: "/prototipo/scheda-esempio.pdf", detail: "3 giorni · gambe, glutei, total body" },
+      },
+      { from: "client", text: "Grazie! La guardo stasera", time: "Lun 08:24" },
+      { from: "client", text: "Ho rifatto le misure: vita −1 cm 🎉", time: "Mar 18:50" },
+      { from: "trainer", text: "Ottimo, si vede la costanza! Continua così", time: "Mar 19:05" },
       { from: "client", text: "Ciao Marco! Ho fatto tutto il Giorno A", time: "Ieri 19:30" },
       { from: "trainer", text: "Grandissima! Venerdì aumentiamo il carico dello squat", time: "Ieri 20:05" },
       { from: "client", text: "Posso spostare la seduta di venerdì alle 18 a sabato?", time: "09:12" },

@@ -220,11 +220,13 @@ function Scorrimento({ scorre, chiave }: { scorre: RefObject<HTMLDivElement | nu
 
 // Barra in basso: pillola di vetro in rilievo; la goccia (glass-drop, la stessa della barra laterale del trainer)
 // scivola sotto la voce attiva. La voce attiva prende il colore del trainer.
+// A destra resta il posto per la faccia di Leo (FacciaLeo, 64 px + 8 di stacco), sulla stessa riga: così Leo
+// non copre mai le schede, perché quella fascia è già riservata alla barra (Marco, 30/10).
 function BarraSezioni({ voci, attiva }: { voci: VoceBarra[]; attiva: string }) {
   return (
     <nav
       aria-label="Sezioni"
-      className="glass glass-3d absolute inset-x-[14px] z-40 grid h-[64px] rounded-full px-[5px]"
+      className="glass glass-3d absolute right-[86px] left-[14px] z-40 grid h-[64px] rounded-full px-[5px]"
       style={{ bottom: "max(14px, env(safe-area-inset-bottom))", gridTemplateColumns: `repeat(${voci.length}, 1fr)` }}
     >
       {voci.map(({ chiave, label, icon: Icon, href, badge }) => {

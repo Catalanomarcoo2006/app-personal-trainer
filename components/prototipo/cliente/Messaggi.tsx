@@ -40,12 +40,18 @@ export function Messaggi() {
   const [fogli, setFogli] = useState<HTMLElement | null>(null);
   useEffect(() => setFogli(document.getElementById(ID_FOGLI)), []);
 
-  // all'apertura e a ogni messaggio nuovo si va in fondo, dove c'è l'ultimo
+  // all'apertura e a ogni messaggio nuovo si va in fondo, dove c'è l'ultimo. Un attimo dopo: aprendo la sezione
+  // il guscio (Shell) riporta la pagina in cima dopo questo effetto e lo annullerebbe. All'apertura senza animazione.
+  // Si scorre il contenitore del guscio direttamente: scrollIntoView lì non si muove (provato il 30/10).
+  const primaVolta = useRef(true);
   useEffect(() => {
-    fondo.current?.scrollIntoView({
-      block: "end",
-      behavior: reduce ? "auto" : "smooth",
-    });
+    const t = window.setTimeout(() => {
+      let el = fondo.current?.parentElement ?? null;
+      while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
+      el?.scrollTo({ top: el.scrollHeight, behavior: reduce || primaVolta.current ? "auto" : "smooth" });
+      primaVolta.current = false;
+    }, 60);
+    return () => window.clearTimeout(t);
   }, [thread.length, reduce]);
 
   const invia = (e: FormEvent) => {
@@ -126,7 +132,8 @@ export function Messaggi() {
             Scrivi a {nome}: qui trovi tutta la vostra conversazione.
           </p>
         )}
-        <div ref={fondo} />
+        {/* spazio per la casella di scrittura, che sta sopra la barra: l'ultimo messaggio non le finisce sotto */}
+        <div ref={fondo} className="h-[44px]" />
       </div>
 
       {/* la casella sta sempre in basso, appena sopra la barra delle sezioni (agganciata fuori dallo scorrimento) */}

@@ -89,7 +89,7 @@ export function Allenamento() {
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.section key={qui} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: EASE_OUT }} className="panel mt-[12px] overflow-hidden rounded-[24px]">
-          <div className="px-[16px] pt-[14px] pb-[12px]" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--trainer) 20%, transparent), color-mix(in srgb, var(--trainer) 5%, transparent))" }}>
+          <div className="tinta-trainer px-[16px] pt-[14px] pb-[12px]">
             <div className="flex items-start justify-between gap-[10px]">
               <div className="min-w-0 leading-none">
                 <p className="text-[18px] font-extrabold tracking-[-0.02em]">{giorno.focus || giorno.label}</p>

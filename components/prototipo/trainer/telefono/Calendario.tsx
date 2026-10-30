@@ -91,7 +91,8 @@ function Giorni({ scelto, onScegli }: { scelto: string; onScegli: (iso: string) 
                   playSound("tap");
                   onScegli(iso);
                 }}
-                className={`relative flex h-[54px] cursor-pointer flex-col items-center justify-center rounded-[16px] leading-none ${qui ? "btn-trainer" : "glass"} ${passato && !qui ? "opacity-55" : ""}`}
+                // i giorni passati: spenti, su fondo pieno (con un fondo trasparente le macchie colorate dietro li facevano beige)
+                className={`relative flex h-[54px] cursor-pointer flex-col items-center justify-center rounded-[16px] leading-none ${qui ? "btn-trainer" : passato ? "bg-soft text-ink/35" : "glass"}`}
               >
                 <span className={`text-[10.5px] font-semibold ${qui ? "" : "text-muted"}`}>{SHORT[i]}</span>
                 <span className="mt-[4px] text-[17px] font-extrabold tabular-nums">{d.getDate()}</span>
@@ -103,6 +104,46 @@ function Giorni({ scelto, onScegli }: { scelto: string; onScegli: (iso: string) 
         </div>
       ))}
     </div>
+  );
+}
+
+// I prossimi tre giorni con sedute dopo quello scelto (nelle due settimane mostrate): la pagina non resta mezza
+// vuota e si vede la settimana a colpo d'occhio. Un tocco apre quel giorno.
+function ProssimiGiorni({ dopo, onScegli }: { dopo: string; onScegli: (iso: string) => void }) {
+  const tutte = useStato((s) => s.sedute);
+  const giorni = settimane()
+    .flat()
+    .map(isoDi)
+    .filter((iso) => iso > dopo)
+    .map((iso) => ({ iso, sedute: seduteDelGiorno(tutte, iso) }))
+    .filter((g) => g.sedute.length)
+    .slice(0, 3);
+  if (!giorni.length) return null;
+  return (
+    <>
+      <Titoletto>Nei prossimi giorni</Titoletto>
+      <Riquadro>
+        {giorni.map((g) => (
+          <Riga
+            key={g.iso}
+            onClick={() => {
+              playSound("tap");
+              onScegli(g.iso);
+            }}
+            sinistra={
+              <span className="grid size-[40px] shrink-0 place-items-center rounded-[13px] bg-soft text-center leading-none">
+                <span>
+                  <span className="block text-[9.5px] font-semibold text-muted">{giornoLungo(g.iso).slice(0, 3)}</span>
+                  <span className="mt-[2px] block text-[15px] font-extrabold tabular-nums">{Number(g.iso.slice(8))}</span>
+                </span>
+              </span>
+            }
+            titolo={conta(g.sedute.length, "seduta", "sedute")}
+            sotto={g.sedute.map((s) => s.time).join(" · ")}
+          />
+        ))}
+      </Riquadro>
+    </>
   );
 }
 
@@ -172,6 +213,8 @@ export function CalendarioTelefono({ giorno, onNuova }: { giorno?: string; onNuo
         ))}
         {!sedute.length && <Vuoto>Nessuna seduta: tocca “Nuova” per fissarne una</Vuoto>}
       </Riquadro>
+
+      <ProssimiGiorni dopo={scelto} onScegli={setScelto} />
 
       {fogli && createPortal(<SchedaSeduta s={aperta} onChiudi={() => setAperta(null)} />, fogli)}
     </>

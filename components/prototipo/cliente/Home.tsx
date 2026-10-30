@@ -73,7 +73,6 @@ function AllenamentoDiOggi() {
   const riga = giorno?.rows[Math.max(0, fatte.findIndex((f) => !f))] ?? giorno?.rows[0];
   const primo = riga ? esercizio(riga) : null;
   const apri = () => navigate(ROTTE_CLIENTE.allenamento);
-  const sfondo = { background: "linear-gradient(135deg, color-mix(in srgb, var(--trainer) 22%, transparent), color-mix(in srgb, var(--trainer) 6%, transparent))" };
 
   if (!prossimo || !giorno)
     return (
@@ -89,7 +88,7 @@ function AllenamentoDiOggi() {
   return (
     <section className="panel overflow-hidden rounded-[24px]">
       <motion.button type="button" whileTap={{ scale: 0.99 }} onClick={apri} aria-label="Apri la scheda intera" className="block w-full cursor-pointer text-left">
-        <div className="flex items-start justify-between gap-[10px] px-[16px] pt-[14px] pb-[12px]" style={sfondo}>
+        <div className="tinta-trainer flex items-start justify-between gap-[10px] px-[16px] pt-[14px] pb-[12px]">
           <div className="min-w-0 leading-none">
             <p className="text-[17px] font-extrabold tracking-[-0.02em]">{prossimo.oggi ? "Allenamento di oggi 🏋️‍♀️" : "Prossimo allenamento"}</p>
             <p className="mt-[6px] truncate text-[12.5px] text-ink/70">
