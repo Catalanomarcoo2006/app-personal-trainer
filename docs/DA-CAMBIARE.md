@@ -10,7 +10,7 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 ## Da fare
 
 ### Da provare sul telefono vero (Marco)
-- [ ] **Microfono che resta acceso dopo un vocale a Leo** (Marco, 30/10): alcuni browser del telefono non chiudono la dettatura dopo `stop()`; l'app dopo 3 s andava avanti ma il microfono restava acceso. **Corretto il 30/10**: dopo i 3 s si spegne a forza (`abort()`), e un vocale nuovo spegne quello rimasto acceso (con test). Da riprovare sul telefono: mandare un vocale, aspettare la risposta, controllare che l'indicatore del microfono si spenga. (2026-10-30)
+- [x] **Microfono che resta acceso dopo un vocale a Leo** (Marco, 30/10; **provato da Marco sul telefono il 30/10: ora si spegne**): alcuni browser del telefono non chiudono la dettatura dopo `stop()`; l'app dopo 3 s andava avanti ma il microfono restava acceso. **Corretto il 30/10**: dopo i 3 s si spegne a forza (`abort()`), e un vocale nuovo spegne quello rimasto acceso (con test). Da riprovare sul telefono: mandare un vocale, aspettare la risposta, controllare che l'indicatore del microfono si spenga. (2026-10-30)
 - [ ] **Vocale tenendo premuta la faccia di Leo** (trainer e cliente): che la voce arrivi (corretto il 30/10 il vocale vuoto "Non ho sentito niente": si ascolta ancora 0,7 s dopo il rilascio) e che il "tieni premuto" non apra il menu del telefono. (2026-10-30)
 - [ ] **Icona "Spotter" sulla schermata Home dell'iPhone**: togliere il vecchio collegamento, chiudere Safari, rifarlo; se resta il peso arancione, cancellare i dati del sito in Impostazioni → Safari → Avanzate. (2026-10-30)
 - [ ] **Animazione d'apertura** (anello che si chiude, testa di Leo che atterra nel contenitore): tempi giusti? (2026-10-30)
