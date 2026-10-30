@@ -4,7 +4,7 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 
 ## Stato al 30/10 (da qui si riparte)
 
-- **Grafiche da telefono temporaneamente chiuse** (Marco, 30/10: "per ora accontentiamoci"): sia l'app del cliente sia l'area trainer da telefono vanno bene così. Non si ritoccano finché Marco non lo chiede; restano solo le prove sul telefono vero (sotto).
+- **Grafiche da telefono riaperte per il video di vendita** (Marco, 30/10): rifiniture di app del cliente e area trainer da telefono nella sezione qui sotto; il backend aspetta. Restano anche le prove sul telefono vero.
 - Il prossimo lavoro grosso è il **backend** (Supabase UE, schema, RLS, accessi, admin): serve che Marco crei il progetto Supabase e passi le chiavi.
 
 ## Da fare
@@ -21,6 +21,10 @@ Lista delle modifiche, anche piccole, che Marco vuole fare. Si aggiunge man mano
 - [x] **4. Clienti del trainer: percentuali in cinque colori** **Fatto 30/10.** (sembra un arcobaleno): un solo colore, rosso solo per "da seguire". (2026-10-30)
 - [x] **5. Calendario del trainer** **Fatto 30/10: giorni passati grigi pieni, sotto "Nei prossimi giorni" (3 giorni con sedute).**: mezza pagina vuota sotto le sedute e giorni passati color beige poco chiaro; linea del tempo come in "Oggi", giorni passati più spenti. (2026-10-30)
 - [x] **6. Messaggi del cliente troppo vuoti per il video** **Fatto 30/10: 7 messaggi con la scheda PDF; la chat ora si apre dal fondo.**: conversazione più ricca nella demo, con una scheda PDF inviata dal trainer. (2026-10-30)
+- [x] **7. Fumetto "Tocca per scrivere a Leo…" trasparente e ripetuto** **Fatto 30/10: fumetti di Leo da telefono in vetro quasi pieno (`.fumetto-pieno`), consiglio una volta per dispositivo (localStorage `consiglio-leo`).**: è di vetro chiaro, sopra il testo delle schede (es. "Piano alimentare.pdf" nel Profilo) le due scritte si mescolano; ricompare a ogni ricarica della pagina e copre per qualche secondo l'agenda della Home. Più pieno e una volta sola. (2026-10-30)
+- [ ] **8. Scheda cliente (trainer): barra del traguardo e "65%" ocra/marroni** nel chiaro (giallo chiaro al buio): un colore in più rispetto a quello del trainer. (2026-10-30)
+- [ ] **9. Messaggi del cliente: primo messaggio tagliato sotto l'intestazione** ("Buongiorno Giulia! Ti ho preparato la…"): è la prima cosa che si legge aprendo la chat. (2026-10-30)
+- [ ] **10. Grafico del peso nella scheda cliente (trainer) al buio**: barre grigio scuro piene, si distinguono poco dal fondo. (2026-10-30)
 
 ### Area cliente
 - [ ] **Avvisi del cliente negli Urgenti del trainer**: dolore segnalato a Leo, misure da confermare, documenti caricati (oggi le misure si vedono solo nel profilo del cliente, il dolore solo nella chat del cliente). (2026-10-29)

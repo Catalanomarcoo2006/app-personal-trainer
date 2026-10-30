@@ -24,7 +24,16 @@ const CODA_MS = 700; // quanto si ascolta ancora dopo aver lasciato
 const RESTA_MS = 7000; // il fumetto della risposta sparisce dopo, se non c'è più niente in arrivo o da confermare
 const NEON = "conic-gradient(from 0deg, var(--trainer), #ffcf5c, #7cf0d0, #7cc4ff, var(--trainer))";
 
+// il consiglio si vede una volta per dispositivo; la variabile tiene anche dove il browser non salva niente
+const CHIAVE_CONSIGLIO = "consiglio-leo";
 let consiglioVisto = false;
+function giaVisto() {
+  try {
+    return localStorage.getItem(CHIAVE_CONSIGLIO) === "visto";
+  } catch {
+    return false;
+  }
+}
 
 // Il contenuto del fumetto dopo un comando: lo decide chi usa la faccia. resta: non sparire ancora.
 export type RispostaFumetto = { nodo: ReactNode; resta: boolean };
@@ -67,10 +76,13 @@ export function FacciaLeo({
   const tenutoRef = useRef(false);
   const ascolta = voce.fase === "in-ascolto";
 
-  // il consiglio compare una volta per scheda del browser, poco dopo che Leo è arrivato al suo posto
+  // il consiglio compare una volta sola, poco dopo che Leo è arrivato al suo posto
   useEffect(() => {
-    if (!arrivata || !voce.disponibile || consiglioVisto) return;
+    if (!arrivata || !voce.disponibile || consiglioVisto || giaVisto()) return;
     consiglioVisto = true;
+    try {
+      localStorage.setItem(CHIAVE_CONSIGLIO, "visto");
+    } catch {}
     const su = window.setTimeout(() => setFumetto((f) => f ?? { tipo: "consiglio" }), 700);
     const giu = window.setTimeout(() => setFumetto((f) => (f?.tipo === "consiglio" ? null : f)), 6000);
     return () => {
@@ -148,7 +160,7 @@ export function FacciaLeo({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.2 }}
-            className={`glass glass-3d absolute right-[14px] z-40 origin-bottom-right rounded-[20px] rounded-br-[6px] px-[14px] py-[11px] text-[13px] leading-snug ${fumetto?.tipo === "consiglio" ? "w-[min(232px,calc(100%-28px))]" : "w-[min(300px,calc(100%-28px))]"} ${fumetto?.tipo === "comando" && !inAscolto ? "" : "pointer-events-none"}`}
+            className={`glass glass-3d fumetto-pieno absolute right-[14px] z-40 origin-bottom-right rounded-[20px] rounded-br-[6px] px-[14px] py-[11px] text-[13px] leading-snug ${fumetto?.tipo === "consiglio" ? "w-[min(232px,calc(100%-28px))]" : "w-[min(300px,calc(100%-28px))]"} ${fumetto?.tipo === "comando" && !inAscolto ? "" : "pointer-events-none"}`}
             style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 74px)" }}
           >
             {inAscolto ? (

@@ -189,6 +189,15 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     0 18px 40px -16px rgba(0, 0, 0, 0.9);
 }
+/* Vetro quasi pieno per i fumetti che passano sopra il testo (Leo da telefono): le scritte sotto non si mescolano */
+.fumetto-pieno {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.9));
+}
+.dark .fumetto-pieno {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)),
+    rgba(14, 14, 17, 0.94);
+}
 /* Versione in rilievo per la barra laterale: spigolo di luce, riflesso interno, ombra profonda */
 .glass-3d {
   box-shadow:
