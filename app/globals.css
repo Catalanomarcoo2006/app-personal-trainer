@@ -125,6 +125,8 @@
 /* velo del colore del trainer (barre del grafico degli incassi) */
 :root {
   --trainer-velo: color-mix(in srgb, var(--trainer) 20%, transparent);
+  /* il colore del trainer più profondo e meno acceso (terracotta per l'arancione): pannelli pieni accanto al bianco */
+  --trainer-profondo: color-mix(in srgb, var(--trainer) 72%, #3a2219);
   --trainer-velo-forte: color-mix(in srgb, var(--trainer) 42%, transparent);
 }
 
@@ -386,9 +388,9 @@
 .scheda-testa {
   color: #fff;
   background:
-    radial-gradient(90% 120% at 100% 0%, rgba(255, 255, 255, 0.28), transparent 60%),
-    linear-gradient(135deg, var(--trainer), color-mix(in srgb, var(--trainer) 70%, #ffc6a1));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    radial-gradient(90% 130% at 100% 0%, color-mix(in srgb, var(--trainer) 55%, transparent), transparent 62%),
+    linear-gradient(150deg, var(--trainer-profondo), color-mix(in srgb, var(--trainer-profondo) 85%, #1f1410));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 .scheda-lista {
   background: color-mix(in srgb, var(--trainer) 8%, var(--color-card));
@@ -414,13 +416,29 @@
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
+/* quello da fare adesso: un filo del colore del trainer attorno */
+.riga-esercizio.adesso {
+  border-color: var(--trainer);
+  box-shadow:
+    0 0 0 1px var(--trainer),
+    0 12px 24px -14px color-mix(in srgb, var(--trainer) 70%, transparent);
+}
+/* fatti: la scheda si "abbassa" (niente rilievo né bianco pieno), il contrasto lo fa la forma, non un altro colore */
 .riga-esercizio.fatta {
-  background: color-mix(in srgb, var(--color-mint-strong) 9%, var(--color-card));
-  border-color: color-mix(in srgb, var(--color-mint-strong) 28%, transparent);
+  background: color-mix(in srgb, var(--trainer) 5%, transparent);
+  border-color: color-mix(in srgb, var(--trainer) 14%, transparent);
   box-shadow: none;
 }
 .dark .riga-esercizio.fatta {
-  background: color-mix(in srgb, var(--color-mint-strong) 10%, transparent);
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+.spunta-fatta {
+  background: var(--trainer-profondo);
+  color: #fff;
+}
+.dark .spunta-fatta {
+  background: var(--trainer);
 }
 /* Tasto spento al buio: grigio di vetro invece dell'arancione trasparente, che sul nero sembra sporco */
 .dark .btn-trainer:disabled {

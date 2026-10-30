@@ -126,17 +126,16 @@ export function Allenamento() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.05 + i * 0.05, duration: 0.35, ease: EASE_OUT }}
-                  className={`riga-esercizio flex items-center gap-[11px] rounded-[16px] py-[11px] pr-[10px] pl-[12px] transition-colors duration-300 ${fatta ? "fatta" : ""}`}
+                  className={`riga-esercizio flex items-center gap-[11px] rounded-[16px] py-[11px] pr-[10px] pl-[12px] transition-colors duration-300 ${fatta ? "fatta" : adesso ? "adesso" : ""}`}
                 >
-                  {/* il numero: tinto del colore del trainer; quello da fare adesso pieno, quelli fatti in verde */}
+                  {/* il numero: tinto del colore del trainer; quello da fare adesso pieno, quelli fatti con la spunta */}
                   <span
-                    className={`grid size-[28px] shrink-0 place-items-center rounded-full text-[12px] font-extrabold tabular-nums transition-colors duration-300 ${adesso ? "btn-trainer" : fatta ? "text-white dark:text-[#0e0e10]" : "numero-esercizio"}`}
-                    style={fatta ? { background: "var(--color-mint-strong)" } : undefined}
+                    className={`grid size-[28px] shrink-0 place-items-center rounded-full text-[12px] font-extrabold tabular-nums transition-colors duration-300 ${adesso ? "btn-trainer" : fatta ? "spunta-fatta" : "numero-esercizio"}`}
                   >
                     {fatta ? <Check size={14} strokeWidth={3} /> : i + 1}
                   </span>
                   <div className="min-w-0 flex-1 leading-none">
-                    <p className={`truncate text-[14.5px] font-bold transition-opacity ${fatta ? "opacity-50" : ""}`}>{e.nome}</p>
+                    <p className={`truncate text-[14.5px] font-bold transition-opacity ${fatta ? "line-through decoration-[1.5px] opacity-45" : ""}`}>{e.nome}</p>
                     <p className="mt-[5px] truncate text-[12px] font-medium text-ink/60">{e.dettaglio}</p>
                     {e.video && (
                       <a
@@ -158,8 +157,7 @@ export function Allenamento() {
                       aria-pressed={fatta}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => spunta(i)}
-                      className={`grid size-[40px] shrink-0 cursor-pointer place-items-center rounded-full border-2 transition-colors duration-300 ${fatta ? "border-transparent text-white dark:text-[#0e0e10]" : "border-ink/15 bg-card text-ink/30"}`}
-                      style={fatta ? { background: "var(--color-mint-strong)" } : undefined}
+                      className={`grid size-[40px] shrink-0 cursor-pointer place-items-center rounded-full border-2 transition-colors duration-300 ${fatta ? "spunta-fatta border-transparent" : "border-ink/15 bg-card text-ink/30"}`}
                     >
                       <motion.span animate={{ scale: fatta ? [1, 1.25, 1] : 1 }} transition={{ duration: 0.3 }}>
                         <Check size={17} strokeWidth={2.8} />
