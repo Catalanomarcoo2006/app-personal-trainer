@@ -133,11 +133,11 @@ export function Allenamento() {
                   transition={{ delay: 0.05 + i * 0.05, duration: 0.35, ease: EASE_OUT }}
                   className="panel flex items-center gap-[12px] rounded-[20px] py-[12px] pr-[12px] pl-[14px]"
                 >
-                  {/* fatti: tutto smorzato tranne la spunta piena; da fare: a piena intensità con la spunta vuota */}
+                  {/* fatti: barrati e smorzati, con la spunta piena; da fare: a piena intensità con la spunta vuota */}
                   <span className={`w-[16px] shrink-0 text-[14px] font-extrabold tabular-nums transition-opacity duration-300 ${fatta ? "opacity-30" : "text-ink/35"}`}>{i + 1}</span>
                   <div className={`min-w-0 flex-1 leading-none transition-opacity duration-300 ${fatta ? "opacity-45" : ""}`}>
-                    <p className="truncate text-[15px] font-bold">{e.nome}</p>
-                    <p className="mt-[5px] truncate text-[12.5px] text-ink/60">{e.dettaglio}</p>
+                    <p className={`truncate text-[15px] font-bold ${fatta ? "line-through decoration-2" : ""}`}>{e.nome}</p>
+                    <p className={`mt-[5px] truncate text-[12.5px] text-ink/60 ${fatta ? "line-through" : ""}`}>{e.dettaglio}</p>
                     {e.video && (
                       <a
                         href={e.video}
