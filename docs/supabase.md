@@ -34,6 +34,9 @@ dalla sua scheda ("Invita nell'app").
   avviso per il trainer) e la data d'inizio nel profilo del cliente (`my_client`).
 - `supabase/migrations/20261029000004_permessi.sql`: permessi di base sulle tabelle. I progetti Supabase nuovi
   non li danno più da soli: senza, "permission denied for table …" (trovato il 29/10 creando il primo trainer).
+- `supabase/migrations/20261106000005_scheda_e_allenamenti.sql`: `save_plan(cliente, giorni)` (la scheda in una sola
+  transazione: niente mezze schede se la rete cade) e `set_workout_done(fatto)` (l'allenamento di oggi del cliente,
+  con il giorno italiano del server). Provata su PGlite (Postgres in memoria) perché sul computer di Marco non c'è Docker.
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -55,7 +58,7 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 2. **Chiavi** (Project Settings → API) in `.env.local` sul computer e su Vercel → Environment Variables:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (questa solo Secret, mai `NEXT_PUBLIC_`).
    Aggiorna `docs/chiavi.md`.
-3. **Carica lo schema** (o, senza terminale: SQL Editor → incolla ed esegui i quattro file di `supabase/migrations/`, in ordine):
+3. **Carica lo schema** (o, senza terminale: SQL Editor → incolla ed esegui i file di `supabase/migrations/`, in ordine):
    ```bash
    npx supabase login
    ```
@@ -87,7 +90,8 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 
 ## Ancora da fare (fasi successive)
 
-- Storage (bucket privato) per documenti, foto e logo: oggi nella versione vera i documenti caricati non si salvano.
+- Storage (bucket privato) per documenti, foto e logo: oggi nella versione vera i documenti caricati non si salvano
+  (la foto del trainer resta solo nel browser) e i video messi sugli esercizi della libreria non si salvano.
 - Finestre per misure e note del trainer (nella demo le fa Leo); avvisi automatici dei pacchetti in scadenza.
 - Aggiornamento dal vivo fra trainer e cliente (Realtime): oggi i messaggi nuovi si vedono ricaricando la pagina.
 - Leo con dati veri: quando c'è il fornitore AI in UE (e il trascrittore per i vocali), si toglie il blocco
