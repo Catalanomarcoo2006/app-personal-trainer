@@ -65,7 +65,44 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
         });
       });
     }
-    stato.carica(foto.stato);
+
+    // documenti su Storage (bucket privato "documenti", cartelle <trainer>/<cliente>): migrazione 6
+    const cartella = ruolo.tipo === "trainer" ? ruolo.trainerId : foto.trainerDelCliente;
+    const bucket = db.storage.from("documenti");
+    const scarica = (percorso: string) => async () => {
+      const r = await bucket.download(percorso);
+      if (r.error) throw r.error;
+      return r.data;
+    };
+    eventiVeri.caricaDocumento = async (d) => {
+      if (!cartella) return null;
+      const percorso = `${cartella}/${d.clientId}/${d.id}.${d.tipo === "pdf" ? "pdf" : "jpg"}`;
+      const su = await bucket.upload(percorso, d.file, { contentType: d.tipo === "pdf" ? "application/pdf" : "image/jpeg" });
+      if (su.error) {
+        console.error("File non caricato", su.error.message);
+        return null;
+      }
+      const riga = await db.from("documents").insert({ id: d.id, client_id: d.clientId, uploaded_by: d.da, storage_path: percorso, name: d.nome, kind: d.tipo });
+      if (riga.error) {
+        console.error("Documento non salvato", riga.error.message);
+        await bucket.remove([percorso]);
+        return null;
+      }
+      return percorso;
+    };
+    eventiVeri.togliDocumento = async (d) => {
+      // prima il file (la regola del cliente guarda la riga), poi la riga
+      if (d.percorso) {
+        const via = await bucket.remove([d.percorso]);
+        if (via.error) return false;
+      }
+      const riga = await db.from("documents").delete().eq("id", d.id);
+      return !riga.error;
+    };
+    // il file si scarica solo quando si apre
+    const documenti = (foto.stato.documenti ?? []).map((d) => (d.percorso ? { ...d, file: scarica(d.percorso) } : d));
+
+    stato.carica({ ...foto.stato, documenti });
     const smetti = avviaSalvataggio({
       db,
       ruolo,

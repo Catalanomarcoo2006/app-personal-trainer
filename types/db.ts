@@ -419,7 +419,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "complete_registration":
+            "can_use_document_path":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"complete_registration":
 { Args: { "p_consent": boolean,"p_gender"?: string,"p_goal_start"?: number,"p_goal_target"?: number,"p_phone"?: string,"p_weigh_frequency"?: string }; Returns: undefined
                            },
 "is_admin":

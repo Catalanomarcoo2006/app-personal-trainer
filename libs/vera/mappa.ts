@@ -7,6 +7,7 @@ import type { ClienteDati, DatiClienti, Misura, Notifiche, Pacchetto, Pagamento 
 import { library, type Alert, type AppointmentType, type ChatMessage, type DatiVeri, type NotificationKind, type Revenue, type Tone } from "@/libs/prototipo/dati-finti";
 import type { Seduta } from "@/libs/prototipo/leo-azioni";
 import type { Day, StatoApp } from "@/libs/prototipo/stato";
+import type { Documento } from "@/libs/prototipo/documenti";
 import { needsAttention } from "@/libs/domain/attention";
 import { daysBetween, romeDayKey } from "@/libs/domain/time";
 import { MESI } from "@/libs/dati/iniziali";
@@ -25,6 +26,7 @@ type RigheDb = {
   workout_logs: Tables<"workout_logs">;
   alerts: Tables<"alerts">;
   ai_messages: Tables<"ai_messages">;
+  documents: Tables<"documents">;
 };
 type Riga<K extends keyof RigheDb> = RigheDb[K];
 
@@ -43,6 +45,7 @@ export type RigheTrainer = {
   logs: Riga<"workout_logs">[];
   alerts: Riga<"alerts">[];
   questions: Pick<Riga<"ai_messages">, "client_id" | "content" | "created_at">[];
+  documents: Riga<"documents">[];
 };
 
 export type Fotografia = {
@@ -51,6 +54,7 @@ export type Fotografia = {
   clienteIo?: string; // nell'app del cliente: il suo id
   registrato?: boolean; // nell'app del cliente: ha già dato il consenso (registrazione fatta)
   allenatoOggi?: boolean; // nell'app del cliente: l'allenamento di oggi è già segnato come fatto
+  trainerDelCliente?: string; // nell'app del cliente: il suo trainer (prima cartella dei documenti su Storage)
 };
 
 // ——— Date e ore nel fuso italiano ———
@@ -197,6 +201,20 @@ export function schedaDa(pianoId: string | undefined, giorni: Riga<"plan_days">[
     }));
 }
 
+// Il file non viaggia con la pagina: AvvioVero mette al posto di file la funzione che lo scarica dal percorso.
+export function documentoDa(d: Riga<"documents">): Documento {
+  return {
+    id: d.id,
+    clientId: d.client_id,
+    nome: d.name,
+    tipo: d.kind === "foto" ? "foto" : "pdf",
+    da: d.uploaded_by === "cliente" || d.uploaded_by === "trainer" ? d.uploaded_by : "nutrizionista",
+    data: dataRoma(d.created_at),
+    file: "",
+    percorso: d.storage_path,
+  };
+}
+
 function messaggioDa(m: Riga<"messages">, oggi: string): ChatMessage {
   return { from: m.sender === "trainer" ? "trainer" : "client", text: m.body, time: quandoMessaggio(m.created_at, oggi) };
 }
@@ -337,7 +355,7 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
       videos: {},
       sent: [],
       replied: [],
-      documenti: [],
+      documenti: r.documents.filter((d) => inElenco.has(d.client_id)).map(documentoDa),
     },
     veri: {
       trainer: { name: r.trainer.name, initials: iniziali(r.trainer.name), photo: FOTO_VUOTA, color: r.trainer.color },
@@ -377,6 +395,7 @@ export function fotografiaCliente(r: RigheCliente, ora: Date): Fotografia {
     ...base,
     clienteIo: r.io.id,
     registrato: !!r.io.consent_at,
+    trainerDelCliente: r.io.trainer_id,
     allenatoOggi: r.logs.some((l) => l.client_id === r.io.id && l.done_on === romeDayKey(ora)),
     veri: {
       ...base.veri,

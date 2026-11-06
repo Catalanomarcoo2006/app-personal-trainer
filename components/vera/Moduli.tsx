@@ -15,8 +15,9 @@ import { useClienti } from "@/libs/dati/selettori";
 import { oggi } from "@/libs/orologio";
 import { playSound } from "@/libs/ui/sound";
 import { navigate, ROUTES } from "@/components/prototipo/trainer/nav";
+import { DocumentiCliente } from "./DocumentiCliente";
 
-type Modulo = { tipo: "cliente" } | { tipo: "pagamento"; clientId?: string } | { tipo: "pacchetto"; clientId?: string };
+type Modulo = { tipo: "cliente" } | { tipo: "pagamento"; clientId?: string } | { tipo: "pacchetto"; clientId?: string } | { tipo: "documenti"; clientId: string };
 
 let aperto: Modulo | null = null;
 const ascolta = new Set<() => void>();
@@ -191,11 +192,13 @@ function NuovoPacchetto({ clientId, chiudi }: { clientId?: string; chiudi: () =>
   );
 }
 
-const TITOLI = { cliente: "Nuovo cliente", pagamento: "Registra un pagamento", pacchetto: "Nuovo pacchetto" };
+const TITOLI = { cliente: "Nuovo cliente", pagamento: "Registra un pagamento", pacchetto: "Nuovo pacchetto", documenti: "Documenti" };
 
-// Montata una volta nella cornice dell'area trainer (computer).
+// Montata una volta nella cornice dell'area trainer (computer e telefono).
 export function Moduli() {
   const m = useModulo();
+  const clienti = useClienti();
+  const delCliente = m?.tipo === "documenti" ? clienti.find((c) => c.id === m.clientId) : undefined;
   const chiudi = () => apriModulo(null);
   return (
     <AnimatePresence>
@@ -209,7 +212,7 @@ export function Moduli() {
             className="relative w-[400px] max-w-[calc(100vw-32px)] rounded-[24px] bg-card p-[20px] shadow-[0_30px_80px_rgba(0,0,0,0.25)]"
           >
             <div className="mb-[14px] flex items-center justify-between">
-              <p className="text-[16px] font-bold">{TITOLI[m.tipo]}</p>
+              <p className="text-[16px] font-bold">{delCliente ? `Documenti di ${delCliente.name.split(" ")[0]}` : TITOLI[m.tipo]}</p>
               <button type="button" aria-label="Chiudi" onClick={chiudi} className="grid size-[28px] cursor-pointer place-items-center rounded-full bg-soft">
                 <X size={14} />
               </button>
@@ -217,6 +220,7 @@ export function Moduli() {
             {m.tipo === "cliente" && <NuovoCliente chiudi={chiudi} />}
             {m.tipo === "pagamento" && <NuovoPagamento clientId={m.clientId} chiudi={chiudi} />}
             {m.tipo === "pacchetto" && <NuovoPacchetto clientId={m.clientId} chiudi={chiudi} />}
+            {m.tipo === "documenti" && <DocumentiCliente clientId={m.clientId} nome={delCliente?.name.split(" ")[0] ?? "il cliente"} />}
           </motion.div>
         </motion.div>
       )}

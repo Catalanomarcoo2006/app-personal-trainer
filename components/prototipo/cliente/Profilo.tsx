@@ -4,7 +4,7 @@
 // i documenti (dieta del nutrizionista, scheda sempre aggiornata, analisi, quello che carica lui: decisione di Marco
 // del 28/10), suoni e tema, informativa e consenso.
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
@@ -13,8 +13,9 @@ import { Toggle } from "@/components/ui/basics";
 import { useAppearance } from "@/components/ui/appearance";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled } from "@/libs/ui/sound";
 import { trainer } from "@/libs/prototipo/dati-finti";
-import { stato, useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
-import { controllaFile, rimpicciolisciFoto, type Documento } from "@/libs/prototipo/documenti";
+import { useStato, useTrainerPhoto } from "@/libs/prototipo/stato";
+import type { Documento } from "@/libs/prototipo/documenti";
+import { caricaDocumento, togliDocumento } from "@/libs/prototipo/documenti-carica";
 import { useCliente } from "@/libs/dati/selettori";
 import { impostaPesata } from "@/libs/dati/sportello";
 import { oggi as giornoDiOggi } from "@/libs/orologio";
@@ -83,7 +84,9 @@ function Informativa() {
 export function Profilo() {
   const c = useCliente(CLIENTE_IO);
   const foto = useTrainerPhoto();
-  const documenti = useStato((s) => s.documenti);
+  const tutti = useStato((s) => s.documenti);
+  const documenti = useMemo(() => tutti.filter((d) => d.clientId === CLIENTE_IO), [tutti]);
+  const [caricando, setCaricando] = useState(false);
   const giorni = useStato((s) => s.plans[CLIENTE_IO]) ?? [];
   const videos = useStato((s) => s.videos);
   const pacchetto = useStato((s) => s.dati.pacchetti.find((p) => p.clientId === CLIENTE_IO));
@@ -105,18 +108,14 @@ export function Profilo() {
   const usate = pacchetto?.lessonsUsed ?? 0;
   const totali = pacchetto?.lessonsTotal ?? 0;
 
-  const caricaFile = async (f: File | undefined) => {
-    if (!f) return;
-    const v = controllaFile(f);
-    if ("motivo" in v) return toast.error(v.motivo);
-    try {
-      const file = v.tipo === "foto" ? await rimpicciolisciFoto(f) : f;
-      stato.addDocumento({ nome: v.tipo === "foto" ? f.name.replace(/\.\w+$/, ".jpg") : f.name, tipo: v.tipo, da: "cliente", data: giornoDiOggi(), file });
-      playSound("complete");
-      toast.success(`Caricato: ${nomeTrainer()} lo trova tra i tuoi documenti`);
-    } catch {
-      toast.error("Non riesco a leggere questa foto: prova con una JPG o PNG");
-    }
+  const caricaFile = async (f: File | undefined): Promise<void> => {
+    if (!f || caricando) return;
+    setCaricando(true);
+    const esito = await caricaDocumento(f, CLIENTE_IO, "cliente");
+    setCaricando(false);
+    if ("motivo" in esito) return void toast.error(esito.motivo);
+    playSound("complete");
+    toast.success(`Caricato: ${nomeTrainer()} lo trova tra i tuoi documenti`);
   };
 
   return (
@@ -216,8 +215,9 @@ export function Profilo() {
                 <button
                   type="button"
                   aria-label={`Togli ${d.nome}`}
-                  onClick={() => {
-                    stato.removeDocumento(d.id);
+                  onClick={async () => {
+                    const esito = await togliDocumento(d);
+                    if ("motivo" in esito) return void toast.error(esito.motivo);
                     playSound("tap");
                     toast.success("Documento tolto");
                   }}
@@ -229,13 +229,16 @@ export function Profilo() {
                 <ChevronRight size={17} className="shrink-0 text-ink/35" />
               )
             }
-            onClick={() => (playSound("tap"), void apriFile(d.file))}
+            onClick={async () => {
+              playSound("tap");
+              if (!(await apriFile(d.file))) toast.error("Non riesco ad aprire il documento: riprova");
+            }}
           />
         ))}
         <input ref={carica} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => (void caricaFile(e.target.files?.[0]), (e.target.value = ""))} />
         <div className="border-t border-line/60 p-[12px]">
-          <motion.button type="button" whileTap={{ scale: 0.97 }} onClick={() => carica.current?.click()} className="glass flex h-[44px] w-full cursor-pointer items-center justify-center gap-[7px] rounded-full text-[13.5px] font-bold">
-            <Upload size={15} style={{ color: "var(--trainer)" }} /> Carica un documento
+          <motion.button type="button" whileTap={{ scale: 0.97 }} onClick={() => carica.current?.click()} disabled={caricando} className="glass flex h-[44px] w-full cursor-pointer disabled:opacity-60 items-center justify-center gap-[7px] rounded-full text-[13.5px] font-bold">
+            <Upload size={15} style={{ color: "var(--trainer)" }} /> {caricando ? "Carico…" : "Carica un documento"}
           </motion.button>
           <p className="mt-[6px] text-center text-[11px] text-muted">PDF o foto, fino a 10 MB. La dieta te la dà solo il tuo nutrizionista.</p>
         </div>

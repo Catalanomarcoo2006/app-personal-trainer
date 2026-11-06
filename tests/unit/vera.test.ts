@@ -31,6 +31,10 @@ const righe: RigheTrainer = {
     { id: "x0", client_id: C, sender: "trainer", body: "Benvenuta", document_id: null, read_at: null, created_at: "2026-11-02T08:30:00Z" },
   ],
   plans: [], days: [], exercises: [], logs: [], alerts: [], questions: [],
+  documents: [
+    { id: "d1", client_id: C, uploaded_by: "nutrizionista", storage_path: `${T}/${C}/d1.pdf`, name: "Dieta.pdf", kind: "pdf", created_at: "2026-11-03T23:30:00Z" },
+    { id: "d2", client_id: "archiviato", uploaded_by: "cliente", storage_path: `${T}/archiviato/d2.jpg`, name: "Foto.jpg", kind: "foto", created_at: "2026-11-01T10:00:00Z" },
+  ],
 };
 
 describe("dal database alle pagine", () => {
@@ -99,6 +103,18 @@ describe("dal database alle pagine", () => {
     const f = fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io, logs: [log] }, ORA);
     expect(f.allenatoOggi).toBe(true);
     expect(fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io, logs: [{ ...log, done_on: "2026-11-03" }] }, ORA).allenatoOggi).toBe(false);
+  });
+
+  it("documenti: con il percorso su Storage e il giorno italiano, solo dei clienti in elenco", () => {
+    expect(fotografiaTrainer(righe, ORA).stato.documenti).toEqual([
+      { id: "d1", clientId: C, nome: "Dieta.pdf", tipo: "pdf", da: "nutrizionista", data: "2026-11-04", file: "", percorso: `${T}/${C}/d1.pdf` },
+    ]);
+  });
+
+  it("cliente: sa chi è il suo trainer (cartella dei documenti)", () => {
+    const { trainer: _t, clients: _c, alerts: _a, questions: _q, ...resto } = righe;
+    const f = fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io: { ...cliente, trainer_id: T, consent_at: null } }, ORA);
+    expect(f.trainerDelCliente).toBe(T);
   });
 
   it("incassi degli ultimi 6 mesi", () => {

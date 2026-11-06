@@ -3,11 +3,15 @@
 
 export type Documento = {
   id: string;
+  clientId: string;
   nome: string;
   tipo: "pdf" | "foto";
   da: "nutrizionista" | "trainer" | "cliente";
   data: string; // "AAAA-MM-GG"
-  file: Blob | string; // un file caricato (Blob, passa tra le finestre) o un indirizzo dei PDF della demo
+  // un file caricato (Blob, passa tra le finestre), un indirizzo dei PDF della demo, o (versione vera) la funzione
+  // che lo scarica da Storage quando si apre
+  file: Blob | string | (() => Promise<Blob>);
+  percorso?: string; // versione vera: dove sta il file nel bucket "documenti" (<trainer>/<cliente>/<id>.<pdf|jpg>)
 };
 
 export const MAX_MB = 10;
@@ -45,6 +49,6 @@ export function rimpicciolisciFoto(file: File, lato = 1600): Promise<Blob> {
 }
 
 export const documentiDemo: Documento[] = [
-  { id: "D1", nome: "Piano alimentare.pdf", tipo: "pdf", da: "nutrizionista", data: "2026-10-05", file: "/prototipo/dieta-esempio.pdf" },
-  { id: "D2", nome: "Analisi del sangue.pdf", tipo: "pdf", da: "cliente", data: "2026-10-02", file: "/prototipo/analisi-esempio.pdf" },
+  { id: "D1", clientId: "giulia-bianchi", nome: "Piano alimentare.pdf", tipo: "pdf", da: "nutrizionista", data: "2026-10-05", file: "/prototipo/dieta-esempio.pdf" },
+  { id: "D2", clientId: "giulia-bianchi", nome: "Analisi del sangue.pdf", tipo: "pdf", da: "cliente", data: "2026-10-02", file: "/prototipo/analisi-esempio.pdf" },
 ];

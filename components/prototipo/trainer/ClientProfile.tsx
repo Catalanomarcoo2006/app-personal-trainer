@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { eventiVeri } from "@/libs/vera/eventi";
+import { apriModulo } from "@/components/vera/Moduli";
 import Link from "next/link";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
@@ -10,8 +11,10 @@ import {
   CalendarClock,
   CalendarPlus,
   Check,
+  ChevronRight,
   ClipboardList,
   Dumbbell,
+  FileText,
   Mail,
   MessageCircle,
   Package,
@@ -64,17 +67,24 @@ function Ring({ percent, color, track, size = 46 }: { percent: number; color: st
   );
 }
 
-function SideRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
-  return (
-    <div className="flex h-[40px] items-center gap-[9px] rounded-[11px] border border-line px-[8px]">
+function SideRow({ icon: Icon, label, value, onClick }: { icon: LucideIcon; label: string; value: string; onClick?: () => void }) {
+  const dentro = (
+    <>
       <span className="grid size-[26px] shrink-0 place-items-center rounded-full bg-soft text-ink/70">
         <Icon size={13} />
       </span>
-      <div className="min-w-0 leading-none">
+      <div className="min-w-0 flex-1 leading-none">
         <p className="text-[9.5px] text-muted">{label}</p>
         <p className="mt-[3px] truncate text-[12px] font-semibold">{value}</p>
       </div>
-    </div>
+    </>
+  );
+  if (!onClick) return <div className="flex h-[40px] items-center gap-[9px] rounded-[11px] border border-line px-[8px]">{dentro}</div>;
+  return (
+    <button type="button" onClick={onClick} className="group flex h-[40px] w-full cursor-pointer items-center gap-[9px] rounded-[11px] border border-line px-[8px] text-left transition-colors hover:bg-soft">
+      {dentro}
+      <ChevronRight size={14} className="shrink-0 text-ink/40 transition-transform group-hover:translate-x-[2px]" />
+    </button>
   );
 }
 
@@ -99,6 +109,8 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
 
   // versione vera: aprire la scheda del cliente vale come aver visto le sue segnalazioni di dolore
   useEffect(() => eventiVeri.doloriVisti?.(c.id), [c.id]);
+
+  const documenti = useStato((s) => s.documenti.filter((d) => d.clientId === c.id).length);
 
   // questa settimana del cliente, dallo store: segue le modifiche fatte da Leo e dal calendario
   const sedute = useStato((s) => s.sedute);
@@ -154,7 +166,17 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
           <div className="mt-[12px] flex shrink-0 flex-col gap-[7px]">
             <SideRow icon={Package} label="Pacchetto" value={`${c.pkg.label} · ${c.pkg.left}`} />
             <SideRow icon={Dumbbell} label="Scheda attuale" value={c.plan} />
-            <SideRow icon={CalendarClock} label="Ultimo allenamento" value={c.lastWorkout} />          </div>
+            <SideRow icon={CalendarClock} label="Ultimo allenamento" value={c.lastWorkout} />
+            <SideRow
+              icon={FileText}
+              label="Documenti"
+              value={documenti === 0 ? "Nessuno per ora · carica la dieta" : documenti === 1 ? "1 documento" : `${documenti} documenti`}
+              onClick={() => {
+                playSound("open");
+                apriModulo({ tipo: "documenti", clientId: c.id });
+              }}
+            />
+          </div>
 
           {/* Le note prendono solo lo spazio che resta: se sono lunghe scorrono (una riga per nota, l'ultima in fondo) */}
           <div ref={note} title={c.notes} className="relative mt-[12px] min-h-[54px] flex-1 overflow-y-auto rounded-[14px] bg-soft px-[12px] py-[10px] [scrollbar-width:none]">

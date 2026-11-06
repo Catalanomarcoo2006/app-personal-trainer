@@ -6,8 +6,9 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { eventiVeri } from "@/libs/vera/eventi";
+import { apriModulo } from "@/components/vera/Moduli";
 import { motion } from "motion/react";
-import { CalendarPlus, Mail, MessageCircle, Phone, Search, X } from "lucide-react";
+import { CalendarPlus, FileText, Mail, MessageCircle, Phone, Search, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
 import { progressOf } from "@/libs/prototipo/dati-finti";
 import { useStato } from "@/libs/prototipo/stato";
@@ -123,6 +124,7 @@ export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuova
   const prossime = useProssime(c.id);
   // versione vera: aprire la scheda del cliente vale come aver visto le sue segnalazioni di dolore
   useEffect(() => eventiVeri.doloriVisti?.(c.id), [c.id]);
+  const documenti = useStato((s) => s.documenti.filter((d) => d.clientId === c.id).length);
   // un solo colore, quello del trainer (come le percentuali dell'elenco): il tono del cliente qui era un colore in più
   const tono = { strong: "var(--trainer)", track: "var(--trainer-velo)" }; // al buio il velo diventa vetro (classi dark:)
   const p = progressOf(c);
@@ -271,6 +273,19 @@ export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuova
       <Titoletto>Pacchetto</Titoletto>
       <Riquadro>
         <Riga titolo={c.pkg.label} sotto={c.pkg.left} destra={c.pkg.expiring ? <span className="shrink-0 rounded-full bg-[rgba(106,90,224,0.16)] px-[8px] py-[3px] text-[11px] font-bold text-[#6a5ae0]">In scadenza</span> : undefined} />
+      </Riquadro>
+
+      <Titoletto>Documenti</Titoletto>
+      <Riquadro>
+        <Riga
+          sinistra={<FileText size={17} className="shrink-0 text-ink/60" />}
+          titolo={documenti === 0 ? "Nessun documento" : documenti === 1 ? "1 documento" : `${documenti} documenti`}
+          sotto="Analisi, foto, dieta del nutrizionista"
+          onClick={() => {
+            playSound("open");
+            apriModulo({ tipo: "documenti", clientId: c.id });
+          }}
+        />
       </Riquadro>
 
       {c.notes && (

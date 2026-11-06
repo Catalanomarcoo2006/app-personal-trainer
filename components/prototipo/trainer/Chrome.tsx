@@ -437,6 +437,7 @@ export function TrainerFrame({ children }: { children: ReactNode }) {
       <Suspense>
         <TrainerTelefono />
         <InstantLinks />
+        <Moduli />
       </Suspense>
     );
   return (

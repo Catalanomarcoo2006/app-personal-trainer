@@ -37,6 +37,10 @@ dalla sua scheda ("Invita nell'app").
 - `supabase/migrations/20261106000005_scheda_e_allenamenti.sql`: `save_plan(cliente, giorni)` (la scheda in una sola
   transazione: niente mezze schede se la rete cade) e `set_workout_done(fatto)` (l'allenamento di oggi del cliente,
   con il giorno italiano del server). Provata su PGlite (Postgres in memoria) perché sul computer di Marco non c'è Docker.
+- `supabase/migrations/20261106000006_storage_documenti.sql`: bucket privato `documenti` (10 MB, PDF e foto), un file
+  per documento in `<trainer>/<cliente>/<id>.<pdf|jpg>`. Il trainer legge, carica e toglie i file dei suoi clienti; il
+  cliente legge i suoi e toglie solo quelli caricati da lui; le righe di `documents` puntano solo alla cartella giusta.
+  Provata su PGlite con uno Storage finto (21 controlli, anche trainer sospeso).
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -90,8 +94,8 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 
 ## Ancora da fare (fasi successive)
 
-- Storage (bucket privato) per documenti, foto e logo: oggi nella versione vera i documenti caricati non si salvano
-  (la foto del trainer resta solo nel browser) e i video messi sugli esercizi della libreria non si salvano.
+- Storage per foto e logo del trainer (oggi la foto resta solo nel browser) e i video messi sugli esercizi della
+  libreria (non si salvano). I documenti dei clienti sono su Storage dal 6/11 (migrazione 6).
 - Finestre per misure e note del trainer (nella demo le fa Leo); avvisi automatici dei pacchetti in scadenza.
 - Aggiornamento dal vivo fra trainer e cliente (Realtime): oggi i messaggi nuovi si vedono ricaricando la pagina.
 - Leo con dati veri: quando c'è il fornitore AI in UE (e il trascrittore per i vocali), si toglie il blocco

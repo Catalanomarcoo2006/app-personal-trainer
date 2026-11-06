@@ -23,7 +23,7 @@ async function schede(db: Db) {
 }
 
 export async function caricaTrainer(db: Db, trainerId: string, ora = new Date()): Promise<Fotografia> {
-  const [t, clients, packages, payments, measurements, sessions, messages, logs, alerts, questions, s] = await Promise.all([
+  const [t, clients, packages, payments, measurements, sessions, messages, logs, alerts, questions, documents, s] = await Promise.all([
     db.from("trainers").select("id, name, slug, color, logo_path, notifications").eq("id", trainerId).single(),
     db.from("clients").select("id, name, email, phone, gender, tone, goal_label, goal_unit, goal_start, goal_current, goal_target, goal_proposed_start, goal_proposed_target, weigh_frequency, notes, created_at").eq("status", "active").order("created_at"),
     db.from("packages").select("*"),
@@ -34,6 +34,7 @@ export async function caricaTrainer(db: Db, trainerId: string, ora = new Date())
     db.from("workout_logs").select("*"),
     db.from("alerts").select("*").order("created_at", { ascending: false }).limit(50),
     db.from("ai_messages").select("client_id, content, created_at").eq("role", "user").order("created_at", { ascending: false }).limit(200),
+    db.from("documents").select("*").order("created_at", { ascending: false }),
     schede(db),
   ]);
   if (t.error) throw new Error(`Trainer non trovato: ${t.error.message}`);
@@ -48,13 +49,14 @@ export async function caricaTrainer(db: Db, trainerId: string, ora = new Date())
     logs: righe(logs, "allenamenti"),
     alerts: righe(alerts, "avvisi"),
     questions: righe(questions, "domande all'assistente"),
+    documents: righe(documents, "documenti"),
     ...s,
   };
   return fotografiaTrainer(r, ora);
 }
 
 export async function caricaCliente(db: Db, slug: string, ora = new Date()): Promise<Fotografia | null> {
-  const [io, marchio, packages, payments, measurements, sessions, messages, logs, s] = await Promise.all([
+  const [io, marchio, packages, payments, measurements, sessions, messages, logs, documents, s] = await Promise.all([
     db.rpc("my_client"),
     db.rpc("trainer_branding", { p_slug: slug }),
     db.from("packages").select("*"),
@@ -63,6 +65,7 @@ export async function caricaCliente(db: Db, slug: string, ora = new Date()): Pro
     db.from("sessions").select("*").order("starts_at"),
     db.from("messages").select("*").order("created_at"),
     db.from("workout_logs").select("*"),
+    db.from("documents").select("*").order("created_at", { ascending: false }),
     schede(db),
   ]);
   const cliente = io.data?.[0];
@@ -78,6 +81,7 @@ export async function caricaCliente(db: Db, slug: string, ora = new Date()): Pro
       sessions: righe(sessions, "sedute"),
       messages: righe(messages, "messaggi"),
       logs: righe(logs, "allenamenti"),
+      documents: righe(documents, "documenti"),
       ...s,
     },
     ora,
