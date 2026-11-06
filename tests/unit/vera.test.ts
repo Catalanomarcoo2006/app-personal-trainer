@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fotografiaTrainer, incassiDa, istanteDa, sedutaDa, type RigheTrainer } from "@/libs/vera/mappa";
+import { fotografiaCliente, fotografiaTrainer, incassiDa, istanteDa, sedutaDa, type RigheTrainer } from "@/libs/vera/mappa";
 import { differenze } from "@/libs/vera/salva";
 import type { StatoApp } from "@/libs/prototipo/stato";
 
@@ -24,7 +24,7 @@ const righe: RigheTrainer = {
     { id: "p1", trainer_id: T, client_id: C, package_id: "pk", amount_cents: 50000, due_on: "2026-10-01", paid_on: "2026-10-02", description: "Pacchetto", created_at: "2026-10-02T10:00:00Z" },
     { id: "p2", trainer_id: T, client_id: C, package_id: null, amount_cents: 4000, due_on: "2026-11-01", paid_on: null, description: "Valutazione", created_at: "2026-11-01T10:00:00Z" },
   ],
-  measurements: [{ id: "m1", client_id: C, taken_on: "2026-10-01", weight_kg: 70, waist_cm: null, hips_cm: null, chest_cm: null, arm_cm: null, thigh_cm: null, confirmed: true, created_at: "2026-10-01T10:00:00Z" }],
+  measurements: [{ id: "m1", client_id: C, taken_on: "2026-10-01", weight_kg: 68, waist_cm: null, hips_cm: null, chest_cm: null, arm_cm: null, thigh_cm: null, confirmed: true, created_at: "2026-10-01T10:00:00Z" }],
   sessions: [seduta("s1", "2026-10-28T17:00:00Z"), seduta("s2", "2026-11-04T17:00:00Z"), seduta("s3", "2026-10-30T17:00:00Z", "cancelled")],
   messages: [
     { id: "x1", client_id: C, sender: "client", body: "Ciao!", document_id: null, read_at: null, created_at: "2026-11-04T08:30:00Z" },
@@ -52,6 +52,53 @@ describe("dal database alle pagine", () => {
     expect(f.veri.conversations[0]).toMatchObject({ clientId: C, unread: 1 });
     expect(f.veri.trainer).toMatchObject({ name: "Giulia Verdi", initials: "GV", color: "#3366FF" });
     expect(d.notifiche.riepilogo).toBe(true);
+  });
+
+  it("lezioni usate: contano anche le sedute senza pacchetto collegato, dal giorno d'inizio del pacchetto", () => {
+    const r: RigheTrainer = {
+      ...righe,
+      sessions: [
+        { ...seduta("a", "2026-10-20T17:00:00Z"), package_id: null }, // dopo l'inizio, passata: conta
+        { ...seduta("b", "2026-09-20T17:00:00Z"), package_id: null }, // prima dell'inizio: no
+        { ...seduta("c", "2026-10-22T17:00:00Z"), package_id: "altro" }, // di un altro pacchetto: no
+        { ...seduta("d", "2026-11-10T17:00:00Z"), package_id: null }, // futura: no
+        { ...seduta("e", "2026-10-25T17:00:00Z", "cancelled"), package_id: null }, // annullata: no
+        seduta("f", "2026-10-26T17:00:00Z"), // collegata al pacchetto: conta
+      ],
+    };
+    expect(fotografiaTrainer(r, ORA).stato.dati!.pacchetti[0].lessonsUsed).toBe(2);
+  });
+
+  it("pacchetto a tempo: si contano solo le sedute entro la scadenza", () => {
+    const r: RigheTrainer = {
+      ...righe,
+      packages: [{ ...righe.packages[0], kind: "time", lessons_total: null, ends_on: "2026-10-21" }],
+      sessions: [{ ...seduta("a", "2026-10-20T17:00:00Z"), package_id: null }, { ...seduta("b", "2026-10-25T17:00:00Z"), package_id: null }],
+    };
+    expect(fotografiaTrainer(r, ORA).stato.dati!.pacchetti[0].lessonsUsed).toBe(1);
+  });
+
+  it("il peso attuale è l'ultima pesata confermata (il cliente non scrive sulla sua riga)", () => {
+    const pesata = (id: string, taken_on: string, weight_kg: number, confirmed = true) => ({ ...righe.measurements[0], id, taken_on, weight_kg, confirmed, created_at: `${taken_on}T10:00:00Z` });
+    const r: RigheTrainer = { ...righe, measurements: [pesata("m1", "2026-10-01", 70), pesata("m3", "2026-11-03", 67.2), pesata("m2", "2026-10-20", 68.5)] };
+    expect(fotografiaTrainer(r, ORA).stato.dati!.clienti[0].goalCurrent).toBe(67.2);
+    // obiettivo non in kg: resta quello scritto
+    const r2: RigheTrainer = { ...r, clients: [{ ...cliente, goal_unit: "%", goal_current: 40 }] };
+    expect(fotografiaTrainer(r2, ORA).stato.dati!.clienti[0].goalCurrent).toBe(40);
+  });
+
+  it("sedute e messaggi di clienti non più in elenco non arrivano alle pagine", () => {
+    const r: RigheTrainer = { ...righe, sessions: [...righe.sessions, { ...seduta("z", "2026-11-05T17:00:00Z"), client_id: "archiviato" }] };
+    expect(fotografiaTrainer(r, ORA).stato.sedute!.map((s) => s.id)).toEqual(["s1", "s2"]);
+  });
+
+  it("cliente: sa se ha già fatto l'allenamento di oggi", () => {
+    const { trainer: _t, clients: _c, alerts: _a, questions: _q, ...resto } = righe;
+    const io = { ...cliente, trainer_id: T, consent_at: "2026-10-02T10:00:00Z" };
+    const log = { id: "l1", client_id: C, plan_day_id: null as string | null, done_on: "2026-11-04", created_at: "2026-11-04T08:00:00Z" };
+    const f = fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io, logs: [log] }, ORA);
+    expect(f.allenatoOggi).toBe(true);
+    expect(fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io, logs: [{ ...log, done_on: "2026-11-03" }] }, ORA).allenatoOggi).toBe(false);
   });
 
   it("incassi degli ultimi 6 mesi", () => {

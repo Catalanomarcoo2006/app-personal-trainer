@@ -4,7 +4,8 @@
 // prossime sedute, pacchetto, note), con le proposte dalla sua app da confermare. Niente pagamenti né schede:
 // quelli restano sul computer (Marco, 29/10).
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { eventiVeri } from "@/libs/vera/eventi";
 import { motion } from "motion/react";
 import { CalendarPlus, Mail, MessageCircle, Phone, Search, X } from "lucide-react";
 import { playSound } from "@/libs/ui/sound";
@@ -120,6 +121,8 @@ const giornoBreve = (iso: string) => {
 
 export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuovaSeduta: (clientId: string) => void }) {
   const prossime = useProssime(c.id);
+  // versione vera: aprire la scheda del cliente vale come aver visto le sue segnalazioni di dolore
+  useEffect(() => eventiVeri.doloriVisti?.(c.id), [c.id]);
   // un solo colore, quello del trainer (come le percentuali dell'elenco): il tono del cliente qui era un colore in più
   const tono = { strong: "var(--trainer)", track: "var(--trainer-velo)" }; // al buio il velo diventa vetro (classi dark:)
   const p = progressOf(c);

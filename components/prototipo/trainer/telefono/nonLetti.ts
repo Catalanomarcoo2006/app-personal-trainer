@@ -7,6 +7,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { conversations, type ChatMessage } from "@/libs/prototipo/dati-finti";
 import { useStato } from "@/libs/prototipo/stato";
+import { eventiVeri } from "@/libs/vera/eventi";
 
 type Thread = Record<string, ChatMessage[]>;
 
@@ -30,6 +31,7 @@ export function segnaLetta(id: string, threads: Thread) {
   const v = vistiDa(threads);
   const n = delCliente(threads[id]);
   if (v[id] === n) return;
+  eventiVeri.letti?.(id);
   visti = { ...v, [id]: n };
   chi.forEach((f) => f());
 }

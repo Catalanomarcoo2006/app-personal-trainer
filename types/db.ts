@@ -450,6 +450,12 @@ isOneToOne: false
 "report_pain":
 { Args: { "p_text": string }; Returns: undefined
                            },
+"save_plan":
+{ Args: { "p_client_id": string,"p_days": Json }; Returns: undefined
+                           },
+"set_workout_done":
+{ Args: { "p_done": boolean }; Returns: undefined
+                           },
 "trainer_branding":
 { Args: { "p_slug": string }; Returns: {
               "active": boolean,"color": string,"logo_path": string,"name": string

@@ -175,28 +175,13 @@ export function differenze(prima: Salvato, dopo: Salvato, ruolo: Ruolo): Operazi
 
 // ——— Scrittura ———
 
-async function scriviScheda(db: Db, clientId: string, giorni: Day[]) {
-  const esistente = await db.from("workout_plans").select("id").eq("client_id", clientId).eq("active", true).maybeSingle();
-  if (esistente.error) throw esistente.error;
-  let planId = esistente.data?.id;
-  if (!planId) {
-    const nuovo = await db.from("workout_plans").insert({ client_id: clientId, name: "Scheda" }).select("id").single();
-    if (nuovo.error) throw nuovo.error;
-    planId = nuovo.data.id;
-  } else {
-    const via = await db.from("plan_days").delete().eq("plan_id", planId);
-    if (via.error) throw via.error;
-  }
-  for (const [i, g] of giorni.entries()) {
-    const d = await db.from("plan_days").insert({ plan_id: planId, position: i, label: g.label, focus: g.focus }).select("id").single();
-    if (d.error) throw d.error;
-    if (!g.rows.length) continue;
-    const r = await db.from("plan_exercises").insert(
-      g.rows.map((row, j) => ({ day_id: d.data.id, position: j, name: rowName(row), sets: row.sets, load: row.load, rest: row.rest, notes: row.video ?? "" })),
-    );
-    if (r.error) throw r.error;
-  }
-}
+// La scheda intera in una sola transazione (save_plan, migrazione 5): o tutta, o niente.
+export const righeScheda = (giorni: Day[]) =>
+  giorni.map((g) => ({
+    label: g.label,
+    focus: g.focus,
+    rows: g.rows.map((row) => ({ name: rowName(row), sets: row.sets, load: row.load, rest: row.rest, notes: row.video ?? "" })),
+  }));
 
 export async function scrivi(db: Db, ops: Operazione[], ruolo: Ruolo): Promise<void> {
   for (const o of ops) {
@@ -205,8 +190,7 @@ export async function scrivi(db: Db, ops: Operazione[], ruolo: Ruolo): Promise<v
       if (ruolo.tipo !== "trainer") continue;
       r = await db.from("trainers").update({ notifications: o.v }).eq("id", ruolo.trainerId);
     } else if (o.t === "scheda") {
-      await scriviScheda(db, o.clientId, o.giorni);
-      continue;
+      r = await db.rpc("save_plan", { p_client_id: o.clientId, p_days: righeScheda(o.giorni) });
     } else if (o.t === "registrazione") {
       r = await db.rpc("complete_registration", o.v);
     } else if (o.t === "messages") {

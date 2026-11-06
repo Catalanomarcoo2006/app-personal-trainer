@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { eventiVeri } from "@/libs/vera/eventi";
 import Link from "next/link";
 import { motion } from "motion/react";
 import toast from "react-hot-toast";
@@ -95,6 +96,9 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
   useEffect(() => {
     if (tocca === "nota") note.current?.scrollTo({ top: note.current.scrollHeight, behavior: "smooth" });
   }, [tocca, focus?.seq]);
+
+  // versione vera: aprire la scheda del cliente vale come aver visto le sue segnalazioni di dolore
+  useEffect(() => eventiVeri.doloriVisti?.(c.id), [c.id]);
 
   // questa settimana del cliente, dallo store: segue le modifiche fatte da Leo e dal calendario
   const sedute = useStato((s) => s.sedute);

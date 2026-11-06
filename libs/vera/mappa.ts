@@ -50,6 +50,7 @@ export type Fotografia = {
   veri: DatiVeri;
   clienteIo?: string; // nell'app del cliente: il suo id
   registrato?: boolean; // nell'app del cliente: ha già dato il consenso (registrazione fatta)
+  allenatoOggi?: boolean; // nell'app del cliente: l'allenamento di oggi è già segnato come fatto
 };
 
 // ——— Date e ore nel fuso italiano ———
@@ -153,10 +154,16 @@ export function pagamentoDa(p: Riga<"payments">): Pagamento | null {
 }
 
 // Lezioni usate = sedute del pacchetto fatte, o fissate e già passate (spec: sedute "done"; nel calendario
-// dell'app una seduta passata e non annullata vale come fatta).
+// dell'app una seduta passata e non annullata vale come fatta). Le pagine non collegano la seduta al pacchetto:
+// una seduta senza pacchetto conta per quello del suo cliente se cade fra l'inizio e la scadenza.
 export function pacchettoDa(p: Riga<"packages">, sedute: Riga<"sessions">[], adesso: Date): Pacchetto {
+  const delPacchetto = (s: Riga<"sessions">) => {
+    if (s.package_id) return s.package_id === p.id;
+    const giorno = dataRoma(s.starts_at);
+    return s.client_id === p.client_id && giorno >= p.starts_on && (!p.ends_on || giorno <= p.ends_on);
+  };
   const usate = new Set(
-    sedute.filter((s) => s.package_id === p.id && (s.status === "done" || (s.status === "scheduled" && new Date(s.starts_at) < adesso))).map((s) => s.id),
+    sedute.filter((s) => delPacchetto(s) && (s.status === "done" || (s.status === "scheduled" && new Date(s.starts_at) < adesso))).map((s) => s.id),
   ).size;
   return {
     id: p.id,
@@ -226,7 +233,9 @@ const NOTIFICHE_PREDEFINITE: Notifiche = { dolore: true, spostamento: true, pacc
 
 export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
   const oggi = romeDayKey(ora);
-  const sedute = r.sessions.filter((s) => s.status !== "cancelled");
+  // solo i clienti in elenco (attivi): le righe di un cliente archiviato restano nel database ma non nelle pagine
+  const inElenco = new Set(r.clients.map((c) => c.id));
+  const sedute = r.sessions.filter((s) => s.status !== "cancelled" && inElenco.has(s.client_id));
   const pianoAttivo = (clientId: string) => r.plans.find((p) => p.client_id === clientId && p.active);
   const ultimoLog = (clientId: string) =>
     r.logs
@@ -234,6 +243,12 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
       .map((l) => l.done_on)
       .sort()
       .at(-1);
+  // il peso di adesso: l'ultima pesata confermata (il cliente scrive le pesate, non la sua riga)
+  const ultimoPeso = (clientId: string) =>
+    r.measurements
+      .filter((m) => m.client_id === clientId && m.confirmed && m.weight_kg !== null)
+      .sort((a, b) => a.taken_on.localeCompare(b.taken_on) || a.created_at.localeCompare(b.created_at))
+      .at(-1)?.weight_kg;
 
   const clienti: ClienteDati[] = r.clients.map((c, i) => {
     const ultimo = ultimoLog(c.id);
@@ -248,7 +263,7 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
       goalLabel: c.goal_label || "Da definire",
       goalUnit: c.goal_unit,
       goalStart: num(c.goal_start) ?? 0,
-      goalCurrent: num(c.goal_current) ?? num(c.goal_start) ?? 0,
+      goalCurrent: (c.goal_unit === "kg" ? num(ultimoPeso(c.id)) : undefined) ?? num(c.goal_current) ?? num(c.goal_start) ?? 0,
       goalTarget: num(c.goal_target) ?? 0,
       notes: c.notes,
       lastWorkout: ultimoAllenamento(ultimo, oggi),
@@ -282,7 +297,8 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
   };
 
   const perCliente = new Map<string, Riga<"messages">[]>();
-  [...r.messages].sort((a, b) => a.created_at.localeCompare(b.created_at)).forEach((m) => perCliente.set(m.client_id, [...(perCliente.get(m.client_id) ?? []), m]));
+  const messaggi = r.messages.filter((m) => inElenco.has(m.client_id));
+  [...messaggi].sort((a, b) => a.created_at.localeCompare(b.created_at)).forEach((m) => perCliente.set(m.client_id, [...(perCliente.get(m.client_id) ?? []), m]));
   const threads = Object.fromEntries([...perCliente].map(([id, ms]) => [id, ms.map((m) => messaggioDa(m, oggi))]));
   const conversations = [...perCliente]
     .sort((a, b) => b[1].at(-1)!.created_at.localeCompare(a[1].at(-1)!.created_at))
@@ -290,7 +306,7 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
 
   const nome = (id: string | null) => clienti.find((c) => c.id === id)?.name ?? "Cliente";
   const dolori = r.alerts.filter((a) => a.kind === "pain" && !a.read && a.client_id);
-  const ultimiDaiClienti = [...r.messages]
+  const ultimiDaiClienti = [...messaggi]
     .filter((m) => m.sender === "client")
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .filter((m, i, tutti) => tutti.findIndex((x) => x.client_id === m.client_id) === i);
@@ -361,6 +377,7 @@ export function fotografiaCliente(r: RigheCliente, ora: Date): Fotografia {
     ...base,
     clienteIo: r.io.id,
     registrato: !!r.io.consent_at,
+    allenatoOggi: r.logs.some((l) => l.client_id === r.io.id && l.done_on === romeDayKey(ora)),
     veri: {
       ...base.veri,
       cliente: { name: r.io.name.split(" ")[0], lessonsLeft: p && p.kind === "lessons" ? Math.max(0, (p.lessonsTotal ?? 0) - p.lessonsUsed) : 0 },

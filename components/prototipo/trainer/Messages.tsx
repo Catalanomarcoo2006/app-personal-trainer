@@ -13,6 +13,7 @@ import { MAX_MESSAGGIO } from "@/libs/dati/sportello";
 import { durataScrittura, TEMPI } from "@/libs/prototipo/leo-viaggio";
 import { stato, useStato, useFocusLeo } from "@/libs/prototipo/stato";
 import { ROUTES } from "./nav";
+import { eventiVeri } from "@/libs/vera/eventi";
 import { ClientAvatar } from "./shared";
 
 const quickReplies = ["Perfetto, ci vediamo venerdì!", "Ti sposto la seduta, ti confermo a breve", "Riposa oggi e fammi sapere domani", "Bravissimo, continua così 💪"];
@@ -50,7 +51,10 @@ export function MessagesView({ search }: { search: string }) {
   const threads = useStato((s) => s.threads);
   const [unread, setUnread] = useState(() => {
     const u = Object.fromEntries(conversations.map((c) => [c.clientId, c.unread])) as Record<string, number>;
-    if (target) u[target] = 0;
+    if (target) {
+      u[target] = 0;
+      eventiVeri.letti?.(target);
+    }
     return u;
   });
   const [filter, setFilter] = useState<"tutti" | "non-letti" | "segnalazioni">("tutti");
@@ -147,6 +151,7 @@ export function MessagesView({ search }: { search: string }) {
     playSound("tap");
     setActiveId(id);
     setUnread((u) => ({ ...u, [id]: 0 }));
+    eventiVeri.letti?.(id);
     setTyping(false);
   };
 
