@@ -520,6 +520,20 @@ export type DatiVeri = {
   urgent: typeof urgent;
 };
 
+// Demo con il marchio di un trainer vero (per mostrargli l'app "sua"): cambia solo chi è il trainer, i dati restano finti.
+export const MARCHI_DEMO = {
+  impervida: { name: "Ousseni Bountoulgou", initials: "OB", photo: "/prototipo/impervida-logo.png", color: "#ee3033" },
+};
+export type MarchioDemo = keyof typeof MARCHI_DEMO;
+
+export function usaMarchioDemo(m: MarchioDemo) {
+  profilo = MARCHI_DEMO[m];
+  // Nei testi della demo il trainer si chiama Marco (i clienti gli scrivono "Ciao Marco!", Leo "ti scriverà Marco")
+  const nome = profilo.name.split(" ")[0];
+  for (const k of Object.keys(assistantAnswers)) assistantAnswers[k] = assistantAnswers[k].replaceAll("Marco", nome);
+  for (const c of conversations) for (const msg of c.messages) msg.text = msg.text.replaceAll("Marco", nome);
+}
+
 export function usaDatiVeri(v: DatiVeri) {
   profilo = v.trainer;
   if (v.cliente) {

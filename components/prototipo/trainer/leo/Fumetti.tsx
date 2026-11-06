@@ -27,6 +27,12 @@ export let tips: Speech[] = [
 // Le cose che richiedono il trainer: fanno illuminare il tasto di Leo finché non apre la chat.
 export let novita: Speech[] = [lucaTip, paymentsTip];
 
+// Demo col marchio di un altro trainer: la prima vignetta saluta col suo nome.
+export function fumettiMarchio() {
+  firstName = trainer.name.split(" ")[0];
+  tips[0] = { ...tips[0], text: tips[0].text.replace(/^Ciao [^!]+!/, `Ciao ${firstName}!`) };
+}
+
 // Versione vera: le vignette della demo parlano di clienti inventati, quindi Leo tace e saluta col nome giusto.
 export function fumettiVeri() {
   firstName = trainer.name.split(" ")[0];

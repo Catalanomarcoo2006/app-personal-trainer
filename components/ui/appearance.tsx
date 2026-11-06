@@ -1,11 +1,16 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, Fragment, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { KEY_ACCENT, KEY_THEME } from "@/libs/ui/appearance-boot";
 import { conOnda } from "@/libs/ui/macchia";
 import { isSoundEnabled, setSoundEnabled } from "@/libs/ui/sound";
 import { registraAspetto } from "@/libs/dati/aspetto";
+import { MARCHI_DEMO, MarchioDemo, usaMarchioDemo } from "@/libs/prototipo/dati-finti";
+
+import { fumettiMarchio } from "@/components/prototipo/trainer/leo/Fumetti";
+
+const KEY_MARCHIO = "marchio-demo";
 
 export type Theme = "light" | "dark";
 
@@ -49,12 +54,32 @@ export function impostaColoreVero(colore: string, salva: (c: string) => void) {
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
   const [accent, setAccentState] = useState(ACCENTS[0]);
+  const [marchioPronto, setMarchioPronto] = useState(false); // cambia chiave ai figli: rileggono nome e logo del marchio demo
 
   useEffect(() => {
     setThemeState(document.documentElement.classList.contains("dark") ? "dark" : "light");
     if (coloreVero) {
       setAccentState(coloreVero.colore);
       document.documentElement.style.setProperty("--trainer", coloreVero.colore);
+      return;
+    }
+    // Demo col marchio di un trainer vero (?marchio=impervida): vale per la visita (sessionStorage), non cambia la demo normale
+    const chiesto = new URLSearchParams(window.location.search).get("marchio");
+    if (chiesto && chiesto in MARCHI_DEMO) {
+      try {
+        window.sessionStorage.setItem(KEY_MARCHIO, chiesto);
+      } catch {}
+    }
+    let marchio: string | null = null;
+    try {
+      marchio = window.sessionStorage.getItem(KEY_MARCHIO);
+    } catch {}
+    if (marchio && marchio in MARCHI_DEMO) {
+      usaMarchioDemo(marchio as MarchioDemo);
+      fumettiMarchio();
+      setAccentState(MARCHI_DEMO[marchio as MarchioDemo].color);
+      document.documentElement.style.setProperty("--trainer", MARCHI_DEMO[marchio as MarchioDemo].color);
+      setMarchioPronto(true);
       return;
     }
     const saved = read(KEY_ACCENT);
@@ -96,7 +121,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     return () => registraAspetto(null);
   }, []);
 
-  return <AppearanceContext.Provider value={{ theme, setTheme, accent, setAccent }}>{children}</AppearanceContext.Provider>;
+  return (
+    <AppearanceContext.Provider value={{ theme, setTheme, accent, setAccent }}>
+      <Fragment key={marchioPronto ? "marchio" : "base"}>{children}</Fragment>
+    </AppearanceContext.Provider>
+  );
 }
 
 export function useAppearance(): Appearance {
