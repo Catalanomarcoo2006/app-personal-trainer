@@ -68,12 +68,16 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     if (chiesto && chiesto in MARCHI_DEMO) {
       try {
         window.sessionStorage.setItem(KEY_MARCHIO, chiesto);
-      } catch {}
+      } catch {
+        // navigazione privata: vale solo ?marchio= di questa visita
+      }
     }
     let marchio: string | null = null;
     try {
       marchio = window.sessionStorage.getItem(KEY_MARCHIO);
-    } catch {}
+    } catch {
+        // navigazione privata: vale solo ?marchio= di questa visita
+      }
     if (marchio && marchio in MARCHI_DEMO) {
       usaMarchioDemo(marchio as MarchioDemo);
       fumettiMarchio();
