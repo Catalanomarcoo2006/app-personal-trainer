@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fotografiaCliente, fotografiaTrainer, incassiDa, istanteDa, sedutaDa, type RigheTrainer } from "@/libs/vera/mappa";
 import { differenze } from "@/libs/vera/salva";
 import type { StatoApp } from "@/libs/prototipo/stato";
@@ -17,7 +17,7 @@ const seduta = (id: string, starts_at: string, status: "scheduled" | "done" | "c
 });
 
 const righe: RigheTrainer = {
-  trainer: { id: T, name: "Giulia Verdi", slug: "giulia-verdi", color: "#3366FF", logo_path: null, notifications: { riepilogo: true } },
+  trainer: { id: T, name: "Giulia Verdi", slug: "giulia-verdi", color: "#3366FF", logo_path: null, photo_path: null, notifications: { riepilogo: true } },
   clients: [cliente],
   packages: [{ id: "pk", client_id: C, kind: "lessons", label: "", lessons_total: 10, starts_on: "2026-10-01", ends_on: null, price_cents: 50000, created_at: "2026-10-01T10:00:00Z" }],
   payments: [
@@ -115,6 +115,20 @@ describe("dal database alle pagine", () => {
     const { trainer: _t, clients: _c, alerts: _a, questions: _q, ...resto } = righe;
     const f = fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io: { ...cliente, trainer_id: T, consent_at: null } }, ORA);
     expect(f.trainerDelCliente).toBe(T);
+  });
+
+  it("foto e logo del trainer: indirizzi pubblici su Storage, anche nell'app del cliente", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abc.supabase.co");
+    const con = { ...righe, trainer: { ...righe.trainer, photo_path: `${T}/foto-1.jpg`, logo_path: `${T}/logo-1.png` } };
+    const f = fotografiaTrainer(con, ORA);
+    expect(f.veri.trainer.photo).toBe(`https://abc.supabase.co/storage/v1/object/public/marchi/${T}/foto-1.jpg`);
+    expect(f.logo).toBe(`https://abc.supabase.co/storage/v1/object/public/marchi/${T}/logo-1.png`);
+    expect(fotografiaTrainer(righe, ORA).veri.trainer.photo).toBe("/brand/persona.svg");
+    const { trainer: _t, clients: _c, alerts: _a, questions: _q, ...resto } = righe;
+    const c = fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF", photo_path: `${T}/foto-1.jpg`, logo_path: null }, io: { ...cliente, trainer_id: T, consent_at: null } }, ORA);
+    expect(c.veri.trainer.photo).toContain("/marchi/");
+    expect(c.logo).toBeUndefined();
+    vi.unstubAllEnvs();
   });
 
   it("incassi degli ultimi 6 mesi", () => {

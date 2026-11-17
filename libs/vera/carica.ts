@@ -24,7 +24,7 @@ async function schede(db: Db) {
 
 export async function caricaTrainer(db: Db, trainerId: string, ora = new Date()): Promise<Fotografia> {
   const [t, clients, packages, payments, measurements, sessions, messages, logs, alerts, questions, documents, s] = await Promise.all([
-    db.from("trainers").select("id, name, slug, color, logo_path, notifications").eq("id", trainerId).single(),
+    db.from("trainers").select("*").eq("id", trainerId).single(),
     db.from("clients").select("id, name, email, phone, gender, tone, goal_label, goal_unit, goal_start, goal_current, goal_target, goal_proposed_start, goal_proposed_target, weigh_frequency, notes, created_at").eq("status", "active").order("created_at"),
     db.from("packages").select("*"),
     db.from("payments").select("*"),
@@ -73,7 +73,7 @@ export async function caricaCliente(db: Db, slug: string, ora = new Date()): Pro
   if (!cliente || !m) return null;
   return fotografiaCliente(
     {
-      trainer: { name: m.name, color: m.color },
+      trainer: { name: m.name, color: m.color, photo_path: m.photo_path, logo_path: m.logo_path },
       io: cliente,
       packages: righe(packages, "pacchetti"),
       payments: righe(payments, "pagamenti"),

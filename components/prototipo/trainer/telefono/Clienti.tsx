@@ -8,7 +8,8 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { eventiVeri } from "@/libs/vera/eventi";
 import { apriModulo } from "@/components/vera/Moduli";
 import { motion } from "motion/react";
-import { CalendarPlus, FileText, Mail, MessageCircle, Phone, Search, X } from "lucide-react";
+import { CalendarPlus, FileText, Mail, MessageCircle, Phone, Ruler, Search, StickyNote, X } from "lucide-react";
+import { inDemo } from "@/libs/orologio";
 import { playSound } from "@/libs/ui/sound";
 import { progressOf } from "@/libs/prototipo/dati-finti";
 import { useStato } from "@/libs/prototipo/stato";
@@ -292,7 +293,18 @@ export function ProfiloTelefono({ c, onNuovaSeduta }: { c: ClienteVista; onNuova
         <>
           <Titoletto>Note</Titoletto>
           <Riquadro className="px-[16px] py-[13px]">
-            <p className="text-[14px] leading-snug">{c.notes}</p>
+            <p className="text-[14px] leading-snug whitespace-pre-line">{c.notes}</p>
+          </Riquadro>
+        </>
+      )}
+
+      {/* versione vera: quello che nella demo si chiede a Leo, con le finestre (components/vera/Moduli) */}
+      {!inDemo() && (
+        <>
+          <Titoletto>Aggiungi</Titoletto>
+          <Riquadro>
+            <Riga sinistra={<Ruler size={17} className="shrink-0 text-ink/60" />} titolo="Nuove misure" sotto="Peso e circonferenze" onClick={() => (playSound("open"), apriModulo({ tipo: "misure", clientId: c.id }))} />
+            <Riga sinistra={<StickyNote size={17} className="shrink-0 text-ink/60" />} titolo="Una nota" sotto="La vedi solo tu" onClick={() => (playSound("open"), apriModulo({ tipo: "nota", clientId: c.id }))} />
           </Riquadro>
         </>
       )}

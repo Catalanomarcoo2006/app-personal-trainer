@@ -7,7 +7,8 @@ import { invitaClienteAction } from "@/app/dashboard/actions";
 import { playSound } from "@/libs/ui/sound";
 import { apriModulo } from "./Moduli";
 
-// Scheda del cliente, versione vera: il trainer lo invita nell'app (o gli rimanda il link d'accesso).
+// Scheda del cliente, versione vera: il trainer lo invita nell'app (o gli rimanda il link d'accesso) e apre le
+// finestre che nella demo fa Leo (pacchetto, pagamento, misure, nota).
 // Senza Resend l'email non parte: il link compare qui, da copiare e mandare su WhatsApp.
 export function InvitaCliente({ clientId }: { clientId: string }) {
   const [inCorso, avvia] = useTransition();
@@ -44,6 +45,12 @@ export function InvitaCliente({ clientId }: { clientId: string }) {
         </button>
         <button type="button" onClick={() => (playSound("tap"), apriModulo({ tipo: "pagamento", clientId }))} className="flex h-[30px] items-center rounded-full bg-soft px-[12px] text-[11.5px] font-semibold">
           Pagamento
+        </button>
+        <button type="button" onClick={() => (playSound("tap"), apriModulo({ tipo: "misure", clientId }))} className="flex h-[30px] items-center rounded-full bg-soft px-[12px] text-[11.5px] font-semibold">
+          Misure
+        </button>
+        <button type="button" onClick={() => (playSound("tap"), apriModulo({ tipo: "nota", clientId }))} className="flex h-[30px] items-center rounded-full bg-soft px-[12px] text-[11.5px] font-semibold">
+          Nota
         </button>
       </div>
       {link && (

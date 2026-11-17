@@ -31,6 +31,12 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'logos-world.net',
       },
+      // foto e logo dei trainer (Supabase Storage, bucket pubblico "marchi")
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/marchi/**',
+      },
     ],
   },
   webpack: (config, { webpack, isServer }) => {

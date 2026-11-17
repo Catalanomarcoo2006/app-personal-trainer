@@ -11,6 +11,7 @@ import type { Documento } from "@/libs/prototipo/documenti";
 import { needsAttention } from "@/libs/domain/attention";
 import { daysBetween, romeDayKey } from "@/libs/domain/time";
 import { MESI } from "@/libs/dati/iniziali";
+import { indirizzoMarchio } from "./marchio";
 
 type RigheDb = {
   trainers: Tables<"trainers">;
@@ -32,7 +33,7 @@ type Riga<K extends keyof RigheDb> = RigheDb[K];
 
 // Tutto quello che il trainer (o il cliente) può leggere, così come arriva dal database.
 export type RigheTrainer = {
-  trainer: Pick<Riga<"trainers">, "id" | "name" | "slug" | "color" | "logo_path" | "notifications">;
+  trainer: Pick<Riga<"trainers">, "id" | "name" | "slug" | "color" | "logo_path" | "photo_path" | "notifications">;
   clients: Omit<Riga<"clients">, "user_id" | "trainer_id" | "status" | "consent_at">[];
   packages: Riga<"packages">[];
   payments: Riga<"payments">[];
@@ -55,6 +56,7 @@ export type Fotografia = {
   registrato?: boolean; // nell'app del cliente: ha già dato il consenso (registrazione fatta)
   allenatoOggi?: boolean; // nell'app del cliente: l'allenamento di oggi è già segnato come fatto
   trainerDelCliente?: string; // nell'app del cliente: il suo trainer (prima cartella dei documenti su Storage)
+  logo?: string; // indirizzo pubblico del logo del trainer (bucket "marchi"), se l'ha caricato
 };
 
 // ——— Date e ore nel fuso italiano ———
@@ -215,7 +217,7 @@ export function documentoDa(d: Riga<"documents">): Documento {
   };
 }
 
-function messaggioDa(m: Riga<"messages">, oggi: string): ChatMessage {
+export function messaggioDa(m: Riga<"messages">, oggi: string): ChatMessage {
   return { from: m.sender === "trainer" ? "trainer" : "client", text: m.body, time: quandoMessaggio(m.created_at, oggi) };
 }
 
@@ -347,6 +349,7 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
     .map(({ ts, ...e }) => ({ ...e, when: quantoFa(ts, ora) }));
 
   return {
+    logo: indirizzoMarchio(r.trainer.logo_path),
     stato: {
       dati,
       sedute: sedute.map(sedutaDa),
@@ -358,7 +361,7 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
       documenti: r.documents.filter((d) => inElenco.has(d.client_id)).map(documentoDa),
     },
     veri: {
-      trainer: { name: r.trainer.name, initials: iniziali(r.trainer.name), photo: FOTO_VUOTA, color: r.trainer.color },
+      trainer: { name: r.trainer.name, initials: iniziali(r.trainer.name), photo: indirizzoMarchio(r.trainer.photo_path) ?? FOTO_VUOTA, color: r.trainer.color },
       pathCards: clienti.slice(0, 3).map((c) => c.id),
       revenue: incassiDa(r.payments, oggi),
       alerts,
@@ -369,13 +372,13 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
   };
 }
 
-// La foto di chi non ne ha ancora caricata una (le foto arriveranno con lo Storage).
+// La foto di chi non ne ha ancora caricata una.
 export const FOTO_VUOTA = "/brand/persona.svg";
 
 // ——— Il cliente ———
 
 export type RigheCliente = Omit<RigheTrainer, "trainer" | "clients" | "alerts" | "questions"> & {
-  trainer: { name: string; color: string };
+  trainer: { name: string; color: string; photo_path?: string | null; logo_path?: string | null };
   io: Omit<Riga<"clients">, "user_id" | "status" | "notes" | "created_at"> & { created_at?: string };
 };
 
@@ -383,7 +386,7 @@ export function fotografiaCliente(r: RigheCliente, ora: Date): Fotografia {
   const base = fotografiaTrainer(
     {
       ...r,
-      trainer: { id: r.io.trainer_id, name: r.trainer.name, slug: "", color: r.trainer.color, logo_path: null, notifications: {} },
+      trainer: { id: r.io.trainer_id, name: r.trainer.name, slug: "", color: r.trainer.color, logo_path: r.trainer.logo_path ?? null, photo_path: r.trainer.photo_path ?? null, notifications: {} },
       clients: [{ ...r.io, notes: "", created_at: r.io.created_at ?? ora.toISOString() }],
       alerts: [],
       questions: [],

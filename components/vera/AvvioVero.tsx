@@ -11,8 +11,14 @@ import { usaDatiVeri } from "@/libs/prototipo/dati-finti";
 import { ascoltaStato, stato } from "@/libs/prototipo/stato";
 import { createClient } from "@/libs/supabase/client";
 import { avviaSalvataggio, type Ruolo } from "@/libs/vera/salva";
-import { FOTO_VUOTA, type Fotografia } from "@/libs/vera/mappa";
+import { FOTO_VUOTA, messaggioDa, type Fotografia } from "@/libs/vera/mappa";
+import { BUCKET_MARCHI, indirizzoMarchio, percorsoMarchio } from "@/libs/vera/marchio";
+import { impostaLogo } from "@/libs/vera/logo";
+import { oggi } from "@/libs/orologio";
 import { eventiVeri } from "@/libs/vera/eventi";
+import { messaggioArrivato } from "@/libs/vera/dal-vivo";
+import { playSound } from "@/libs/ui/sound";
+import type { Tables } from "@/types/db";
 import { impostaSpunteVere } from "@/components/prototipo/cliente/spunte";
 import { impostaBase } from "@/components/prototipo/trainer/nav";
 import { fumettiVeri } from "@/components/prototipo/trainer/leo/Fumetti";
@@ -39,6 +45,7 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
         .then(({ error }) => error && toast.error("Il colore non è stato salvato"));
     });
     fumettiVeri();
+    impostaLogo(foto.logo ?? null);
     // gli errori qui non fermano nessuno: si vedono nella console e la prossima volta si riprova
     const segnala = (cosa: string) => ({ error }: { error: { message: string } | null }) => {
       if (error) console.error(`${cosa} non salvato`, error.message);
@@ -49,6 +56,40 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
         void db.from("messages").update({ read_at: new Date().toISOString() }).eq("client_id", clientId).eq("sender", "client").is("read_at", null).then(segnala("Messaggi letti"));
       eventiVeri.doloriVisti = (clientId) =>
         void db.from("alerts").update({ read: true }).eq("client_id", clientId).eq("kind", "pain").eq("read", false).then(segnala("Segnalazione vista"));
+
+      // foto e logo su Storage (bucket pubblico "marchi", migrazione 7): prima il file nuovo, poi la riga, poi via il vecchio
+      const marchi = db.storage.from(BUCKET_MARCHI);
+      const { trainerId } = ruolo;
+      const percorsoDi = async (tipo: "foto" | "logo") => {
+        const r = await db.from("trainers").select("photo_path, logo_path").eq("id", trainerId).single();
+        return (tipo === "foto" ? r.data?.photo_path : r.data?.logo_path) ?? null;
+      };
+      const scriviRiga = (tipo: "foto" | "logo", percorso: string | null) =>
+        db.from("trainers").update(tipo === "foto" ? { photo_path: percorso } : { logo_path: percorso }).eq("id", trainerId);
+      eventiVeri.cambiaMarchio = async (tipo, file) => {
+        const prima = await percorsoDi(tipo);
+        const percorso = percorsoMarchio(trainerId, tipo);
+        const su = await marchi.upload(percorso, file, { contentType: tipo === "foto" ? "image/jpeg" : "image/png", cacheControl: "31536000" });
+        if (su.error) {
+          console.error("Immagine non caricata", su.error.message);
+          return null;
+        }
+        const riga = await scriviRiga(tipo, percorso);
+        if (riga.error) {
+          console.error("Immagine non salvata", riga.error.message);
+          await marchi.remove([percorso]);
+          return null;
+        }
+        if (prima) void marchi.remove([prima]);
+        return indirizzoMarchio(percorso) ?? null;
+      };
+      eventiVeri.togliMarchio = async (tipo) => {
+        const prima = await percorsoDi(tipo);
+        const riga = await scriviRiga(tipo, null);
+        if (riga.error) return false;
+        if (prima) void marchi.remove([prima]);
+        return true;
+      };
     } else {
       // l'allenamento di oggi: una riga al giorno, con il giorno italiano del server (set_workout_done)
       impostaSpunteVere(!!foto.allenatoOggi, (fatto) => {
@@ -113,8 +154,24 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
       ascolta: ascoltaStato,
       errore: (m) => toast.error(m),
     });
+
+    // messaggi dal vivo: quello che scrive l'altro entra nella conversazione senza ricaricare (Realtime, migrazione 7)
+    const canale = db
+      .channel("messaggi")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, ({ new: riga }) => {
+        const m = riga as Tables<"messages">;
+        const clientId = messaggioArrivato(m, ruolo, stato.get().dati.clienti.map((c) => c.id));
+        if (!clientId) return;
+        stato.addMessage(clientId, messaggioDa(m, oggi()));
+        playSound("open");
+      })
+      .subscribe();
+
     setPronto(true);
-    return smetti;
+    return () => {
+      smetti();
+      void db.removeChannel(canale);
+    };
     // si avvia una volta sola: i dati arrivano dal server con la pagina
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -31,7 +31,8 @@ export function rimpicciolisciLogo(file: File, vettoriale: boolean): Promise<str
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
-      const { w, h } = misuraLogo(img.width, img.height);
+      // un SVG senza misure dichiarate può arrivare largo 0: si disegna a 512 px
+      const { w, h } = misuraLogo(img.width || 512, img.height || 512);
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;

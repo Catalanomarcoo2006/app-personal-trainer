@@ -14,9 +14,15 @@ import { Bagliore } from "./shared";
 import { useNotifiche } from "@/libs/dati/selettori";
 import { impostaNotifica } from "@/libs/dati/sportello";
 import type { Notifiche } from "@/libs/dati/tipi";
-import { aggiornaBenvenuto, azzeraBenvenuto, useBenvenuto } from "@/libs/prototipo/benvenuto";
+import { aggiornaBenvenuto, azzeraBenvenuto, controllaLogo, useBenvenuto } from "@/libs/prototipo/benvenuto";
 import { useSceltaVocali } from "@/libs/prototipo/leo-voce-scelta";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
+import { rimpicciolisciLogo } from "@/components/prototipo/benvenuto/passi/Marchio";
+import { inDemo } from "@/libs/orologio";
+import { eventiVeri } from "@/libs/vera/eventi";
+import { fileDa } from "@/libs/vera/marchio";
+import { impostaLogo, useLogo } from "@/libs/vera/logo";
+import { FOTO_VUOTA } from "@/libs/vera/mappa";
 
 // I suoni dell'app, da ascoltare: nascono tutti dallo stesso "pop" con tonalità diverse.
 const soundSamples: { kind: SoundKind; label: string; hint: string; icon: LucideIcon }[] = [
@@ -91,6 +97,9 @@ function Segmented<T extends string>({ options, value, onChange, id }: { options
 export function SettingsView() {
   const photo = useTrainerPhoto();
   const photoInput = useRef<HTMLInputElement>(null);
+  const logoInput = useRef<HTMLInputElement>(null);
+  const logo = useLogo();
+  const [inviando, setInviando] = useState<"foto" | "logo" | null>(null);
   const { theme, setTheme, accent, setAccent } = useAppearance();
   const [sound, setSound] = useState(true);
   const tone = useBenvenuto().tono;
@@ -124,9 +133,9 @@ export function SettingsView() {
                       }}
                       className="cursor-pointer text-[11px] font-semibold underline underline-offset-2"
                     >
-                      Cambia foto
+                      {inviando === "foto" ? "Carico…" : "Cambia foto"}
                     </button>
-                    {photo !== trainer.photo && (
+                    {inDemo() && photo !== trainer.photo && (
                       <button
                         type="button"
                         onClick={() => {
@@ -139,6 +148,24 @@ export function SettingsView() {
                         Ripristina
                       </button>
                     )}
+                    {!inDemo() && photo !== FOTO_VUOTA && (
+                      <button
+                        type="button"
+                        disabled={inviando !== null}
+                        onClick={async () => {
+                          playSound("tap");
+                          setInviando("foto");
+                          const ok = await eventiVeri.togliMarchio?.("foto");
+                          setInviando(null);
+                          if (!ok) return void toast.error("La foto non è stata tolta: riprova");
+                          stato.setTrainerPhoto(FOTO_VUOTA);
+                          toast("Foto tolta");
+                        }}
+                        className="cursor-pointer text-[11px] font-semibold text-muted underline underline-offset-2"
+                      >
+                        Togli
+                      </button>
+                    )}
                   </div>
                   <input
                     ref={photoInput}
@@ -149,13 +176,23 @@ export function SettingsView() {
                       const file = e.target.files?.[0];
                       e.target.value = "";
                       if (!file) return;
+                      let piccola: string;
                       try {
-                        stato.setTrainerPhoto(await shrinkPhoto(file));
-                        playSound("confirm");
-                        toast.success("Foto aggiornata");
+                        piccola = await shrinkPhoto(file);
                       } catch {
-                        toast.error("Non riesco a leggere questa immagine");
+                        return void toast.error("Non riesco a leggere questa immagine");
                       }
+                      if (!inDemo()) {
+                        // versione vera: su Storage, poi l'indirizzo nuovo
+                        setInviando("foto");
+                        const url = await eventiVeri.cambiaMarchio?.("foto", await fileDa(piccola));
+                        setInviando(null);
+                        if (!url) return void toast.error("La foto non è stata salvata: riprova");
+                        piccola = url;
+                      }
+                      stato.setTrainerPhoto(piccola);
+                      playSound("confirm");
+                      toast.success("Foto aggiornata");
                     }}
                   />
                 </div>
@@ -218,10 +255,10 @@ export function SettingsView() {
                   initial={{ scale: 0.8, rotate: -8 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 380, damping: 18 }}
-                  className="grid size-[64px] place-items-center rounded-[18px] text-[22px] font-extrabold text-white"
-                  style={{ background: "var(--trainer)" }}
+                  className="grid size-[64px] shrink-0 place-items-center overflow-hidden rounded-[18px] text-[22px] font-extrabold text-white"
+                  style={{ background: logo ? "#fff" : "var(--trainer)" }}
                 >
-                  {trainer.initials}
+                  {logo ? <img src={logo} alt="Il tuo logo" className="size-full object-contain p-[5px]" /> : trainer.initials}
                 </motion.span>
                 <div className="flex flex-wrap gap-[7px] pl-[4px]">
                   {ACCENTS.map((c) => (
@@ -244,6 +281,67 @@ export function SettingsView() {
                   ))}
                 </div>
               </div>
+              {!inDemo() && (
+                <div className="mt-[10px] flex items-center gap-[10px]">
+                  <button
+                    type="button"
+                    disabled={inviando !== null}
+                    onClick={() => {
+                      playSound("tap");
+                      logoInput.current?.click();
+                    }}
+                    className="cursor-pointer text-[11px] font-semibold underline underline-offset-2"
+                  >
+                    {inviando === "logo" ? "Carico…" : logo ? "Cambia logo" : "Carica il logo"}
+                  </button>
+                  {logo && (
+                    <button
+                      type="button"
+                      disabled={inviando !== null}
+                      onClick={async () => {
+                        playSound("tap");
+                        setInviando("logo");
+                        const ok = await eventiVeri.togliMarchio?.("logo");
+                        setInviando(null);
+                        if (!ok) return void toast.error("Il logo non è stato tolto: riprova");
+                        impostaLogo(null);
+                        toast("Logo tolto");
+                      }}
+                      className="cursor-pointer text-[11px] font-semibold text-muted underline underline-offset-2"
+                    >
+                      Togli
+                    </button>
+                  )}
+                  <span className="text-[10.5px] text-muted">PNG, JPG o SVG</span>
+                  <input
+                    ref={logoInput}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      const esito = controllaLogo(file);
+                      if ("motivo" in esito) return void toast.error(esito.motivo);
+                      let png: string;
+                      try {
+                        // anche l'SVG diventa PNG: Storage accetta solo immagini raster (niente script dentro i file)
+                        png = await rimpicciolisciLogo(file, false);
+                      } catch {
+                        return void toast.error("Non riesco a leggere questo logo: prova con un PNG");
+                      }
+                      setInviando("logo");
+                      const url = await eventiVeri.cambiaMarchio?.("logo", await fileDa(png));
+                      setInviando(null);
+                      if (!url) return void toast.error("Il logo non è stato salvato: riprova");
+                      impostaLogo(url);
+                      playSound("confirm");
+                      toast.success("Logo aggiornato: i tuoi clienti lo vedono entrando");
+                    }}
+                  />
+                </div>
+              )}
               <div className="mt-[14px] rounded-[16px] px-[14px] py-[12px] transition-colors duration-500" style={{ background: "color-mix(in srgb, var(--trainer) 12%, var(--color-card))" }}>
                 <p className="text-[10.5px] text-ink/55">Anteprima nell’app del cliente</p>
                 <p className="mt-[4px] text-[15px] font-bold">Obiettivo −8 kg</p>

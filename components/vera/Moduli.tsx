@@ -1,6 +1,6 @@
 "use client";
 
-// Le finestre per fare a mano quello che nella demo si chiede a Leo: nuovo cliente, pagamento, pacchetto.
+// Le finestre per fare a mano quello che nella demo si chiede a Leo: nuovo cliente, pagamento, pacchetto, misure, nota.
 // Nella versione vera servono sempre (Leo non chiama l'AI finché non c'è il fornitore in Europa); nella demo le
 // apre il tasto "Nuovo cliente" della lista Clienti. Passano dallo sportello, come Leo: stessi controlli, e nella
 // versione vera il salvataggio continuo le scrive nel database.
@@ -10,14 +10,20 @@ import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
 import { EASE_OUT } from "@/components/ui/motion";
-import { creaCliente, creaPacchetto, registraPagamento } from "@/libs/dati/sportello";
+import { aggiungiMisura, aggiungiNota, creaCliente, creaPacchetto, registraPagamento } from "@/libs/dati/sportello";
 import { useClienti } from "@/libs/dati/selettori";
 import { oggi } from "@/libs/orologio";
 import { playSound } from "@/libs/ui/sound";
 import { navigate, ROUTES } from "@/components/prototipo/trainer/nav";
 import { DocumentiCliente } from "./DocumentiCliente";
 
-type Modulo = { tipo: "cliente" } | { tipo: "pagamento"; clientId?: string } | { tipo: "pacchetto"; clientId?: string } | { tipo: "documenti"; clientId: string };
+type Modulo =
+  | { tipo: "cliente" }
+  | { tipo: "pagamento"; clientId?: string }
+  | { tipo: "pacchetto"; clientId?: string }
+  | { tipo: "documenti"; clientId: string }
+  | { tipo: "misure"; clientId: string }
+  | { tipo: "nota"; clientId: string };
 
 let aperto: Modulo | null = null;
 const ascolta = new Set<() => void>();
@@ -192,13 +198,95 @@ function NuovoPacchetto({ clientId, chiudi }: { clientId?: string; chiudi: () =>
   );
 }
 
-const TITOLI = { cliente: "Nuovo cliente", pagamento: "Registra un pagamento", pacchetto: "Nuovo pacchetto", documenti: "Documenti" };
+// "72,5" → 72.5; vuoto → undefined (la misura non c'è)
+const numero = (t: string) => (t.trim() ? Number(t.trim().replace(",", ".")) : undefined);
+
+const GIRI = [
+  ["waistCm", "Vita"],
+  ["hipsCm", "Fianchi"],
+  ["chestCm", "Petto"],
+  ["armCm", "Braccio"],
+  ["thighCm", "Coscia"],
+] as const;
+
+function NuoveMisure({ clientId, chiudi }: { clientId: string; chiudi: () => void }) {
+  const [data, setData] = useState(oggi());
+  const [peso, setPeso] = useState("");
+  const [giri, setGiri] = useState<Record<(typeof GIRI)[number][0], string>>({ waistCm: "", hipsCm: "", chestCm: "", armCm: "", thighCm: "" });
+  const invia = async (e: FormEvent): Promise<void> => {
+    e.preventDefault();
+    const valori = { weightKg: numero(peso), ...Object.fromEntries(GIRI.map(([k]) => [k, numero(giri[k])])) };
+    if (Object.values(valori).some((v) => v !== undefined && !Number.isFinite(v))) return void toast.error("Scrivi solo numeri, per esempio 72,5");
+    if (Object.values(valori).every((v) => v === undefined)) return void toast.error("Scrivi almeno una misura");
+    const pulite = Object.fromEntries(Object.entries(valori).filter(([, v]) => v !== undefined));
+    const r = await aggiungiMisura({ clientId, takenOn: data, ...pulite });
+    if ("motivo" in r) return void toast.error(r.motivo);
+    playSound("confirm");
+    toast.success("Misure salvate");
+    chiudi();
+  };
+  return (
+    <form onSubmit={invia} className="space-y-[12px]">
+      <div className="grid grid-cols-2 gap-[10px]">
+        <Riga etichetta="Giorno">
+          <input type="date" required max={oggi()} value={data} onChange={(e) => setData(e.target.value)} className={campo} />
+        </Riga>
+        <Riga etichetta="Peso (kg)">
+          <input autoFocus inputMode="decimal" value={peso} onChange={(e) => setPeso(e.target.value)} className={campo} placeholder="72,5" />
+        </Riga>
+      </div>
+      <div className="grid grid-cols-3 gap-[10px]">
+        {GIRI.map(([k, l]) => (
+          <Riga key={k} etichetta={`${l} (cm)`}>
+            <input inputMode="decimal" value={giri[k]} onChange={(e) => setGiri((g) => ({ ...g, [k]: e.target.value }))} className={campo} />
+          </Riga>
+        ))}
+      </div>
+      <button type="submit" className="btn-trainer mt-[4px] h-[40px] w-full cursor-pointer rounded-full text-[13px] font-bold">
+        Salva le misure
+      </button>
+    </form>
+  );
+}
+
+function NuovaNota({ clientId, chiudi }: { clientId: string; chiudi: () => void }) {
+  const [testo, setTesto] = useState("");
+  const invia = async (e: FormEvent): Promise<void> => {
+    e.preventDefault();
+    const r = await aggiungiNota(clientId, testo);
+    if ("motivo" in r) return void toast.error(r.motivo);
+    playSound("confirm");
+    toast.success("Nota aggiunta");
+    chiudi();
+  };
+  return (
+    <form onSubmit={invia} className="space-y-[12px]">
+      <Riga etichetta="La vede solo tu, con la data di oggi">
+        <textarea
+          autoFocus
+          required
+          rows={4}
+          value={testo}
+          onChange={(e) => setTesto(e.target.value)}
+          className={`${campo} h-auto resize-none py-[10px] leading-snug`}
+          placeholder="Ginocchio destro: niente affondi per due settimane"
+        />
+      </Riga>
+      <button type="submit" className="btn-trainer mt-[4px] h-[40px] w-full cursor-pointer rounded-full text-[13px] font-bold">
+        Aggiungi la nota
+      </button>
+    </form>
+  );
+}
+
+const TITOLI = { cliente: "Nuovo cliente", pagamento: "Registra un pagamento", pacchetto: "Nuovo pacchetto", documenti: "Documenti", misure: "Nuove misure", nota: "Nuova nota" };
 
 // Montata una volta nella cornice dell'area trainer (computer e telefono).
 export function Moduli() {
   const m = useModulo();
   const clienti = useClienti();
-  const delCliente = m?.tipo === "documenti" ? clienti.find((c) => c.id === m.clientId) : undefined;
+  const delCliente = m && "clientId" in m && m.clientId ? clienti.find((c) => c.id === m.clientId) : undefined;
+  const nome = delCliente?.name.split(" ")[0];
   const chiudi = () => apriModulo(null);
   return (
     <AnimatePresence>
@@ -212,7 +300,9 @@ export function Moduli() {
             className="relative w-[400px] max-w-[calc(100vw-32px)] rounded-[24px] bg-card p-[20px] shadow-[0_30px_80px_rgba(0,0,0,0.25)]"
           >
             <div className="mb-[14px] flex items-center justify-between">
-              <p className="text-[16px] font-bold">{delCliente ? `Documenti di ${delCliente.name.split(" ")[0]}` : TITOLI[m.tipo]}</p>
+              <p className="text-[16px] font-bold">
+                {nome && m.tipo === "documenti" ? `Documenti di ${nome}` : nome && m.tipo === "misure" ? `Misure di ${nome}` : nome && m.tipo === "nota" ? `Nota su ${nome}` : TITOLI[m.tipo]}
+              </p>
               <button type="button" aria-label="Chiudi" onClick={chiudi} className="grid size-[28px] cursor-pointer place-items-center rounded-full bg-soft">
                 <X size={14} />
               </button>
@@ -220,7 +310,9 @@ export function Moduli() {
             {m.tipo === "cliente" && <NuovoCliente chiudi={chiudi} />}
             {m.tipo === "pagamento" && <NuovoPagamento clientId={m.clientId} chiudi={chiudi} />}
             {m.tipo === "pacchetto" && <NuovoPacchetto clientId={m.clientId} chiudi={chiudi} />}
-            {m.tipo === "documenti" && <DocumentiCliente clientId={m.clientId} nome={delCliente?.name.split(" ")[0] ?? "il cliente"} />}
+            {m.tipo === "documenti" && <DocumentiCliente clientId={m.clientId} nome={nome ?? "il cliente"} />}
+            {m.tipo === "misure" && <NuoveMisure clientId={m.clientId} chiudi={chiudi} />}
+            {m.tipo === "nota" && <NuovaNota clientId={m.clientId} chiudi={chiudi} />}
           </motion.div>
         </motion.div>
       )}

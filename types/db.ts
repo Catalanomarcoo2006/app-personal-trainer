@@ -355,14 +355,14 @@ isOneToOne: false
                   ]
                 },"trainers": {
                   Row: {
-                    "color": string,"created_at": string,"id": string,"license_expires_at": string,"logo_path": string | null,"name": string,"notifications": NonNullable<Json>,"slug": string,"sounds_enabled": boolean,"status": Database["public"]['Enums']["trainer_status"],"user_id": string
+                    "color": string,"created_at": string,"id": string,"license_expires_at": string,"logo_path": string | null,"name": string,"notifications": NonNullable<Json>,"photo_path": string | null,"slug": string,"sounds_enabled": boolean,"status": Database["public"]['Enums']["trainer_status"],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "color"?: string,"created_at"?: string,"id"?: string,"license_expires_at": string,"logo_path"?: string | null,"name": string,"notifications"?: NonNullable<Json>,"slug": string,"sounds_enabled"?: boolean,"status"?: Database["public"]['Enums']["trainer_status"],"user_id": string
+                    "color"?: string,"created_at"?: string,"id"?: string,"license_expires_at": string,"logo_path"?: string | null,"name": string,"notifications"?: NonNullable<Json>,"photo_path"?: string | null,"slug": string,"sounds_enabled"?: boolean,"status"?: Database["public"]['Enums']["trainer_status"],"user_id": string
                   }
                   Update: {
-                    "color"?: string,"created_at"?: string,"id"?: string,"license_expires_at"?: string,"logo_path"?: string | null,"name"?: string,"notifications"?: NonNullable<Json>,"slug"?: string,"sounds_enabled"?: boolean,"status"?: Database["public"]['Enums']["trainer_status"],"user_id"?: string
+                    "color"?: string,"created_at"?: string,"id"?: string,"license_expires_at"?: string,"logo_path"?: string | null,"name"?: string,"notifications"?: NonNullable<Json>,"photo_path"?: string | null,"slug"?: string,"sounds_enabled"?: boolean,"status"?: Database["public"]['Enums']["trainer_status"],"user_id"?: string
                   }
                   Relationships: [
                     
@@ -461,7 +461,7 @@ isOneToOne: false
                            },
 "trainer_branding":
 { Args: { "p_slug": string }; Returns: {
-              "active": boolean,"color": string,"logo_path": string,"name": string
+              "active": boolean,"color": string,"logo_path": string,"name": string,"photo_path": string
             }[]
                            }
           }

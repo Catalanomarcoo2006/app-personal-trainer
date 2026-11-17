@@ -4,6 +4,7 @@ import AuthCard from "@/components/auth/AuthCard";
 import { createClient } from "@/libs/supabase/server";
 import { getAccess } from "@/libs/auth/profile";
 import { validateSlug } from "@/libs/slug";
+import { indirizzoMarchio } from "@/libs/vera/marchio";
 import AccessoCliente from "./AccessoCliente";
 import { caricaCliente } from "@/libs/vera/carica";
 import { Cornice } from "@/components/prototipo/Cornice";
@@ -34,7 +35,12 @@ export default async function PaginaTrainer({ params }: Props) {
   const m = await marchio(slug);
   if (!m) notFound();
 
-  const logo = (
+  // il logo caricato dal trainer (bucket pubblico "marchi"), altrimenti l'iniziale nel suo colore
+  const logoUrl = indirizzoMarchio(m.logo_path);
+  const logo = logoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={logoUrl} alt={m.name} className="size-20 rounded-2xl bg-white object-contain p-2 shadow-sm" />
+  ) : (
     <span className="flex size-16 items-center justify-center rounded-full text-2xl font-bold text-white" style={{ background: m.color }}>
       {m.name.charAt(0).toUpperCase()}
     </span>

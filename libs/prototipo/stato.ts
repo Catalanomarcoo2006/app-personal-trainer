@@ -255,6 +255,8 @@ export const stato = {
   },
   setTrainerPhoto(url: string | null) {
     state = { ...state, trainerPhoto: url };
+    // nella versione vera la foto sta su Storage (eventiVeri.cambiaMarchio): il browser non la ricorda
+    if (!inDemo()) return emit();
     try {
       if (url) localStorage.setItem(PHOTO_KEY, url);
       else localStorage.removeItem(PHOTO_KEY);
@@ -266,7 +268,8 @@ export const stato = {
 };
 
 // ——— Foto del trainer ———
-// Scelta dalle Impostazioni, rimpicciolita nel browser e ricordata in questo browser (localStorage).
+// Scelta dalle Impostazioni, rimpicciolita nel browser e ricordata in questo browser (localStorage). Nella versione
+// vera arriva dal database (trainer.photo) e quella nuova si carica su Storage.
 
 const PHOTO_KEY = "pt-foto-trainer";
 let photoLoaded = false;
@@ -275,7 +278,7 @@ let photoLoaded = false;
 export function useTrainerPhoto(): string {
   const chosen = useStato((s) => s.trainerPhoto);
   useEffect(() => {
-    if (photoLoaded) return;
+    if (photoLoaded || !inDemo()) return;
     photoLoaded = true;
     try {
       const saved = localStorage.getItem(PHOTO_KEY);
