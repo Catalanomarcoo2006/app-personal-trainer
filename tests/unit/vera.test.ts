@@ -145,6 +145,11 @@ describe("dalle pagine al database", () => {
     return { dati: f.dati, sedute: f.sedute, threads: f.threads, plans: f.plans };
   };
 
+  it("un cliente senza scheda non ha un elenco vuoto di giorni (la pagina Schede parte da un giorno vuoto)", () => {
+    const senza: RigheTrainer = { ...righe, plans: [], days: [], exercises: [] };
+    expect(fotografiaTrainer(senza, ORA).stato.plans).toEqual({});
+  });
+
   it("video della libreria: dal database alle pagine, anche del cliente", () => {
     const con = { ...righe, videos: [{ exercise_key: "squat", url: "https://youtu.be/abc" }] };
     expect(fotografiaTrainer(con, ORA).stato.videos).toEqual({ squat: "https://youtu.be/abc" });

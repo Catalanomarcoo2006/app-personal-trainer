@@ -358,7 +358,9 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
       dati,
       sedute: sedute.map(sedutaDa),
       threads,
-      plans: Object.fromEntries(clienti.map((c) => [c.id, schedaDa(pianoAttivo(c.id)?.id, r.days, r.exercises)])),
+      // chi non ha una scheda (o ne ha una senza giorni) non compare: le pagine partono da un giorno vuoto.
+      // Con un elenco vuoto la pagina Schede andava in errore al ricaricamento (trovato il 17/11 provando online).
+      plans: Object.fromEntries(clienti.map((c) => [c.id, schedaDa(pianoAttivo(c.id)?.id, r.days, r.exercises)] as const).filter(([, giorni]) => giorni.length)),
       videos: Object.fromEntries((r.videos ?? []).map((v) => [v.exercise_key, v.url])),
       sent: [],
       replied: [],

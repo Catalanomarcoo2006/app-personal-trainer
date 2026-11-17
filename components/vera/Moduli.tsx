@@ -261,7 +261,7 @@ function NuovaNota({ clientId, chiudi }: { clientId: string; chiudi: () => void 
   };
   return (
     <form onSubmit={invia} className="space-y-[12px]">
-      <Riga etichetta="La vede solo tu, con la data di oggi">
+      <Riga etichetta="La vedi solo tu, con la data di oggi">
         <textarea
           autoFocus
           required

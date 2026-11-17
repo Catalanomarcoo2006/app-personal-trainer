@@ -190,7 +190,7 @@ export const stato = {
   },
   setPlan(clientId: string, fn: (days: Day[]) => Day[]) {
     // chi non ha ancora una scheda parte da un giorno vuoto (clienti nuovi della versione vera)
-    state = { ...state, plans: { ...state.plans, [clientId]: fn(state.plans[clientId] ?? [{ label: "Giorno A", focus: "", rows: [] }]) } };
+    state = { ...state, plans: { ...state.plans, [clientId]: fn(state.plans[clientId]?.length ? state.plans[clientId] : [{ label: "Giorno A", focus: "", rows: [] }]) } };
     emit();
   },
   setLibraryVideo(exId: string, url: string | null) {

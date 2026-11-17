@@ -274,7 +274,8 @@ export function PlansView({ search }: { search: string }) {
   const clientId = clients.some((c) => c.id === scelto) ? scelto : clients[0]?.id;
   const client = clients.find((c) => c.id === clientId);
   // chi non ha ancora una scheda parte da un giorno vuoto
-  const days = allPlans[clientId] ?? SCHEDA_VUOTA;
+  const salvati = allPlans[clientId];
+  const days = salvati?.length ? salvati : SCHEDA_VUOTA;
   const current = Math.min(dayIndex, days.length - 1);
   const day = days[current];
 
@@ -384,7 +385,7 @@ export function PlansView({ search }: { search: string }) {
                 <div className="min-w-0 leading-none">
                   <p className="truncate text-[12px] font-bold">{c.name}</p>
                   <p className={`mt-[4px] truncate text-[10.5px] ${active ? "opacity-60" : "text-muted"}`}>
-                    {n} {n === 1 ? "giorno" : "giorni"} · {allPlans[c.id][0]?.focus}
+                    {n} {n === 1 ? "giorno" : "giorni"} · {allPlans[c.id]?.[0]?.focus}
                   </p>
                 </div>
               </motion.button>
