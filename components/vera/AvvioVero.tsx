@@ -17,7 +17,8 @@ import { impostaLogo } from "@/libs/vera/logo";
 import { impostaAccount } from "@/libs/vera/account";
 import { oggi } from "@/libs/orologio";
 import { eventiVeri } from "@/libs/vera/eventi";
-import { messaggioArrivato } from "@/libs/vera/dal-vivo";
+import { avvisoArrivato, messaggioArrivato, sedutaArrivata } from "@/libs/vera/dal-vivo";
+import { aggiungiDolore } from "@/libs/prototipo/dati-finti";
 import { playSound } from "@/libs/ui/sound";
 import type { Tables } from "@/types/db";
 import { impostaSpunteVere } from "@/components/prototipo/cliente/spunte";
@@ -162,17 +163,35 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
       errore: (m) => toast.error(m),
     });
 
-    // messaggi dal vivo: quello che scrive l'altro entra nella conversazione senza ricaricare (Realtime, migrazione 7)
+    // dal vivo (Realtime): i messaggi dell'altro (migrazione 7); per il cliente le sedute che il trainer aggiunge,
+    // sposta o annulla; per il trainer i dolori e le richieste di spostamento (migrazione 10)
     const canale = db
-      .channel("messaggi")
+      .channel("dal-vivo")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, ({ new: riga }) => {
         const m = riga as Tables<"messages">;
         const clientId = messaggioArrivato(m, ruolo, stato.get().dati.clienti.map((c) => c.id));
         if (!clientId) return;
         stato.addMessage(clientId, messaggioDa(m, oggi()));
         playSound("open");
-      })
-      .subscribe();
+      });
+    if (ruolo.tipo === "cliente")
+      canale.on("postgres_changes", { event: "*", schema: "public", table: "sessions" }, ({ new: riga }) => {
+        if (!riga || !("id" in riga)) return;
+        const r = sedutaArrivata(stato.get().sedute, riga as Tables<"sessions">, ruolo.clientId);
+        if (!r) return;
+        if (r.tipo === "metti") stato.putSeduta(r.seduta);
+        else stato.removeSeduta(r.id);
+        playSound("open");
+      });
+    else
+      canale.on("postgres_changes", { event: "INSERT", schema: "public", table: "alerts" }, ({ new: riga }) => {
+        const r = avvisoArrivato(riga as Tables<"alerts">, stato.get().dati.clienti);
+        if (!r) return;
+        if (r.dolore) aggiungiDolore(r.dolore);
+        playSound("open");
+        toast(r.avviso, { icon: r.dolore ? "⚠️" : "📅", duration: 6000 });
+      });
+    canale.subscribe();
 
     setPronto(true);
     return () => {

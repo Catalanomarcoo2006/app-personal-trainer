@@ -2,7 +2,8 @@
 // La trasformazione vera è in vista.ts (pura, usata anche dal server). Con Supabase questi selettori
 // leggeranno dalle tabelle; chi li usa resta uguale.
 
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+import { ascoltaAvvisi, versioneDegliAvvisi } from "@/libs/prototipo/dati-finti";
 import { stato, useStato } from "@/libs/prototipo/stato";
 import { calcolaIncassi, vistaCliente, vistaClienti, type ClienteVista } from "./vista";
 import { urgentiDa, type Urgente } from "./testi";
@@ -47,5 +48,7 @@ export function useTrovaCliente(): (id: string) => ClienteVista | undefined {
 
 export function useUrgenti(): Urgente[] {
   const d = useDati();
-  return useMemo(() => urgentiDa(d), [d]);
+  // un dolore arrivato dal vivo (versione vera) non cambia i dati: si ascolta a parte
+  const v = useSyncExternalStore(ascoltaAvvisi, versioneDegliAvvisi, versioneDegliAvvisi);
+  return useMemo(() => urgentiDa(d), [d, v]);
 }

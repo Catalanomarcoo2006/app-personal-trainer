@@ -534,6 +534,24 @@ export function usaMarchioDemo(m: MarchioDemo) {
   for (const c of conversations) for (const msg of c.messages) msg.text = msg.text.replaceAll("Marco", nome);
 }
 
+// Un avviso arrivato dal vivo (versione vera, AvvioVero): un dolore va negli Urgenti e tra gli avvisi della home.
+// Gli Urgenti si ridisegnano da soli (useUrgenti ascolta questa versione).
+let versioneAvvisi = 0;
+const chiAvvisi = new Set<() => void>();
+export const ascoltaAvvisi = (f: () => void) => {
+  chiAvvisi.add(f);
+  return () => {
+    chiAvvisi.delete(f);
+  };
+};
+export const versioneDegliAvvisi = () => versioneAvvisi;
+export function aggiungiDolore(d: { clientId: string; title: string; detail: string; text: string }) {
+  urgent = [...urgent, { kind: "dolore", clientId: d.clientId, title: d.title, detail: d.detail }];
+  alerts = [{ clientId: d.clientId, text: d.text, urgent: true }, ...alerts];
+  versioneAvvisi++;
+  chiAvvisi.forEach((f) => f());
+}
+
 // Il trainer ha cambiato nome (Impostazioni, versione vera): iniziali comprese.
 export function rinominaTrainer(nome: string) {
   const iniziali = nome.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");

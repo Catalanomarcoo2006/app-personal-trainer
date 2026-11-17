@@ -52,6 +52,9 @@ dalla sua scheda ("Invita nell'app").
 - `supabase/migrations/20261117000009_video_esercizi.sql`: `exercise_videos` (trainer, id dell'esercizio della libreria, link):
   i video "in tutte le schede" scelti dal trainer; li legge anche l'app dei suoi clienti. Solo link (YouTube, Instagram,
   Drive), niente file su Storage. Provata su PGlite (9 controlli).
+- `supabase/migrations/20261117000010_dal_vivo_sedute_avvisi.sql`: `sessions` e `alerts` in Realtime. Il cliente vede subito
+  le sedute che il trainer aggiunge, sposta o annulla; il trainer vede subito dolori (anche negli Urgenti) e richieste
+  di spostamento. Le sedute dal vivo le ascolta solo il cliente: le cambia solo il trainer.
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -113,6 +116,5 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 ## Ancora da fare (fasi successive)
 
 - Resend attivo: servono il dominio, la chiave ed `EMAIL_FROM` (passo 8). Il codice c'è dal 17/11.
-- Aggiornamento dal vivo anche di sedute e avvisi (dal 17/11 sono dal vivo solo i messaggi).
 - Leo con dati veri: quando c'è il fornitore AI in UE (e il trascrittore per i vocali), si toglie il blocco
   `inDemo()` in `useChatLeo.ts`, `LeoCliente.tsx` e `leo-voce-browser.ts`.
