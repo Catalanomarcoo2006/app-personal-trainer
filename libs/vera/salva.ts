@@ -12,7 +12,7 @@ import { istanteDa } from "./mappa";
 
 type Db = SupabaseClient<Database>;
 export type Ruolo = { tipo: "trainer"; trainerId: string } | { tipo: "cliente"; clientId: string };
-type Salvato = Pick<StatoApp, "dati" | "sedute" | "threads" | "plans">;
+type Salvato = Pick<StatoApp, "dati" | "sedute" | "threads" | "plans"> & { videos?: StatoApp["videos"] };
 
 export type Operazione =
   | { t: "clients"; op: "insert" | "update"; id: string; v: Partial<TablesInsert<"clients">> }
@@ -27,6 +27,7 @@ export type Operazione =
   | { t: "messages"; op: "insert"; v: TablesInsert<"messages"> }
   | { t: "notifiche"; v: Database["public"]["Tables"]["trainers"]["Update"]["notifications"] }
   | { t: "scheda"; clientId: string; giorni: Day[] }
+  | { t: "video"; key: string; url: string | null }
   | { t: "registrazione"; v: Database["public"]["Functions"]["complete_registration"]["Args"] };
 
 const uguali = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -169,6 +170,13 @@ export function differenze(prima: Salvato, dopo: Salvato, ruolo: Ruolo): Operazi
     if (!uguali(prima.plans[clientId], giorni) && dopo.dati.clienti.some((x) => x.id === clientId)) ops.push({ t: "scheda", clientId, giorni });
   });
 
+  // video della libreria ("in tutte le schede"): collegati, cambiati, tolti
+  const vPrima = prima.videos ?? {};
+  const vDopo = dopo.videos ?? {};
+  for (const key of new Set([...Object.keys(vPrima), ...Object.keys(vDopo)])) {
+    if (vPrima[key] !== vDopo[key]) ops.push({ t: "video", key, url: vDopo[key] ?? null });
+  }
+
   c.tolti.forEach((x) => ops.push({ t: "clients", op: "delete", id: x.id }));
   return ops;
 }
@@ -189,6 +197,11 @@ export async function scrivi(db: Db, ops: Operazione[], ruolo: Ruolo): Promise<v
     if (o.t === "notifiche") {
       if (ruolo.tipo !== "trainer") continue;
       r = await db.from("trainers").update({ notifications: o.v }).eq("id", ruolo.trainerId);
+    } else if (o.t === "video") {
+      if (ruolo.tipo !== "trainer") continue;
+      r = o.url
+        ? await db.from("exercise_videos").upsert({ trainer_id: ruolo.trainerId, exercise_key: o.key, url: o.url, updated_at: new Date().toISOString() })
+        : await db.from("exercise_videos").delete().eq("trainer_id", ruolo.trainerId).eq("exercise_key", o.key);
     } else if (o.t === "scheda") {
       r = await db.rpc("save_plan", { p_client_id: o.clientId, p_days: righeScheda(o.giorni) });
     } else if (o.t === "registrazione") {

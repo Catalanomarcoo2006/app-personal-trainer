@@ -149,6 +149,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"exercise_videos": {
+                  Row: {
+                    "exercise_key": string,"trainer_id": string,"updated_at": string,"url": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "exercise_key": string,"trainer_id": string,"updated_at"?: string,"url": string
+                  }
+                  Update: {
+                    "exercise_key"?: string,"trainer_id"?: string,"updated_at"?: string,"url"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exercise_videos_trainer_id_fkey"
+      columns: ["trainer_id"]
+isOneToOne: false
+      referencedRelation: "trainers"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"habits": {
                   Row: {
                     "client_id": string,"day": string,"id": string,"steps": number | null,"water_ml": number | null

@@ -29,7 +29,7 @@ describe("pacchetti che finiscono", () => {
   it("a tempo: a 7 giorni dalla scadenza; conta solo l'ultimo pacchetto del cliente", () => {
     const tempo = pacchetto({ id: "p2", client_id: "c2", kind: "time", lessons_total: null, starts_on: "2026-10-24", ends_on: "2026-11-24" });
     const vecchio = pacchetto({ id: "p0", client_id: "c2", kind: "time", lessons_total: null, starts_on: "2026-09-01", ends_on: "2026-10-01" });
-    const r = { clients, packages: [vecchio, tempo], sessions: [], giaAvvisati: new Set<string>() };
+    const r = { clients, packages: [vecchio, tempo], sessions: [] as Tables<"sessions">[], giaAvvisati: new Set<string>() };
     expect(pacchettiDaAvvisare(r, ORA)).toEqual([{ packageId: "p2", clientId: "c2", testo: "Il pacchetto di Luca scade il 24 novembre 2026" }]);
     expect(pacchettiDaAvvisare({ ...r, packages: [vecchio, { ...tempo, ends_on: "2026-12-24" }] }, ORA)).toEqual([]);
     expect(pacchettiDaAvvisare({ ...r, packages: [{ ...tempo, ends_on: "2026-11-17" }] }, ORA)[0].testo).toBe("Il pacchetto di Luca scade oggi");

@@ -156,7 +156,7 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
       ruolo,
       leggi: () => {
         const s = stato.get();
-        return { dati: s.dati, sedute: s.sedute, threads: s.threads, plans: s.plans };
+        return { dati: s.dati, sedute: s.sedute, threads: s.threads, plans: s.plans, videos: s.videos };
       },
       ascolta: ascoltaStato,
       errore: (m) => toast.error(m),

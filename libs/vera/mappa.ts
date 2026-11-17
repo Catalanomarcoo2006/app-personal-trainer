@@ -29,6 +29,7 @@ type RigheDb = {
   alerts: Tables<"alerts">;
   ai_messages: Tables<"ai_messages">;
   documents: Tables<"documents">;
+  exercise_videos: Tables<"exercise_videos">;
 };
 type Riga<K extends keyof RigheDb> = RigheDb[K];
 
@@ -48,6 +49,7 @@ export type RigheTrainer = {
   alerts: Riga<"alerts">[];
   questions: Pick<Riga<"ai_messages">, "client_id" | "content" | "created_at">[];
   documents: Riga<"documents">[];
+  videos?: Pick<Riga<"exercise_videos">, "exercise_key" | "url">[]; // video della libreria scelti dal trainer (migrazione 9)
 };
 
 export type Fotografia = {
@@ -357,7 +359,7 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
       sedute: sedute.map(sedutaDa),
       threads,
       plans: Object.fromEntries(clienti.map((c) => [c.id, schedaDa(pianoAttivo(c.id)?.id, r.days, r.exercises)])),
-      videos: {},
+      videos: Object.fromEntries((r.videos ?? []).map((v) => [v.exercise_key, v.url])),
       sent: [],
       replied: [],
       documenti: r.documents.filter((d) => inElenco.has(d.client_id)).map(documentoDa),

@@ -23,7 +23,7 @@ async function schede(db: Db) {
 }
 
 export async function caricaTrainer(db: Db, trainerId: string, ora = new Date()): Promise<Fotografia> {
-  const [t, chi, clients, packages, payments, measurements, sessions, messages, logs, alerts, questions, documents, s] = await Promise.all([
+  const [t, chi, clients, packages, payments, measurements, sessions, messages, logs, alerts, questions, documents, s, video] = await Promise.all([
     db.from("trainers").select("*").eq("id", trainerId).single(),
     db.auth.getUser(),
     db.from("clients").select("id, name, email, phone, gender, tone, goal_label, goal_unit, goal_start, goal_current, goal_target, goal_proposed_start, goal_proposed_target, weigh_frequency, notes, created_at").eq("status", "active").order("created_at"),
@@ -37,6 +37,7 @@ export async function caricaTrainer(db: Db, trainerId: string, ora = new Date())
     db.from("ai_messages").select("client_id, content, created_at").eq("role", "user").order("created_at", { ascending: false }).limit(200),
     db.from("documents").select("*").order("created_at", { ascending: false }),
     schede(db),
+    db.from("exercise_videos").select("exercise_key, url"),
   ]);
   if (t.error) throw new Error(`Trainer non trovato: ${t.error.message}`);
   const r: RigheTrainer = {
@@ -51,13 +52,15 @@ export async function caricaTrainer(db: Db, trainerId: string, ora = new Date())
     alerts: righe(alerts, "avvisi"),
     questions: righe(questions, "domande all'assistente"),
     documents: righe(documents, "documenti"),
+    // senza la migrazione 9 la tabella non c'è: la pagina si apre lo stesso, senza video della libreria
+    videos: video.error ? [] : (video.data ?? []),
     ...s,
   };
   return { ...fotografiaTrainer(r, ora), account: { email: chi.data.user?.email ?? "", slug: t.data.slug, licenza: t.data.license_expires_at } };
 }
 
 export async function caricaCliente(db: Db, slug: string, ora = new Date()): Promise<Fotografia | null> {
-  const [io, marchio, packages, payments, measurements, sessions, messages, logs, documents, s] = await Promise.all([
+  const [io, marchio, packages, payments, measurements, sessions, messages, logs, documents, s, video] = await Promise.all([
     db.rpc("my_client"),
     db.rpc("trainer_branding", { p_slug: slug }),
     db.from("packages").select("*"),
@@ -68,6 +71,7 @@ export async function caricaCliente(db: Db, slug: string, ora = new Date()): Pro
     db.from("workout_logs").select("*"),
     db.from("documents").select("*").order("created_at", { ascending: false }),
     schede(db),
+    db.from("exercise_videos").select("exercise_key, url"),
   ]);
   const cliente = io.data?.[0];
   const m = marchio.data?.[0];
@@ -83,6 +87,7 @@ export async function caricaCliente(db: Db, slug: string, ora = new Date()): Pro
       messages: righe(messages, "messaggi"),
       logs: righe(logs, "allenamenti"),
       documents: righe(documents, "documenti"),
+      videos: video.error ? [] : (video.data ?? []),
       ...s,
     },
     ora,

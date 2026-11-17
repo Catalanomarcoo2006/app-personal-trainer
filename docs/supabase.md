@@ -49,6 +49,9 @@ dalla sua scheda ("Invita nell'app").
   dashboard si apre lo stesso, ma foto e logo non si salvano.
 - `supabase/migrations/20261117000008_avvisi.sql`: `alerts.package_id` (un solo avviso per pacchetto, indice unico) e
   `alerts.emailed_at` (vuoto = da mandare per email). Gli avvisi già esistenti si segnano come mandati. Provata su PGlite.
+- `supabase/migrations/20261117000009_video_esercizi.sql`: `exercise_videos` (trainer, id dell'esercizio della libreria, link):
+  i video "in tutte le schede" scelti dal trainer; li legge anche l'app dei suoi clienti. Solo link (YouTube, Instagram,
+  Drive), niente file su Storage. Provata su PGlite (9 controlli).
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -109,7 +112,6 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 
 ## Ancora da fare (fasi successive)
 
-- Video messi sugli esercizi della libreria (non si salvano ancora: servono un bucket e una colonna).
 - Resend attivo: servono il dominio, la chiave ed `EMAIL_FROM` (passo 8). Il codice c'è dal 17/11.
 - Aggiornamento dal vivo anche di sedute e avvisi (dal 17/11 sono dal vivo solo i messaggi).
 - Leo con dati veri: quando c'è il fornitore AI in UE (e il trascrittore per i vocali), si toglie il blocco

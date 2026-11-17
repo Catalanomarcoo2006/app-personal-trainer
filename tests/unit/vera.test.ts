@@ -145,6 +145,26 @@ describe("dalle pagine al database", () => {
     return { dati: f.dati, sedute: f.sedute, threads: f.threads, plans: f.plans };
   };
 
+  it("video della libreria: dal database alle pagine, anche del cliente", () => {
+    const con = { ...righe, videos: [{ exercise_key: "squat", url: "https://youtu.be/abc" }] };
+    expect(fotografiaTrainer(con, ORA).stato.videos).toEqual({ squat: "https://youtu.be/abc" });
+    expect(fotografiaTrainer(righe, ORA).stato.videos).toEqual({});
+    const { trainer: _t, clients: _c, alerts: _a, questions: _q, ...resto } = con;
+    const c = fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io: { ...cliente, trainer_id: T, consent_at: null } }, ORA);
+    expect(c.stato.videos).toEqual({ squat: "https://youtu.be/abc" });
+  });
+
+  it("video della libreria: collegato, cambiato, tolto; il cliente non li scrive", () => {
+    const prima = { ...base(), videos: { squat: "https://youtu.be/a", panca: "https://youtu.be/b" } };
+    const dopo = { ...prima, videos: { squat: "https://youtu.be/c", affondi: "https://youtu.be/d" } };
+    expect(differenze(prima, dopo, { tipo: "trainer", trainerId: T })).toEqual([
+      { t: "video", key: "squat", url: "https://youtu.be/c" },
+      { t: "video", key: "panca", url: null },
+      { t: "video", key: "affondi", url: "https://youtu.be/d" },
+    ]);
+    expect(differenze(prima, dopo, { tipo: "cliente", clientId: C }).filter((o) => o.t === "video")).toEqual([]);
+  });
+
   it("nessun cambiamento, nessuna scrittura", () => {
     expect(differenze(base(), base(), { tipo: "trainer", trainerId: T })).toEqual([]);
   });
