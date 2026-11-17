@@ -45,14 +45,14 @@ isOneToOne: false
                   ]
                 },"alerts": {
                   Row: {
-                    "client_id": string | null,"created_at": string,"id": string,"kind": Database["public"]['Enums']["alert_kind"],"read": boolean,"text": string,"trainer_id": string
+                    "client_id": string | null,"created_at": string,"emailed_at": string | null,"id": string,"kind": Database["public"]['Enums']["alert_kind"],"package_id": string | null,"read": boolean,"text": string,"trainer_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "client_id"?: string | null,"created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["alert_kind"],"read"?: boolean,"text": string,"trainer_id": string
+                    "client_id"?: string | null,"created_at"?: string,"emailed_at"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["alert_kind"],"package_id"?: string | null,"read"?: boolean,"text": string,"trainer_id": string
                   }
                   Update: {
-                    "client_id"?: string | null,"created_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["alert_kind"],"read"?: boolean,"text"?: string,"trainer_id"?: string
+                    "client_id"?: string | null,"created_at"?: string,"emailed_at"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["alert_kind"],"package_id"?: string | null,"read"?: boolean,"text"?: string,"trainer_id"?: string
                   }
                   Relationships: [
                     {

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import AuthCard from "@/components/auth/AuthCard";
 import { createClient } from "@/libs/supabase/client";
+import { passwordDimenticataAction } from "./actions";
 import { getAccess, homeOf } from "@/libs/auth/profile";
 
 // Accesso di trainer e admin: email e password, con "password dimenticata".
@@ -38,9 +39,12 @@ function Accesso() {
       return;
     }
     setAttesa(true);
-    await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/api/auth/callback?next=/nuova-password`,
-    });
+    // con Resend la manda l'app (in italiano); altrimenti l'email di Supabase
+    const r = await passwordDimenticataAction(email.trim()).catch(() => ({ supabase: true }));
+    if (r.supabase)
+      await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/api/auth/callback?next=/nuova-password`,
+      });
     setAttesa(false);
     // stessa risposta che l'email esista o no: non si rivela chi è registrato
     toast.success("Se l'email è registrata, ti abbiamo mandato un link per scegliere una nuova password");

@@ -1,7 +1,10 @@
-// Indirizzo del sito e email degli inviti, per le azioni sul server (admin e trainer).
+// Indirizzo del sito e invio delle email, per le azioni sul server (admin, trainer, pagine d'accesso).
+// Con RESEND_API_KEY le email partono da Resend (in italiano, modelli in modelli.ts); senza, chi ha chiesto
+// l'invito copia il link dalla pagina, e link d'accesso e password dimenticata restano quelli di Supabase.
 
 import { headers } from "next/headers";
 import config from "@/config";
+import { mittente, type Email } from "./modelli";
 
 export async function indirizzoSito(): Promise<string> {
   const h = await headers();
@@ -10,22 +13,25 @@ export async function indirizzoSito(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-const html = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+export const conResend = () => !!process.env.RESEND_API_KEY;
 
-// Email con il link d'accesso, con Resend se la chiave c'è; altrimenti false, e chi ha chiesto l'invito copia il
-// link dalla pagina e lo manda lui (WhatsApp, email).
-export async function mandaLink(o: { email: string; nome: string; link: string; oggetto: string; frase: string; tasto: string }): Promise<boolean> {
-  if (!process.env.RESEND_API_KEY) return false;
+// Manda un'email; false se Resend non c'è o non è andata (l'errore resta nei log del server).
+// nomeMittente: per le email ai clienti si legge il nome del trainer ("Marco Rossi <ciao@spotter.it>").
+export async function mandaEmail(a: string, email: Email, nomeMittente?: string): Promise<boolean> {
+  if (!conResend()) return false;
   try {
     const { sendEmail } = await import("@/libs/resend");
     await sendEmail({
-      to: o.email,
-      subject: o.oggetto,
-      text: `Ciao ${o.nome}, ${o.frase} ${o.link}`,
-      html: `<p>Ciao ${html(o.nome)},</p><p>${html(o.frase)}</p><p><a href="${html(o.link)}">${html(o.tasto)}</a></p>`,
+      from: mittente(process.env.EMAIL_FROM || config.resend.fromNoReply, nomeMittente),
+      to: a,
+      subject: email.oggetto,
+      text: email.testo,
+      html: email.html,
+      replyTo: config.resend.supportEmail,
     });
     return true;
-  } catch {
+  } catch (e) {
+    console.error("Email non partita", e instanceof Error ? e.message : e);
     return false;
   }
 }

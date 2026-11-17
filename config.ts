@@ -2,6 +2,8 @@ import { ConfigProps } from "./types/config";
 
 const config = {
   appName: "APP PERSONAL TRAINER", // nome di lavoro, da sostituire con il nome commerciale
+  // il nome che vedono trainer e clienti (email, icona): provvisorio, marchio e dominio da controllare
+  productName: "Spotter",
   // descrizione per i motori di ricerca (si può sostituire pagina per pagina)
   appDescription:
     "L'app del personal trainer: clienti, schede, calendario e pagamenti, con il marchio del trainer e un assistente virtuale.",

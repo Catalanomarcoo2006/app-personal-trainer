@@ -47,6 +47,8 @@ dalla sua scheda ("Invita nell'app").
   (la pagina `/<slug>` mostra il logo prima del login), `messages` nella pubblicazione di Realtime (messaggi dal vivo).
   Provata su PGlite (14 controlli). Il codice legge la riga del trainer con `select("*")`: se la migrazione manca, la
   dashboard si apre lo stesso, ma foto e logo non si salvano.
+- `supabase/migrations/20261117000008_avvisi.sql`: `alerts.package_id` (un solo avviso per pacchetto, indice unico) e
+  `alerts.emailed_at` (vuoto = da mandare per email). Gli avvisi già esistenti si segnano come mandati. Provata su PGlite.
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -91,7 +93,14 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
    select id, 'admin' from auth.users where email = 'LA-TUA-EMAIL';
    ```
    Da lì entri da `/signin` e arrivi su `/admin`.
-8. **Email**: finché non c'è Resend (`RESEND_API_KEY`), il pannello admin mostra il link d'invito da copiare e mandare al trainer.
+8. **Email con Resend** (dal 17/11 le manda l'app, in italiano, e funzionano anche aperte dall'app della posta):
+   crea l'account su resend.com, aggiungi e verifica il dominio del prodotto (record DNS), crea una chiave. Su Vercel:
+   `RESEND_API_KEY`, `EMAIL_FROM` (es. `Spotter <ciao@dominio.it>`) e `CRON_SECRET`, poi Redeploy. Da lì partono
+   dall'app: invito del trainer e del cliente, link d'accesso del cliente (`chiediLinkAction`), password dimenticata
+   (`passwordDimenticataAction`), avvisi e riepilogo del lunedì (`/api/cron/avvisi`, ogni mattina alle 7). Senza la
+   chiave tutto resta come prima (link da copiare, email di Supabase). Il mittente `onboarding@resend.dev` manda solo
+   all'email del proprietario dell'account Resend: per i trainer serve il dominio.
+   Prima, finché non c'è Resend (`RESEND_API_KEY`), il pannello admin mostra il link d'invito da copiare e mandare al trainer.
    Le email di Supabase (link dei clienti, password dimenticata) con il server di posta incluso hanno limiti bassi:
    prima dei clienti veri serve un SMTP (Resend) in Authentication → Emails → SMTP Settings.
 
@@ -101,8 +110,7 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 ## Ancora da fare (fasi successive)
 
 - Video messi sugli esercizi della libreria (non si salvano ancora: servono un bucket e una colonna).
-- Avvisi automatici dei pacchetti in scadenza (oggi si vedono nella pagina, non arriva un avviso).
-- Resend: email in italiano (link d'accesso del cliente, password dimenticata) con SMTP proprio. Servono chiave e dominio.
+- Resend attivo: servono il dominio, la chiave ed `EMAIL_FROM` (passo 8). Il codice c'è dal 17/11.
 - Aggiornamento dal vivo anche di sedute e avvisi (dal 17/11 sono dal vivo solo i messaggi).
 - Leo con dati veri: quando c'è il fornitore AI in UE (e il trascrittore per i vocali), si toglie il blocco
   `inDemo()` in `useChatLeo.ts`, `LeoCliente.tsx` e `leo-voce-browser.ts`.

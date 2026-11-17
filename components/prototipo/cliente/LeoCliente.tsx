@@ -6,6 +6,7 @@
 
 import { inDemo } from "@/libs/orologio";
 import { createClient } from "@/libs/supabase/client";
+import { avvisaDoloreAction } from "@/app/[slug]/[[...sezione]]/actions";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowUp, BellRing, Paperclip, X } from "lucide-react";
@@ -132,7 +133,11 @@ export function useChatCliente() {
     if (dolore && !inDemo())
       void createClient()
         .rpc("report_pain", { p_text: testo })
-        .then(({ error }) => error && console.error("Avviso di dolore non salvato", error.message));
+        .then(({ error }) => {
+          if (error) return console.error("Avviso di dolore non salvato", error.message);
+          // l'email al trainer parte subito (se l'ha accesa), non al controllo del mattino
+          void avvisaDoloreAction().catch((): void => undefined);
+        });
     if (dolore) {
       timer.current.push(
         window.setTimeout(() => {

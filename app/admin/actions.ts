@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/libs/supabase/server";
 import { createTrainer, ERRORI_TRAINER, newInviteLink, renewTrainer, setTrainerStatus } from "@/libs/admin/trainers";
 import config from "@/config";
-import { indirizzoSito, mandaLink } from "@/libs/email/inviti";
+import { indirizzoSito, mandaEmail } from "@/libs/email/inviti";
+import { invitoTrainer } from "@/libs/email/modelli";
 
 export type EsitoAzione = { ok: true; messaggio: string; link?: string } | { ok: false; messaggio: string } | null;
 
@@ -38,14 +39,7 @@ async function creaTrainer_(_: EsitoAzione, form: FormData): Promise<EsitoAzione
   const r = await createTrainer({ name, email, slug, siteUrl: await indirizzoSito() });
   if ("error" in r) return { ok: false, messaggio: ERRORI_TRAINER[r.error] };
   revalidatePath("/admin");
-  const inviata = await mandaLink({
-    email: email.trim(),
-    nome: name.trim(),
-    link: r.inviteLink,
-    oggetto: `Il tuo account su ${config.appName}`,
-    frase: "il tuo account è pronto. Apri il link per scegliere la password (vale 24 ore):",
-    tasto: "Scegli la password",
-  });
+  const inviata = await mandaEmail(email.trim(), invitoTrainer({ nome: name.trim().split(" ")[0], prodotto: config.productName, link: r.inviteLink }));
   return {
     ok: true,
     messaggio: inviata ? `Creato: invito mandato a ${email.trim()}` : "Creato. L'email non è partita (manca Resend): manda tu questo link al trainer",

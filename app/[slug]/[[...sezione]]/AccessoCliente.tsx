@@ -2,10 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/libs/supabase/client";
+import { chiediLinkAction } from "./actions";
 
-// Il cliente entra con il link via email (magic link): niente password da ricordare.
-// shouldCreateUser: false → solo i clienti aggiunti dal trainer ricevono il link.
-export default function AccessoCliente() {
+// Il cliente entra con il link via email (magic link): niente password da ricordare. Con Resend l'email la
+// mandiamo noi (chiediLinkAction); altrimenti quella di Supabase, con shouldCreateUser: false → solo i clienti
+// aggiunti dal trainer ricevono il link.
+export default function AccessoCliente({ slug }: { slug: string }) {
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [stato, setStato] = useState<"scrivi" | "attesa" | "inviato">("scrivi");
@@ -13,16 +15,18 @@ export default function AccessoCliente() {
   const invia = async (e: FormEvent) => {
     e.preventDefault();
     setStato("attesa");
-    await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/api/auth/callback` },
-    });
+    const r = await chiediLinkAction(slug, email.trim()).catch(() => ({ supabase: true }));
+    if (r.supabase)
+      await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+      });
     // stessa risposta che l'email sia di un cliente o no
     setStato("inviato");
   };
 
   if (stato === "inviato")
-    return <p className="text-center text-sm text-ink">Se sei un cliente, ti è arrivata un&apos;email con il link per entrare. Aprila da questo telefono.</p>;
+    return <p className="text-center text-sm text-ink">Se sei un cliente, ti è arrivata un&apos;email con il link per entrare. Aprila dal telefono.</p>;
 
   return (
     <form onSubmit={invia} className="space-y-3">

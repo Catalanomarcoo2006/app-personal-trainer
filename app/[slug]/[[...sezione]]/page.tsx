@@ -67,7 +67,7 @@ export default async function PaginaTrainer({ params }: Props) {
 
   return (
     <AuthCard title={m.name} subtitle="Scrivi la tua email: ti mandiamo il link per entrare." color={m.color} logo={logo}>
-      <AccessoCliente />
+      <AccessoCliente slug={slug} />
     </AuthCard>
   );
 }

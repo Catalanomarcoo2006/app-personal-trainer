@@ -8,12 +8,14 @@ if (!process.env.RESEND_API_KEY) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendEmail = async ({
+  from,
   to,
   subject,
   text,
   html,
   replyTo,
 }: {
+  from?: string;
   to: string | string[];
   subject: string;
   text: string;
@@ -21,7 +23,7 @@ export const sendEmail = async ({
   replyTo?: string | string[];
 }) => {
   const { data, error } = await resend.emails.send({
-    from: config.resend.fromAdmin,
+    from: from ?? config.resend.fromAdmin,
     to,
     subject,
     text,
