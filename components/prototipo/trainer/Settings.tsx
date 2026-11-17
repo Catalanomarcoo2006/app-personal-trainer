@@ -8,7 +8,7 @@ import { Avatar, Toggle } from "@/components/ui/basics";
 import { Appear, ProgressBar } from "@/components/ui/motion";
 import { ACCENTS, useAppearance } from "@/components/ui/appearance";
 import { isSoundEnabled, onSoundChange, playSound, setSoundEnabled, type SoundKind } from "@/libs/ui/sound";
-import { trainer } from "@/libs/prototipo/dati-finti";
+import { rinominaTrainer, trainer } from "@/libs/prototipo/dati-finti";
 import { shrinkPhoto, stato, useTrainerPhoto, useFocusLeo } from "@/libs/prototipo/stato";
 import { Bagliore } from "./shared";
 import { useNotifiche } from "@/libs/dati/selettori";
@@ -18,11 +18,12 @@ import { aggiornaBenvenuto, azzeraBenvenuto, controllaLogo, useBenvenuto } from 
 import { useSceltaVocali } from "@/libs/prototipo/leo-voce-scelta";
 import { BENVENUTO } from "@/components/prototipo/benvenuto/Benvenuto";
 import { rimpicciolisciLogo } from "@/components/prototipo/benvenuto/passi/Marchio";
-import { inDemo } from "@/libs/orologio";
+import { inDemo, oggi } from "@/libs/orologio";
 import { eventiVeri } from "@/libs/vera/eventi";
 import { fileDa } from "@/libs/vera/marchio";
 import { impostaLogo, useLogo } from "@/libs/vera/logo";
 import { FOTO_VUOTA } from "@/libs/vera/mappa";
+import { accountVero, statoLicenza } from "@/libs/vera/account";
 
 // I suoni dell'app, da ascoltare: nascono tutti dallo stesso "pop" con tonalità diverse.
 const soundSamples: { kind: SoundKind; label: string; hint: string; icon: LucideIcon }[] = [
@@ -43,12 +44,19 @@ function Card({ title, icon, children, className = "" }: { title: string; icon?:
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+// Senza onChange il campo tiene il suo valore da solo (demo); readOnly per quello che non si cambia da qui.
+function Field({ label, value, onChange, readOnly, hint }: { label: string; value: string; onChange?: (v: string) => void; readOnly?: boolean; hint?: string }) {
   const [v, setV] = useState(value);
   return (
     <label className="block">
       <span className="text-[10.5px] text-muted">{label}</span>
-      <input value={v} onChange={(e) => setV(e.target.value)} className="mt-[4px] h-[36px] w-full rounded-[11px] border border-line bg-card px-[12px] text-[12.5px] font-medium outline-none focus:border-[var(--trainer)]" />
+      <input
+        value={onChange ? value : v}
+        readOnly={readOnly}
+        onChange={(e) => (onChange ? onChange(e.target.value) : setV(e.target.value))}
+        className={`mt-[4px] h-[36px] w-full rounded-[11px] border border-line px-[12px] text-[12.5px] font-medium outline-none focus:border-[var(--trainer)] ${readOnly ? "bg-soft text-ink/70" : "bg-card"}`}
+      />
+      {hint && <span className="mt-[3px] block text-[10px] text-muted">{hint}</span>}
     </label>
   );
 }
@@ -100,6 +108,10 @@ export function SettingsView() {
   const logoInput = useRef<HTMLInputElement>(null);
   const logo = useLogo();
   const [inviando, setInviando] = useState<"foto" | "logo" | null>(null);
+  // versione vera: l'account letto dal database (nella demo è null e restano i dati finti)
+  const account = accountVero();
+  const [nome, setNome] = useState(trainer.name);
+  const licenza = account ? statoLicenza(account.licenza, oggi()) : null;
   const { theme, setTheme, accent, setAccent } = useAppearance();
   const [sound, setSound] = useState(true);
   const tone = useBenvenuto().tono;
@@ -198,15 +210,32 @@ export function SettingsView() {
                 </div>
               </div>
               <div className="mt-[12px] flex flex-col gap-[8px]">
-                <Field label="Nome e cognome" value={trainer.name} />
-                <Field label="Email" value="marco.rossi@esempio.it" />
-                <Field label="Telefono" value="+39 340 000 0100" />
+                {account ? (
+                  <>
+                    <Field label="Nome e cognome" value={nome} onChange={setNome} hint="Lo vedono i tuoi clienti nell'app" />
+                    <Field label="Email d'accesso" value={account.email} readOnly hint="Per cambiarla scrivi all'assistenza" />
+                  </>
+                ) : (
+                  <>
+                    <Field label="Nome e cognome" value={trainer.name} />
+                    <Field label="Email" value="marco.rossi@esempio.it" />
+                    <Field label="Telefono" value="+39 340 000 0100" />
+                  </>
+                )}
               </div>
               <div className="mt-[14px] flex gap-[8px]">
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.96 }}
-                  onClick={() => {
+                  onClick={async () => {
+                    if (account) {
+                      const pulito = nome.trim().replace(/\s+/g, " ");
+                      if (pulito.length < 2 || pulito.length > 80) return void toast.error("Scrivi nome e cognome (al massimo 80 caratteri)");
+                      if (pulito === trainer.name) return void toast("Nessuna modifica da salvare");
+                      if (!(await eventiVeri.cambiaNome?.(pulito))) return void toast.error("Il nome non è stato salvato: riprova");
+                      rinominaTrainer(pulito);
+                      setNome(pulito);
+                    }
                     playSound("confirm");
                     toast.success("Profilo salvato");
                   }}
@@ -215,6 +244,7 @@ export function SettingsView() {
                   <Check size={14} /> Salva le modifiche
                 </motion.button>
                 {/* per rifare la demo: il primo accesso riparte da capo */}
+                {!account && (
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.96 }}
@@ -226,21 +256,30 @@ export function SettingsView() {
                 >
                   <Sparkles size={13} /> Rivedi il benvenuto
                 </motion.button>
+                )}
               </div>
             </Card>
           </Appear>
           <Appear i={2}>
             <Card title="Abbonamento">
               <div className="mt-[10px] flex items-center justify-between">
-                <span className="rounded-full bg-ok-soft px-[9px] py-[3px] text-[10.5px] font-bold text-ok">Attivo</span>
+                {licenza?.scaduta ? (
+                  <span className="rounded-full bg-[rgba(220,60,60,0.14)] px-[9px] py-[3px] text-[10.5px] font-bold text-[#d03b3b]">Scaduta</span>
+                ) : licenza?.inScadenza ? (
+                  <span className="rounded-full bg-[rgba(106,90,224,0.16)] px-[9px] py-[3px] text-[10.5px] font-bold text-[#6a5ae0]">Da rinnovare</span>
+                ) : (
+                  <span className="rounded-full bg-ok-soft px-[9px] py-[3px] text-[10.5px] font-bold text-ok">Attivo</span>
+                )}
                 <span className="text-[11px] text-muted">Rinnovo 200 € all’anno</span>
               </div>
               <p className="mt-[8px] text-[12.5px]">
-                Licenza valida fino al <b>21 ottobre 2027</b>
+                {licenza?.scaduta ? "Licenza scaduta il " : "Licenza valida fino al "}
+                <b>{licenza ? licenza.data : "21 ottobre 2027"}</b>
               </p>
               <div className="mt-[8px]">
-                <ProgressBar percent={2} fill="var(--trainer)" track="var(--color-soft)" />
+                <ProgressBar percent={licenza ? licenza.passato : 2} fill="var(--trainer)" track="var(--color-soft)" />
               </div>
+              {licenza?.inScadenza && <p className="mt-[6px] text-[11px] text-muted">Mancano {licenza.giorni} giorni: per rinnovare scrivi all&apos;assistenza.</p>}
             </Card>
           </Appear>
         </div>
@@ -350,7 +389,10 @@ export function SettingsView() {
                 </div>
               </div>
               <p className="mt-[12px] flex items-center gap-[7px] rounded-full bg-soft px-[12px] py-[8px] text-[12px]">
-                <Globe size={13} className="text-muted" /> nomeprodotto.it/<b>marco-rossi</b>
+                <Globe size={13} className="shrink-0 text-muted" />
+                <span className="truncate">
+                  {account && typeof window !== "undefined" ? window.location.host : "nomeprodotto.it"}/<b>{account ? account.slug : "marco-rossi"}</b>
+                </span>
               </p>
             </Card>
           </Appear>

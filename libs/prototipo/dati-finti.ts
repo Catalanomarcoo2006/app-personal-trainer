@@ -534,6 +534,12 @@ export function usaMarchioDemo(m: MarchioDemo) {
   for (const c of conversations) for (const msg of c.messages) msg.text = msg.text.replaceAll("Marco", nome);
 }
 
+// Il trainer ha cambiato nome (Impostazioni, versione vera): iniziali comprese.
+export function rinominaTrainer(nome: string) {
+  const iniziali = nome.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
+  profilo = { ...profilo, name: nome.trim(), initials: iniziali || profilo.initials };
+}
+
 export function usaDatiVeri(v: DatiVeri) {
   profilo = v.trainer;
   if (v.cliente) {

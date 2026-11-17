@@ -23,8 +23,9 @@ async function schede(db: Db) {
 }
 
 export async function caricaTrainer(db: Db, trainerId: string, ora = new Date()): Promise<Fotografia> {
-  const [t, clients, packages, payments, measurements, sessions, messages, logs, alerts, questions, documents, s] = await Promise.all([
+  const [t, chi, clients, packages, payments, measurements, sessions, messages, logs, alerts, questions, documents, s] = await Promise.all([
     db.from("trainers").select("*").eq("id", trainerId).single(),
+    db.auth.getUser(),
     db.from("clients").select("id, name, email, phone, gender, tone, goal_label, goal_unit, goal_start, goal_current, goal_target, goal_proposed_start, goal_proposed_target, weigh_frequency, notes, created_at").eq("status", "active").order("created_at"),
     db.from("packages").select("*"),
     db.from("payments").select("*"),
@@ -52,7 +53,7 @@ export async function caricaTrainer(db: Db, trainerId: string, ora = new Date())
     documents: righe(documents, "documenti"),
     ...s,
   };
-  return fotografiaTrainer(r, ora);
+  return { ...fotografiaTrainer(r, ora), account: { email: chi.data.user?.email ?? "", slug: t.data.slug, licenza: t.data.license_expires_at } };
 }
 
 export async function caricaCliente(db: Db, slug: string, ora = new Date()): Promise<Fotografia | null> {

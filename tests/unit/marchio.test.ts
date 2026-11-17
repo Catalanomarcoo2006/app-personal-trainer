@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { indirizzoMarchio, percorsoMarchio } from "@/libs/vera/marchio";
 import { messaggioArrivato } from "@/libs/vera/dal-vivo";
+import { statoLicenza } from "@/libs/vera/account";
 
 const T = "00000000-0000-0000-0000-00000000000t";
 
@@ -39,5 +40,13 @@ describe("messaggi dal vivo", () => {
     expect(messaggioArrivato({ client_id: "c1", sender: "trainer" }, cliente, [])).toBe("c1");
     expect(messaggioArrivato({ client_id: "c1", sender: "client" }, cliente, [])).toBeNull();
     expect(messaggioArrivato({ client_id: "c2", sender: "trainer" }, cliente, [])).toBeNull();
+  });
+});
+
+describe("licenza del trainer (Impostazioni)", () => {
+  it("data in italiano, giorni che restano, barra del tempo passato", () => {
+    expect(statoLicenza("2027-10-21", "2026-11-17")).toMatchObject({ data: "21 ottobre 2027", giorni: 338, passato: 7, inScadenza: false, scaduta: false });
+    expect(statoLicenza("2026-12-01", "2026-11-17")).toMatchObject({ giorni: 14, inScadenza: true, scaduta: false });
+    expect(statoLicenza("2026-11-10", "2026-11-17")).toMatchObject({ scaduta: true, inScadenza: false, passato: 100 });
   });
 });

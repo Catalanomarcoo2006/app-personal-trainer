@@ -14,6 +14,7 @@ import { avviaSalvataggio, type Ruolo } from "@/libs/vera/salva";
 import { FOTO_VUOTA, messaggioDa, type Fotografia } from "@/libs/vera/mappa";
 import { BUCKET_MARCHI, indirizzoMarchio, percorsoMarchio } from "@/libs/vera/marchio";
 import { impostaLogo } from "@/libs/vera/logo";
+import { impostaAccount } from "@/libs/vera/account";
 import { oggi } from "@/libs/orologio";
 import { eventiVeri } from "@/libs/vera/eventi";
 import { messaggioArrivato } from "@/libs/vera/dal-vivo";
@@ -46,6 +47,7 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
     });
     fumettiVeri();
     impostaLogo(foto.logo ?? null);
+    impostaAccount(foto.account ?? null);
     // gli errori qui non fermano nessuno: si vedono nella console e la prossima volta si riprova
     const segnala = (cosa: string) => ({ error }: { error: { message: string } | null }) => {
       if (error) console.error(`${cosa} non salvato`, error.message);
@@ -82,6 +84,11 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
         }
         if (prima) void marchi.remove([prima]);
         return indirizzoMarchio(percorso) ?? null;
+      };
+      eventiVeri.cambiaNome = async (nome) => {
+        const r = await db.from("trainers").update({ name: nome }).eq("id", trainerId);
+        if (r.error) console.error("Nome non salvato", r.error.message);
+        return !r.error;
       };
       eventiVeri.togliMarchio = async (tipo) => {
         const prima = await percorsoDi(tipo);

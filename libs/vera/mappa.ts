@@ -12,6 +12,7 @@ import { needsAttention } from "@/libs/domain/attention";
 import { daysBetween, romeDayKey } from "@/libs/domain/time";
 import { MESI } from "@/libs/dati/iniziali";
 import { indirizzoMarchio } from "./marchio";
+import type { AccountVero } from "./account";
 
 type RigheDb = {
   trainers: Tables<"trainers">;
@@ -57,6 +58,7 @@ export type Fotografia = {
   allenatoOggi?: boolean; // nell'app del cliente: l'allenamento di oggi è già segnato come fatto
   trainerDelCliente?: string; // nell'app del cliente: il suo trainer (prima cartella dei documenti su Storage)
   logo?: string; // indirizzo pubblico del logo del trainer (bucket "marchi"), se l'ha caricato
+  account?: AccountVero; // nell'area trainer: email d'accesso, slug, scadenza della licenza (Impostazioni)
 };
 
 // ——— Date e ore nel fuso italiano ———

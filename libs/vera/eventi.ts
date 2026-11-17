@@ -16,4 +16,6 @@ export const eventiVeri: {
   cambiaMarchio?: (tipo: "foto" | "logo", file: Blob) => Promise<string | null>;
   // togliere foto o logo: false se non è andata
   togliMarchio?: (tipo: "foto" | "logo") => Promise<boolean>;
+  // il trainer cambia il suo nome (Impostazioni): false se non è andata
+  cambiaNome?: (nome: string) => Promise<boolean>;
 } = {};
