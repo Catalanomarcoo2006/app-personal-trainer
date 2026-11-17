@@ -41,6 +41,12 @@ dalla sua scheda ("Invita nell'app").
   per documento in `<trainer>/<cliente>/<id>.<pdf|jpg>`. Il trainer legge, carica e toglie i file dei suoi clienti; il
   cliente legge i suoi e toglie solo quelli caricati da lui; le righe di `documents` puntano solo alla cartella giusta.
   Provata su PGlite con uno Storage finto (21 controlli, anche trainer sospeso).
+- `supabase/migrations/20261117000007_marchio_e_dal_vivo.sql`: bucket **pubblico** `marchi` (2 MB, PNG/JPG/WebP) per foto e
+  logo del trainer, un file per caricamento in `<trainer>/<foto|logo>-<numero>.<ext>` (il nome cambia: niente immagini
+  vecchie in memoria); scrive solo il trainer nella sua cartella. `trainers.photo_path`, `trainer_branding()` con la foto
+  (la pagina `/<slug>` mostra il logo prima del login), `messages` nella pubblicazione di Realtime (messaggi dal vivo).
+  Provata su PGlite (14 controlli). Il codice legge la riga del trainer con `select("*")`: se la migrazione manca, la
+  dashboard si apre lo stesso, ma foto e logo non si salvano.
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).
@@ -94,9 +100,9 @@ Per aprire l'app sul locale, in `.env.local` metti i valori di `npx supabase sta
 
 ## Ancora da fare (fasi successive)
 
-- Storage per foto e logo del trainer (oggi la foto resta solo nel browser) e i video messi sugli esercizi della
-  libreria (non si salvano). I documenti dei clienti sono su Storage dal 6/11 (migrazione 6).
-- Finestre per misure e note del trainer (nella demo le fa Leo); avvisi automatici dei pacchetti in scadenza.
-- Aggiornamento dal vivo fra trainer e cliente (Realtime): oggi i messaggi nuovi si vedono ricaricando la pagina.
+- Video messi sugli esercizi della libreria (non si salvano ancora: servono un bucket e una colonna).
+- Avvisi automatici dei pacchetti in scadenza (oggi si vedono nella pagina, non arriva un avviso).
+- Resend: email in italiano (link d'accesso del cliente, password dimenticata) con SMTP proprio. Servono chiave e dominio.
+- Aggiornamento dal vivo anche di sedute e avvisi (dal 17/11 sono dal vivo solo i messaggi).
 - Leo con dati veri: quando c'è il fornitore AI in UE (e il trascrittore per i vocali), si toglie il blocco
   `inDemo()` in `useChatLeo.ts`, `LeoCliente.tsx` e `leo-voce-browser.ts`.
