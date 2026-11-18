@@ -11,6 +11,8 @@ import { usaDatiVeri } from "@/libs/prototipo/dati-finti";
 import { ascoltaStato, stato } from "@/libs/prototipo/stato";
 import { createClient } from "@/libs/supabase/client";
 import { avviaSalvataggio, type Ruolo } from "@/libs/vera/salva";
+import { avviaRicarica } from "@/libs/vera/ricarica";
+import { caricaCliente, caricaTrainer } from "@/libs/vera/carica";
 import { FOTO_VUOTA, messaggioDa, type Fotografia } from "@/libs/vera/mappa";
 import { BUCKET_MARCHI, indirizzoMarchio, percorsoMarchio } from "@/libs/vera/marchio";
 import { impostaLogo } from "@/libs/vera/logo";
@@ -152,7 +154,7 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
     const documenti = (foto.stato.documenti ?? []).map((d) => (d.percorso ? { ...d, file: scarica(d.percorso) } : d));
 
     stato.carica({ ...foto.stato, documenti });
-    const smetti = avviaSalvataggio({
+    const salvataggio = avviaSalvataggio({
       db,
       ruolo,
       leggi: () => {
@@ -163,8 +165,38 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
       errore: (m) => toast.error(m),
     });
 
+    // i dati cambiati dall'altro si rileggono dal database appena si può (eventi dal vivo, e ogni tanto da soli)
+    const ricarica = avviaRicarica({
+      leggi: async () => {
+        const f = ruolo.tipo === "trainer" ? await caricaTrainer(db, ruolo.trainerId) : await caricaCliente(db, base.replace(/^\//, ""));
+        if (!f) return null;
+        const docs = (f.stato.documenti ?? []).map((d) => (d.percorso ? { ...d, file: scarica(d.percorso) } : d));
+        return { ...f, stato: { ...f.stato, documenti: docs } };
+      },
+      // niente da salvare, e nessuno sta scrivendo (una casella con del testo): non si butta via quello che sta facendo
+      libero: () => {
+        if (salvataggio.occupato()) return false;
+        const a = document.activeElement as (HTMLElement & { value?: string }) | null;
+        if (!a) return true;
+        const scrive = /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) ? !!a.value?.trim() : a.isContentEditable && !!a.textContent?.trim();
+        return !scrive;
+      },
+      applica: (f) => {
+        // uguale a quello che c'è già: niente da fare (anche gli eventi delle nostre stesse scritture finiscono qui)
+        const s = stato.get();
+        const prima = { dati: s.dati, sedute: s.sedute, threads: s.threads, plans: s.plans, videos: s.videos, documenti: s.documenti };
+        const dopo = { dati: f.stato.dati, sedute: f.stato.sedute, threads: f.stato.threads, plans: f.stato.plans, videos: f.stato.videos, documenti: f.stato.documenti };
+        if (JSON.stringify(prima) === JSON.stringify(dopo)) return;
+        salvataggio.applicaDalDatabase(() => {
+          usaDatiVeri(f.veri);
+          stato.carica(dopo);
+        });
+      },
+    });
+
     // dal vivo (Realtime): i messaggi dell'altro (migrazione 7); per il cliente le sedute che il trainer aggiunge,
-    // sposta o annulla; per il trainer i dolori e le richieste di spostamento (migrazione 10)
+    // sposta o annulla; per il trainer i dolori e le richieste di spostamento (migrazione 10); il resto (scheda,
+    // pacchetti, pagamenti, misure, documenti, video…) si rilegge dal database (migrazione 11)
     const canale = db
       .channel("dal-vivo")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, ({ new: riga }) => {
@@ -174,8 +206,12 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
         stato.addMessage(clientId, messaggioDa(m, oggi()));
         playSound("open");
       });
+    // le altre tabelle: a ogni cambiamento (anche dell'altro) si rilegge. sessions e alerts hanno il loro ascolto sotto.
+    const DA_RILEGGERE = ["packages", "payments", "measurements", "workout_plans", "plan_days", "plan_exercises", "workout_logs", "documents", "exercise_videos", "clients"];
+    for (const tabella of DA_RILEGGERE) canale.on("postgres_changes", { event: "*", schema: "public", table: tabella }, () => ricarica.richiedi());
     if (ruolo.tipo === "cliente")
       canale.on("postgres_changes", { event: "*", schema: "public", table: "sessions" }, ({ new: riga }) => {
+        ricarica.richiedi();
         if (!riga || !("id" in riga)) return;
         const r = sedutaArrivata(stato.get().sedute, riga as Tables<"sessions">, ruolo.clientId);
         if (!r) return;
@@ -184,18 +220,38 @@ export function AvvioVero({ foto, ruolo, base, children }: { foto: Fotografia; r
         playSound("open");
       });
     else
-      canale.on("postgres_changes", { event: "INSERT", schema: "public", table: "alerts" }, ({ new: riga }) => {
+      canale.on("postgres_changes", { event: "*", schema: "public", table: "alerts" }, ({ eventType, new: riga }) => {
+        ricarica.richiedi();
+        if (eventType !== "INSERT") return;
         const r = avvisoArrivato(riga as Tables<"alerts">, stato.get().dati.clienti);
         if (!r) return;
         if (r.dolore) aggiungiDolore(r.dolore);
         playSound("open");
         toast(r.avviso, { icon: r.dolore ? "⚠️" : "📅", duration: 6000 });
       });
-    canale.subscribe();
+    // Il canale dal vivo deve conoscere chi è collegato: senza, il server lo tratta da visitatore ("Error 401:
+    // Unauthorized") e non manda niente (trovato il 18/11 provando online). Prima si legge la sessione, poi ci si
+    // iscrive; a ogni rinnovo della sessione si dà al canale il nuovo permesso.
+    let attivo = true;
+    void db.auth.getSession().then(async ({ data }) => {
+      if (!attivo) return;
+      await db.realtime.setAuth(data.session?.access_token ?? null);
+      if (!attivo) return;
+      canale.subscribe((esito, errore) => {
+        if (esito === "SUBSCRIBED") ricarica.richiedi(); // appena collegati si rilegge: si recupera quello che è passato prima
+        else if (esito === "CHANNEL_ERROR" || esito === "TIMED_OUT") console.error("Aggiornamenti dal vivo non attivi", errore?.message ?? esito);
+      });
+    });
+    const { data: ascoltoSessione } = db.auth.onAuthStateChange((_evento, sessione) => {
+      void db.realtime.setAuth(sessione?.access_token ?? null);
+    });
 
     setPronto(true);
     return () => {
-      smetti();
+      attivo = false;
+      ascoltoSessione.subscription.unsubscribe();
+      ricarica.ferma();
+      salvataggio.smetti();
       void db.removeChannel(canale);
     };
     // si avvia una volta sola: i dati arrivano dal server con la pagina

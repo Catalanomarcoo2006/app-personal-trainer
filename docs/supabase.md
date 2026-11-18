@@ -55,6 +55,13 @@ dalla sua scheda ("Invita nell'app").
 - `supabase/migrations/20261117000010_dal_vivo_sedute_avvisi.sql`: `sessions` e `alerts` in Realtime. Il cliente vede subito
   le sedute che il trainer aggiunge, sposta o annulla; il trainer vede subito dolori (anche negli Urgenti) e richieste
   di spostamento. Le sedute dal vivo le ascolta solo il cliente: le cambia solo il trainer.
+- `supabase/migrations/20261118000011_dal_vivo_tutto.sql`: anche pacchetti, pagamenti, misure, schede, allenamenti, documenti,
+  video e clienti in Realtime. **Va caricata prima di pubblicare il codice del 18/11**: l'app si iscrive a tutte queste
+  tabelle e, se una manca nella pubblicazione, il canale dal vivo non parte. Come funziona: messaggi, sedute e avvisi
+  arrivano direttamente; per tutto il resto a ogni evento l'app rilegge i dati dal database (`libs/vera/ricarica.ts`),
+  ma solo quando non c'è niente da salvare e nessuno sta scrivendo; in più ogni 45 secondi e quando si torna sulla
+  pagina, così se la connessione dal vivo cade i dati arrivano lo stesso. Il canale si iscrive dopo aver letto la
+  sessione (`realtime.setAuth`): prima si collegava da visitatore e il server rispondeva "Error 401: Unauthorized".
 - `types/db.ts`: tipi generati (`npm run db:types` con il locale acceso).
 - Pagine: `/signin` (trainer e admin, email + password), `/nuova-password` (dopo l'invito o "password dimenticata"),
   `/<slug>` (login del cliente col marchio, link via email), `/sospeso`, `/admin` (crea, rinnova, sospendi, link d'accesso).

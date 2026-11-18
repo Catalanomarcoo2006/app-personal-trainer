@@ -560,6 +560,9 @@ export function rinominaTrainer(nome: string) {
 
 export function usaDatiVeri(v: DatiVeri) {
   profilo = v.trainer;
+  // riletti dal database con l'app aperta: chi guarda gli urgenti si ridisegna
+  versioneAvvisi++;
+  chiAvvisi.forEach((f) => f());
   if (v.cliente) {
     nomeCliente = v.cliente.name;
     lezioniCliente = v.cliente.lessonsLeft;

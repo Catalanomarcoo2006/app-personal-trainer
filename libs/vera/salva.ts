@@ -223,6 +223,17 @@ export async function scrivi(db: Db, ops: Operazione[], ruolo: Ruolo): Promise<v
 // Si aspetta un attimo dopo l'ultimo cambiamento (chi scrive una scheda cambia lo stato a ogni tasto), poi si
 // salvano le differenze, una scrittura alla volta, nell'ordine in cui sono avvenute.
 
+export type Salvataggio = {
+  smetti: () => void;
+  // c'è qualcosa da salvare, si sta salvando, o si è appena salvato (gli eventi dal vivo di quel salvataggio
+  // stanno arrivando): in questo momento non si rileggono i dati dal database
+  occupato: () => boolean;
+  // applica dati arrivati dal database (letti da fuori) senza che vengano riscritti: dopo, quello che c'è è "già salvato"
+  applicaDalDatabase: (applica: () => void) => void;
+};
+
+const ECO_MS = 2500; // dopo una scrittura propria arrivano gli eventi dal vivo che ne nascono: si aspetta
+
 export function avviaSalvataggio(o: {
   db: Db;
   ruolo: Ruolo;
@@ -230,27 +241,40 @@ export function avviaSalvataggio(o: {
   ascolta: (fn: () => void) => () => void;
   errore: (messaggio: string) => void;
   attesa?: number;
-}): () => void {
+  adesso?: () => number;
+}): Salvataggio {
+  const ora = o.adesso ?? Date.now;
   let salvato = o.leggi();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let coda = Promise.resolve();
+  let inScrittura = 0;
+  let ultimaScrittura = 0;
+  let sospeso = false;
 
   const salva = () => {
+    timer = undefined;
+    inScrittura++;
     coda = coda.then(async () => {
-      const adesso = o.leggi();
-      const ops = differenze(salvato, adesso, o.ruolo);
-      salvato = adesso;
-      if (!ops.length) return;
       try {
-        await scrivi(o.db, ops, o.ruolo);
-      } catch (e) {
-        console.error("Salvataggio non riuscito", e);
-        o.errore("Una modifica non è stata salvata: ricarica la pagina e riprova");
+        const adesso = o.leggi();
+        const ops = differenze(salvato, adesso, o.ruolo);
+        salvato = adesso;
+        if (!ops.length) return;
+        try {
+          await scrivi(o.db, ops, o.ruolo);
+        } catch (e) {
+          console.error("Salvataggio non riuscito", e);
+          o.errore("Una modifica non è stata salvata: ricarica la pagina e riprova");
+        }
+        ultimaScrittura = ora();
+      } finally {
+        inScrittura--;
       }
     });
   };
 
   const smetti = o.ascolta(() => {
+    if (sospeso) return;
     clearTimeout(timer);
     timer = setTimeout(salva, o.attesa ?? 500);
   });
@@ -260,9 +284,21 @@ export function avviaSalvataggio(o: {
     salva();
   };
   if (typeof window !== "undefined") window.addEventListener("pagehide", subito);
-  return () => {
-    smetti();
-    if (typeof window !== "undefined") window.removeEventListener("pagehide", subito);
-    subito();
+  return {
+    smetti: () => {
+      smetti();
+      if (typeof window !== "undefined") window.removeEventListener("pagehide", subito);
+      subito();
+    },
+    occupato: () => timer !== undefined || inScrittura > 0 || ora() - ultimaScrittura < ECO_MS,
+    applicaDalDatabase: (applica) => {
+      sospeso = true;
+      try {
+        applica();
+        salvato = o.leggi();
+      } finally {
+        sospeso = false;
+      }
+    },
   };
 }
