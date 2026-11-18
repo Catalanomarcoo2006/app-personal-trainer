@@ -107,16 +107,24 @@ export function Progressi() {
   useEffect(() => setFogli(document.getElementById(ID_FOGLI)), []);
   if (!c) return null;
 
+  // finché il trainer non ha confermato un obiettivo in kg (cliente nuovo) partenza e traguardo non ci sono: niente
+  // percentuali inventate, e il peso di adesso è l'ultima pesata, non il valore dell'obiettivo
+  const inKg = c.unit === "kg";
   const fatti = c.start - c.current;
   const totale = c.start - c.target;
   const percento = Math.round(Math.min(100, Math.max(0, (fatti / totale) * 100)));
   const prima = c.weights[0];
+  const pesoOra = c.weights.at(-1) ?? (inKg ? c.current : undefined);
 
   return (
     <div className="mt-[16px] flex flex-col gap-[12px]">
       {/* obiettivo */}
       <section className="panel overflow-hidden rounded-[24px] px-[16px] pt-[14px] pb-[16px]" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--trainer) 20%, var(--color-card)), var(--color-card))" }}>
         <p className="text-[12.5px] font-semibold text-ink/60">{c.goal}</p>
+        {!inKg ? (
+          <p className="mt-[8px] text-[14px] leading-snug">Il tuo obiettivo in kg lo conferma {nomeTrainer()} con te: da quel momento qui vedi quanto manca.</p>
+        ) : (
+        <>
         <div className="mt-[6px] flex items-end justify-between">
           <p className="text-[44px] leading-none font-extrabold tabular-nums tracking-[-0.04em]">
             {percento}
@@ -136,6 +144,8 @@ export function Progressi() {
           <span className="font-bold text-ink">Oggi {numero(c.current)} kg</span>
           <span>Traguardo {numero(c.target)} kg</span>
         </div>
+        </>
+        )}
         {proposto && (
           <p className="mt-[12px] rounded-[14px] bg-card/70 px-[12px] py-[9px] text-[12.5px] leading-snug">
             🕒 <b>Hai proposto</b> {numero(proposto.start)} → {numero(proposto.target)} kg: {nomeTrainer()} lo guarda e lo conferma con te.
@@ -147,12 +157,14 @@ export function Progressi() {
       <section className="panel rounded-[24px] px-[16px] pt-[14px] pb-[10px]">
         <div className="flex items-center justify-between">
           <p className="text-[15px] font-bold">Peso</p>
-          <span className="inline-flex items-center gap-[4px] rounded-full bg-ok/12 px-[9px] py-[4px] text-[11.5px] font-bold text-ok">
-            <TrendingDown size={12} /> {numero(c.current - prima)} kg dall&apos;inizio
-          </span>
+          {pesoOra !== undefined && prima !== undefined && (
+            <span className="inline-flex items-center gap-[4px] rounded-full bg-ok/12 px-[9px] py-[4px] text-[11.5px] font-bold text-ok">
+              <TrendingDown size={12} /> {numero(pesoOra - prima)} kg dall&apos;inizio
+            </span>
+          )}
         </div>
         <p className="mt-[6px] text-[32px] leading-none font-extrabold tabular-nums tracking-[-0.03em]">
-          {numero(c.current)} <span className="text-[15px] font-semibold text-muted">kg</span>
+          {pesoOra === undefined ? "—" : numero(pesoOra)} <span className="text-[15px] font-semibold text-muted">kg</span>
         </p>
         <div className="mt-[6px] h-[96px]">
           <SoftAreaChart points={c.weights} />

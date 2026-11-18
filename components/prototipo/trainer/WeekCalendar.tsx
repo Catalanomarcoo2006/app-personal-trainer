@@ -3,7 +3,8 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import toast from "react-hot-toast";
-import { CalendarClock, CalendarPlus, Check, MapPin, MessageCircle, Plus, Trash2, UserRound, X } from "lucide-react";
+import { CalendarClock, CalendarPlus, Check, MapPin, MessageCircle, Plus, Trash2, UserRound, Users, X } from "lucide-react";
+import { giaAllOra, raggruppaPerOra } from "@/libs/prototipo/sovrapposte";
 import { EASE_OUT } from "@/components/ui/motion";
 import { playSound } from "@/libs/ui/sound";
 import { conta } from "@/libs/ui/testo";
@@ -104,6 +105,92 @@ function SessionCard({ day, a, i, density, onOpen, layoutId, atterra }: { day: W
         </>
       )}
     </motion.button>
+  );
+}
+
+// Più allievi nella stessa ora: un solo blocco (così nella cella non se ne perde nessuno), si apre con l'elenco.
+function GroupCard({ day, group, density, onOpen }: { day: WeekDay; group: Appointment[]; density: number; onOpen: () => void }) {
+  const clientById = useTrovaCliente();
+  const inizio = group.reduce((m, a) => Math.min(m, toMinutes(a.time)), 24 * 60);
+  const fine = group.reduce((m, a) => Math.max(m, toMinutes(a.time) + a.minutes), 0);
+  const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+  const live = group.some((a) => statusOf(day, a).live);
+  const done = group.every((a) => statusOf(day, a).done);
+  const visti = group.slice(0, 4);
+  return (
+    <motion.button
+      type="button"
+      layout="position"
+      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+      animate={{ opacity: done ? 0.6 : 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.12 } }}
+      transition={{ duration: 0.3, ease: EASE_OUT }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={() => {
+        playSound("tap");
+        onOpen();
+      }}
+      title={`${hhmm(inizio)} – ${hhmm(fine)} · ${group.length} allievi: ${group.map((a) => clientById(a.clientId)?.name.split(" ")[0]).join(", ")}`}
+      className={`relative z-10 block w-full shrink-0 cursor-pointer overflow-hidden rounded-[11px] px-[9px] text-left transition-shadow hover:shadow-[0_8px_18px_rgba(0,0,0,0.12)] ${density === 2 ? "py-[8px]" : density === 1 ? "py-[6px]" : "pt-[7px] pb-[8px]"}`}
+      style={{ background: "color-mix(in srgb, var(--trainer) 12%, var(--color-card))" }}
+    >
+      <span className="absolute top-0 bottom-0 left-0 w-[3px]" style={{ background: "var(--trainer)" }} />
+      <span className="flex items-center gap-[4px] text-[10px] leading-none font-bold tabular-nums" style={{ color: "var(--trainer)" }}>
+        <Users size={10} /> {density === 2 ? hhmm(inizio) : `${hhmm(inizio)} – ${hhmm(fine)}`}
+        {done && <Check size={10} strokeWidth={3} className="ml-auto text-ink/50" />}
+        {live && <span className="btn-trainer ml-auto rounded-full px-[5px] py-[1px] text-[8.5px]">ora</span>}
+      </span>
+      <span className={`flex min-w-0 items-center gap-[6px] ${density === 2 ? "mt-[4px]" : "mt-[5px]"}`}>
+        <span className="flex shrink-0 items-center">
+          {visti.map((a, n) => {
+            const c = clientById(a.clientId);
+            return c ? (
+              <span key={n} className={n ? "-ml-[6px]" : ""}>
+                <ClientAvatar c={c} size={density === 2 ? 16 : 18} />
+              </span>
+            ) : null;
+          })}
+        </span>
+        <span className="truncate text-[12px] font-bold">{group.length} allievi</span>
+      </span>
+    </motion.button>
+  );
+}
+
+// L'elenco delle sedute di un blocco: ogni riga apre il dettaglio normale (sposta, annulla, scrivi…).
+function GroupList({ day, group, onClose, onPick }: { day: WeekDay; group: Appointment[]; onClose: () => void; onPick: (a: Appointment) => void }) {
+  const clientById = useTrovaCliente();
+  return (
+    <Dialog label={`${day.long} ${day.n} ${day.month} · ${group.length} allievi insieme`} onClose={onClose}>
+      <div className="mt-[12px] flex flex-col gap-[6px]">
+        {group.map((a, n) => {
+          const c = clientById(a.clientId);
+          const colors = appointmentColors[a.type];
+          const Icon = typeIcons[a.type];
+          return (
+            <button
+              key={("id" in a ? (a as Seduta).id : undefined) ?? `${a.time}-${a.clientId}-${n}`}
+              type="button"
+              onClick={() => {
+                playSound("tap");
+                onPick(a);
+              }}
+              className="flex cursor-pointer items-center gap-[10px] rounded-[14px] px-[12px] py-[9px] text-left transition-opacity hover:opacity-85"
+              style={{ background: colors.bg }}
+            >
+              {c && <ClientAvatar c={c} size={30} />}
+              <span className="min-w-0 flex-1 leading-none">
+                <span className="block truncate text-[13px] font-bold">{c?.name}</span>
+                <span className="mt-[5px] flex items-center gap-[4px] text-[10.5px] tabular-nums" style={{ color: colors.strong }}>
+                  <Icon size={10} /> {a.time} – {endTime(a)} · {a.type}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </Dialog>
   );
 }
 
@@ -355,6 +442,21 @@ function SessionForm({ days, draft, onClose, onSave }: { days: WeekDay[]; draft:
           </div>
         </div>
 
+        {/* solo un'informazione: si possono fissare più allievi nella stessa ora, nessun blocco */}
+        {(() => {
+          const gia = giaAllOra(days[day].items, time, draft.replacing);
+          if (!gia.length) return null;
+          const nomi = gia.map((a) => clientById(a.clientId)?.name.split(" ")[0] ?? "").filter(Boolean);
+          return (
+            <p className="mt-[10px] flex items-start gap-[6px] rounded-[11px] bg-soft px-[10px] py-[7px] text-[11.5px] leading-snug text-ink/75">
+              <Users size={12} className="mt-[2px] shrink-0" />
+              <span>
+                In quest&apos;ora hai già {gia.length === 1 ? "1 allievo" : `${gia.length} allievi`}: {nomi.join(", ")}. Puoi fissarne un altro insieme.
+              </span>
+            </p>
+          );
+        })()}
+
         <p className="mt-[12px] mb-[6px] text-[11px] font-semibold text-muted">Tipo</p>
         <div className="flex flex-wrap gap-[6px]">
           {types.map((t) => {
@@ -474,6 +576,7 @@ function Cell({
   deps,
   onAdd,
   onOpen,
+  onGroup,
   leo,
 }: {
   day: WeekDay;
@@ -482,13 +585,16 @@ function Cell({
   deps: unknown[];
   onAdd: () => void;
   onOpen: (a: Appointment) => void;
+  onGroup: (g: Appointment[]) => void;
   leo: { acceso: boolean; volo: boolean; nuova?: string; fantasmi: Seduta[]; ridotto: boolean };
 }) {
   const box = useRef<HTMLDivElement>(null);
-  const density = useFitDensity(box, 2, [...deps, items.length]);
+  // più allievi nella stessa ora: un blocco solo, così nella cella non se ne perde nessuno
+  const blocchi = raggruppaPerOra(items);
+  const density = useFitDensity(box, 2, [...deps, blocchi.length]);
   const now = toMinutes(trainer.now);
   const showNow = day.isToday && band === BANDS.findIndex((b) => now < b.until);
-  const nowAt = showNow ? items.findIndex((a) => toMinutes(a.time) + a.minutes > now) : -2;
+  const nowAt = showNow ? blocchi.findIndex((g) => Math.max(...g.map((a) => toMinutes(a.time) + a.minutes)) > now) : -2;
   const b = BANDS[band];
 
   return (
@@ -531,12 +637,17 @@ function Cell({
       <AnimatePresence mode="popLayout" initial={false}>
         {(() => {
           // le sedute appena cancellate da Leo (anche più insieme), ognuna al suo posto tra quelle che restano
-          const ghosts = leo.fantasmi.map((g) => ({ g, at: items.findIndex((a) => toMinutes(a.time) > toMinutes(g.time)) }));
+          const ghosts = leo.fantasmi.map((g) => ({ g, at: blocchi.findIndex((b) => toMinutes(b[0].time) > toMinutes(g.time)) }));
           const fantasma = (g: Seduta) => <Fantasma key={`fantasma-${g.id}`} a={g} />;
-          return items.flatMap((a, i) => {
+          return blocchi.flatMap((blocco, i) => {
             const out = [];
             if (i === nowAt) out.push(<NowMark key="adesso" />);
             for (const x of ghosts) if (x.at === i) out.push(fantasma(x.g));
+            if (blocco.length > 1) {
+              out.push(<GroupCard key={`gruppo-${i}-${blocco.length}-${blocco[0].time}`} day={day} group={blocco} density={density} onOpen={() => onGroup(blocco)} />);
+              return out;
+            }
+            const a = blocco[0];
             const id = "id" in a ? (a as Seduta).id : undefined;
             out.push(
               <SessionCard
@@ -579,6 +690,8 @@ export function WeekCalendar() {
   const [leo, setLeo] = useState<{ tipo: string; id: string; gruppo: { id: string; date: string; time: string }[] } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [open, setOpen] = useState<{ day: number; a: Appointment } | null>(null);
+  // il blocco aperto: giorno e ora; le sedute si rileggono ogni volta, così dopo uno spostamento o un annullamento l'elenco è giusto
+  const [gruppo, setGruppo] = useState<{ day: number; ora: number } | null>(null);
 
   const week = weekOf(offset, sedute);
   // nella demo lo store ha solo questa settimana e la prossima; nella versione vera tutte
@@ -587,6 +700,7 @@ export function WeekCalendar() {
   const days: WeekDay[] = week.days.map((d, i) => ({ ...d, items: [...items[i]].sort((a, b) => toMinutes(a.time) - toMinutes(b.time)) }));
   const total = days.reduce((s, d) => s + d.items.length, 0);
   const todayIndex = days.findIndex((d) => d.isToday);
+  const gruppoItems = gruppo && days[gruppo.day] ? giaAllOra(days[gruppo.day].items, `${gruppo.ora}:00`).filter((a) => !hidden.includes(a.type)) : [];
 
   // "Nuova seduta" dalla barra in alto (richieste.ts): torna a questa settimana e apre la finestra su oggi
   useEffect(() => {
@@ -716,6 +830,7 @@ export function WeekCalendar() {
                     deps={[offset, hidden, edits, sedute]}
                     onAdd={() => setDraft({ day: di, time: band.start })}
                     onOpen={(a) => setOpen({ day: di, a })}
+                    onGroup={(items) => setGruppo({ day: di, ora: Math.floor(toMinutes(items[0].time) / 60) })}
                     leo={(() => {
                       const giorno = isoDi(giornoDi(offset, di));
                       const quiTutte = leo && inStore ? leo.gruppo.filter((g) => g.date === giorno && bandOf({ time: g.time } as Appointment) === bi) : [];
@@ -732,6 +847,18 @@ export function WeekCalendar() {
       </section>
 
       <AnimatePresence>
+        {gruppo && !open && gruppoItems.length > 0 && (
+          <GroupList
+            key="gruppo"
+            day={days[gruppo.day]}
+            group={gruppoItems}
+            onClose={() => setGruppo(null)}
+            onPick={(a) => {
+              // la riga apre il dettaglio normale; chiudendolo si torna all'elenco (sempre aggiornato)
+              setOpen({ day: gruppo.day, a });
+            }}
+          />
+        )}
         {open && (
           <SessionDetail
             key="dettaglio"
