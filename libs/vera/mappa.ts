@@ -308,7 +308,8 @@ export function fotografiaTrainer(r: RigheTrainer, ora: Date): Fotografia {
 
   // un pacchetto per cliente nelle pagine: il più recente
   const pacchetti = clienti.flatMap((c) => {
-    const p = r.packages.filter((x) => x.client_id === c.id).sort((a, b) => b.starts_on.localeCompare(a.starts_on))[0];
+    // a parità di inizio (due pacchetti fatti lo stesso giorno) vince quello creato per ultimo, uguale per trainer e cliente
+    const p = r.packages.filter((x) => x.client_id === c.id).sort((a, b) => b.starts_on.localeCompare(a.starts_on) || b.created_at.localeCompare(a.created_at))[0];
     return p ? [pacchettoDa(p, r.sessions, ora)] : [];
   });
 

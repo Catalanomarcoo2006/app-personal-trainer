@@ -73,6 +73,14 @@ describe("dal database alle pagine", () => {
     expect(fotografiaTrainer(r, ORA).stato.dati!.pacchetti[0].lessonsUsed).toBe(2);
   });
 
+  it("due pacchetti fatti lo stesso giorno: vale l'ultimo creato, in qualunque ordine arrivino", () => {
+    const vecchio = { ...righe.packages[0], id: "pk1", lessons_total: 10, starts_on: "2026-11-04", created_at: "2026-11-04T09:00:00Z" };
+    const nuovo = { ...righe.packages[0], id: "pk2", lessons_total: 20, starts_on: "2026-11-04", created_at: "2026-11-04T09:05:00Z" };
+    for (const packages of [[vecchio, nuovo], [nuovo, vecchio]]) {
+      expect(fotografiaTrainer({ ...righe, packages }, ORA).stato.dati!.pacchetti[0].lessonsTotal).toBe(20);
+    }
+  });
+
   it("pacchetto a tempo: si contano solo le sedute entro la scadenza", () => {
     const r: RigheTrainer = {
       ...righe,
