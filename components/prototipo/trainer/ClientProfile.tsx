@@ -159,7 +159,9 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
               <ProgressBar percent={percent} fill={tone.strong} track={tone.track} />
             </div>
             <p className="mt-[7px] text-[10px] text-ink/55">
-              Partenza {String(c.start).replace(".", ",")} {c.unit} · oggi {String(c.current).replace(".", ",")} {c.unit} · traguardo {c.target} {c.unit}
+              {c.unit === "%"
+                ? "Obiettivo in kg ancora da impostare: lo propone il cliente quando si registra, tu lo confermi."
+                : `Partenza ${String(c.start).replace(".", ",")} ${c.unit} · oggi ${String(c.current).replace(".", ",")} ${c.unit} · traguardo ${c.target} ${c.unit}`}
             </p>
           </div>
 
@@ -282,7 +284,11 @@ export function ClientProfile({ c }: { c: ClienteVista }) {
                 Misure <Ruler size={13} className="text-ink/60" />
               </h2>
               <div className="mt-[10px] flex flex-1 flex-col justify-between">
-                {!c.measures.length && <p className="my-auto text-center text-[11px] text-ink/45">Ancora nessuna misura: dille a Leo o allega un file.</p>}
+                {!c.measures.length && (
+                  <p className="my-auto text-center text-[11px] text-ink/45">
+                    {inDemo() ? "Ancora nessuna misura: dille a Leo o allega un file." : "Ancora nessuna misura: aggiungila con il tasto Misure."}
+                  </p>
+                )}
                 {c.measures.map((m, i) => {
                   const d = m.current - m.start;
                   return (

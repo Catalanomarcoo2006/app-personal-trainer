@@ -157,7 +157,11 @@ export function ClientList({ search }: { search: string }) {
             {shown.map((c, i) => (
               <ClientTile key={`${filter}-${c.id}`} c={c} i={i} nuovo={!iniziali.has(c.id)} />
             ))}
-            {shown.length === 0 && <p className="col-span-4 mt-[40px] text-center text-[13px] text-muted">Nessun cliente corrisponde alla ricerca.</p>}
+            {shown.length === 0 && (
+              <p className="col-span-4 mt-[40px] text-center text-[13px] text-muted">
+                {clients.length === 0 ? "Non hai ancora clienti: premi «Nuovo cliente» per aggiungere il primo." : "Nessun cliente corrisponde alla ricerca."}
+              </p>
+            )}
           </div>
         </div>
 

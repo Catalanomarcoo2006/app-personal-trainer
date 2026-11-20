@@ -19,8 +19,8 @@ export default function SoftAreaChart({
   // servono almeno due punti per una curva (un cliente appena aggiunto non ne ha)
   if (points.length < 2)
     return (
-      <div className="grid h-full min-h-[40px] w-full place-items-center text-[11px] text-ink/45" style={height ? { height } : undefined}>
-        Ancora nessuna rilevazione
+      <div className="grid h-full min-h-[40px] w-full place-items-center text-center text-[11px] text-ink/45" style={height ? { height } : undefined}>
+        {points.length === 1 ? "Una sola pesata: la curva compare dalla prossima" : "Ancora nessuna rilevazione"}
       </div>
     );
   const w = 300;
