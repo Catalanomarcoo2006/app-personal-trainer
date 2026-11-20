@@ -329,6 +329,10 @@ export const client = {
   get lessonsLeft() {
     return lezioniCliente;
   },
+  // la riga del pacchetto come la vede il cliente: "8 lezioni rimaste", "Scade il 20 febbraio", "Nessun pacchetto"
+  get packageNote() {
+    return notaPacchettoCliente;
+  },
   weekDone: ["L", "M"],
   nextSession: { when: "Venerdì 23, ore 18:00", where: "Fit Lab, Meolo" },
   weight: [72, 71.6, 71.1, 70.8, 70.2, 69.9, 69.4, 68.9],
@@ -506,12 +510,13 @@ export let conversations: { clientId: string; unread: number; messages: ChatMess
 // diventano quelli del database: chi li importa legge sempre il valore di adesso (export let e getter).
 let nomeCliente = "Giulia";
 let lezioniCliente = 2;
+let notaPacchettoCliente = "2 lezioni rimaste";
 
 export type Revenue = typeof revenue;
 
 export type DatiVeri = {
   trainer: { name: string; initials: string; photo: string; color: string };
-  cliente?: { name: string; lessonsLeft: number };
+  cliente?: { name: string; lessonsLeft: number; pacchetto: string };
   pathCards: string[];
   revenue: Revenue;
   alerts: Alert[];
@@ -566,6 +571,7 @@ export function usaDatiVeri(v: DatiVeri) {
   if (v.cliente) {
     nomeCliente = v.cliente.name;
     lezioniCliente = v.cliente.lessonsLeft;
+    notaPacchettoCliente = v.cliente.pacchetto;
   }
   pathCards = v.pathCards;
   revenue = v.revenue;

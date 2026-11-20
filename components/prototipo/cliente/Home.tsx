@@ -50,7 +50,17 @@ export function TrainerDiGiulia() {
         </span>
       </span>
       <span className="glass inline-flex h-[34px] items-center rounded-full px-[12px] text-[12px] text-muted">
-        <b className="mr-[4px] font-bold text-ink">{client.lessonsLeft}</b> lezioni rimaste
+        {/* "8 lezioni rimaste" col numero in evidenza; "Scade il 20 febbraio" e "Nessun pacchetto" interi */}
+        {(() => {
+          const [numero, ...resto] = client.packageNote.split(" ");
+          return /^\d+$/.test(numero) ? (
+            <>
+              <b className="mr-[4px] font-bold text-ink">{numero}</b> {resto.join(" ")}
+            </>
+          ) : (
+            client.packageNote
+          );
+        })()}
       </span>
     </div>
   );

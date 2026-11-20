@@ -113,6 +113,15 @@ describe("dal database alle pagine", () => {
     expect(fotografiaCliente({ ...resto, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io, logs: [{ ...log, done_on: "2026-11-03" }] }, ORA).allenatoOggi).toBe(false);
   });
 
+  it("riga del pacchetto per il cliente: lezioni rimaste, scadenza se è a mesi, nessun pacchetto", () => {
+    const { trainer: _t, clients: _c, alerts: _a, questions: _q, ...resto } = righe;
+    const per = (packages: RigheTrainer["packages"]) =>
+      fotografiaCliente({ ...resto, packages, trainer: { name: "Giulia Verdi", color: "#3366FF" }, io: { ...cliente, trainer_id: T, consent_at: null } }, ORA).veri.cliente!.pacchetto;
+    expect(per(righe.packages)).toBe("9 lezioni rimaste");
+    expect(per([{ ...righe.packages[0], kind: "time", lessons_total: null, ends_on: "2027-02-20" }])).toBe("Scade il 20 febbraio");
+    expect(per([])).toBe("Nessun pacchetto");
+  });
+
   it("documenti: con il percorso su Storage e il giorno italiano, solo dei clienti in elenco", () => {
     expect(fotografiaTrainer(righe, ORA).stato.documenti).toEqual([
       { id: "d1", clientId: C, nome: "Dieta.pdf", tipo: "pdf", da: "nutrizionista", data: "2026-11-04", file: "", percorso: `${T}/${C}/d1.pdf` },

@@ -11,6 +11,7 @@ import type { Documento } from "@/libs/prototipo/documenti";
 import { needsAttention } from "@/libs/domain/attention";
 import { daysBetween, romeDayKey } from "@/libs/domain/time";
 import { MESI } from "@/libs/dati/iniziali";
+import { rimastePacchetto } from "@/libs/dati/vista";
 import { indirizzoMarchio } from "./marchio";
 import type { AccountVero } from "./account";
 
@@ -409,7 +410,12 @@ export function fotografiaCliente(r: RigheCliente, ora: Date): Fotografia {
     allenatoOggi: r.logs.some((l) => l.client_id === r.io.id && l.done_on === romeDayKey(ora)),
     veri: {
       ...base.veri,
-      cliente: { name: r.io.name.split(" ")[0], lessonsLeft: p && p.kind === "lessons" ? Math.max(0, (p.lessonsTotal ?? 0) - p.lessonsUsed) : 0 },
+      cliente: {
+        name: r.io.name.split(" ")[0],
+        lessonsLeft: p && p.kind === "lessons" ? Math.max(0, (p.lessonsTotal ?? 0) - p.lessonsUsed) : 0,
+        // a lezioni "8 lezioni rimaste", a mesi "Scade il 20 febbraio" (non "0 lezioni rimaste")
+        pacchetto: p ? rimastePacchetto(p) : "Nessun pacchetto",
+      },
     },
   };
 }
