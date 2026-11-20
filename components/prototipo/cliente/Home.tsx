@@ -37,6 +37,9 @@ const Titolo = ({ children }: { children: ReactNode }) => <h2 className="mt-[20p
 // Sotto "Ciao, Giulia!": la pastiglia del trainer, come nel riferimento.
 export function TrainerDiGiulia() {
   const foto = useTrainerPhoto();
+  // "lezioni rimaste" e il nome del trainer vengono da variabili fuori dallo store: si segue lo store dei pacchetti
+  // perché, quando arrivano dati nuovi dal database (pacchetto fatto o cambiato dal trainer), la pagina si ridisegni
+  useStato((s) => s.dati.pacchetti);
   return (
     <div className="mt-[10px] flex flex-wrap items-center gap-[8px]">
       <span className="glass inline-flex h-[34px] items-center gap-[8px] rounded-full pr-[12px] pl-[3px] text-[12.5px]">
