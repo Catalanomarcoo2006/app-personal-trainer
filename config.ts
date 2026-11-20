@@ -8,7 +8,9 @@ const config = {
   appDescription:
     "L'app del personal trainer: clienti, schede, calendario e pagamenti, con il marchio del trainer e un assistente virtuale.",
   // solo il dominio, senza https:// né / finale: oggi l'indirizzo di Vercel, poi il dominio del prodotto
-  domainName: "app-personal-trainer-kappa.vercel.app",
+  // Col dominio del prodotto non serve toccare il codice: basta la variabile NEXT_PUBLIC_DOMAIN_NAME su Vercel
+  // (docs/dominio-e-email.md). I link delle email usano già l'indirizzo da cui l'app è aperta.
+  domainName: process.env.NEXT_PUBLIC_DOMAIN_NAME || "app-personal-trainer-kappa.vercel.app",
   resend: {
     // Mittenti delle email (Fase 5). onboarding@resend.dev è il mittente di prova di Resend:
     // va sostituito con un indirizzo del dominio del prodotto, verificato su Resend.

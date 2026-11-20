@@ -4,7 +4,7 @@ Elenco delle chiavi API del progetto: **quali esistono e dove sono usate, mai i 
 I valori stanno solo in `.env.local` (sul computer di Marco, escluso da git) e nelle Environment Variables di Vercel.
 Aggiornare questa tabella ogni volta che si crea, si sposta o si cancella una chiave.
 
-**Ultimo aggiornamento:** 2026-11-17
+**Ultimo aggiornamento:** 2026-11-20
 
 ## Chiavi attive
 
@@ -22,8 +22,9 @@ Le stesse variabili `AI_*` servono a **due rotte**: Leo del trainer (`app/protot
 
 | Servizio | Variabili | Quando |
 |---|---|---|
-| Resend (email) | `RESEND_API_KEY` (segreta) e `EMAIL_FROM` (non segreta, es. `Spotter <ciao@dominio.it>`, dominio verificato su Resend) | Vercel, Production. Con la chiave partono dall'app tutte le email in italiano: inviti, link d'accesso dei clienti, password dimenticata, avvisi e riepilogo del trainer. Serve prima il dominio |
+| Resend (email) | `RESEND_API_KEY` (segreta) e `EMAIL_FROM` (non segreta, es. `Spotter <ciao@dominio.it>`, dominio verificato su Resend) | Vercel, Production. Con la chiave partono dall'app tutte le email in italiano: inviti, link d'accesso dei clienti, password dimenticata, avvisi e riepilogo del trainer. Serve prima il dominio (passi in `docs/dominio-e-email.md`) |
 | Controllo del mattino (Vercel Cron) | `CRON_SECRET` (segreta, una stringa lunga a caso, almeno 16 caratteri) | Vercel, Production. Vercel la usa da solo per chiamare `/api/cron/avvisi` alle 7 (6 UTC); senza, gli avvisi dei pacchetti e le email degli avvisi non partono |
+| Dominio del prodotto | — | `NEXT_PUBLIC_DOMAIN_NAME` | Vercel, Production (non segreta, es. `tuodominio.it`): cambia l'indirizzo per i motori di ricerca; i link delle email usano già l'indirizzo da cui l'app è aperta | quando si compra il dominio |
 | Fornitore AI in UE | `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` | Prima del primo cliente vero: con dati veri DeepSeek non si usa |
 | Trascrizione della voce in UE (vocali a Leo) | `AI_STT_BASE_URL`, `AI_STT_API_KEY`, `AI_STT_MODEL` | Prima dei vocali con clienti veri; oggi i vocali usano la dettatura del browser (solo dati finti) |
 
